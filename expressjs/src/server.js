@@ -1,8 +1,11 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const cookieParser = require('cookie-parser');
-const dbConnection = require('./database/db.js');
-const dotenv = require('dotenv');
+const express = require("express");
+const bodyParser = require("body-parser");
+const cookieParser = require("cookie-parser");
+const dbConnection = require("./database/db.js");
+const dotenv = require("dotenv");
+const userRoutes = require('./routes/user.route.js');
+const roomRoutes = require('./routes/room.route.js');
+const gameRoutes = require("./routes/game.route.js");
 
 dotenv.config();
 
@@ -18,8 +21,11 @@ app.use(cookieParser());
 
 // CORS middleware
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", process.env.FRONTEND_URL); // Replace with your frontend domain
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE ,PATCH, OPTIONS");
+  res.header("Access-Control-Allow-Origin", process.env.FRONTEND_URL); 
+  res.header(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, DELETE ,PATCH, OPTIONS"
+  );
   res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
   res.header("Access-Control-Allow-Credentials", "true");
 
@@ -29,10 +35,13 @@ app.use((req, res, next) => {
 // Root route
 app.get("/", (req, res) => {
   const nodeVersion = process.versions.node;
-  const expressVersion = process.versions.express; 
 
-  res.send(`This is back-end application with Node.js version ${nodeVersion} and Express version ${expressVersion}`);
+  res.send(`This is back-end application using Node.js version ${nodeVersion}`);
 });
+
+app.use("/api", userRoutes);
+app.use("/api", roomRoutes);
+app.use("/api", gameRoutes);
 
 // Global error handling middleware
 app.use((err, req, res, next) => {
