@@ -1,28 +1,43 @@
 const Role = require("../role.model");
 
 class Stalker extends Role {
-  constructor() {
+  constructor(trait) {
+    let description = 'Thái nhân cách, thích rình mò người khác. Khả năng: núp sau nhà để rình người chơi khác.';
+    let imagePath = "./src/models/roles/assets/stalker.png";
     super(
       "Người theo dõi",
-      "Thái nhân cách, thích rình mò người khác. Người tốt: núp sau nhà để rình người chơi khác. Người xấu: chưa có.",
-      {
-        canStalk: false,
-      },
-      0
+      description,
+      {},
+      0,
+      imagePath
     );
+    this.trait = trait;
+    super.setCount(11);
+    this.setAvailableAction("Stalk");
+    this.setTrait(trait);
   }
 
-  setType(type) {
-    super.setType(type);
+  setAvailableAction(availableAction) {
+    this.availableAction = availableAction;
+  }
 
-    if (type === "good") {
-      super.setCount(11);
-      this.abilities.canStalk = true;
+  setTrait(trait) {
+    switch (trait) {
+      case "mad":
+        this.abilities.canStalk = false;
+        break;
+      case "bad":
+        super.setDescription("Thái nhân cách, thích rình mò người khác. Khả năng: núp sau nhà để rình, xem vai trò người chơi khác.");
+        this.abilities.canStalk = true;
+        break;
+      default:
+        this.abilities.canStalk = true;
+        break;
     }
   }
 
-  getType() {
-    super.getType(type);
+  getTrait() {
+    return this.trait;
   }
 }
 

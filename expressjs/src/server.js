@@ -1,36 +1,32 @@
 const express = require("express");
-const bodyParser = require("body-parser");
-const cookieParser = require("cookie-parser");
-const dbConnection = require("./database/db.js");
-const dotenv = require("dotenv");
-const userRoutes = require('./routes/user.route.js');
-const roomRoutes = require('./routes/room.route.js');
-const gameRoutes = require("./routes/game.route.js");
+const app = express();
 
+// Load environment variables
+const dotenv = require("dotenv");
 dotenv.config();
 
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-dbConnection(); // Connect to the database
+// Connect to the database
+const dbConnection = require("./database/db.js");
+dbConnection();
 
 // Middleware for parsing request bodies and cookies
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Cookie parser middleware
+const cookieParser = require("cookie-parser");
 app.use(cookieParser());
 
 // CORS middleware
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", process.env.FRONTEND_URL); 
-  res.header(
-    "Access-Control-Allow-Methods",
-    "GET, POST, PUT, DELETE ,PATCH, OPTIONS"
-  );
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.header("Access-Control-Allow-Credentials", "true");
+const cors = require('cors');
+const corsOptions = {
+  origin: process.env.Frontend_URL, 
+  methods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH'], 
+  allowedHeaders: ['Content-Type'], 
+  credentials: true,
+};
 
-  next();
-});
+app.use(cors(corsOptions));
 
 // Root route
 app.get("/", (req, res) => {
@@ -39,17 +35,28 @@ app.get("/", (req, res) => {
   res.send(`This is back-end application using Node.js version ${nodeVersion}`);
 });
 
-app.use("/api", userRoutes);
-app.use("/api", roomRoutes);
-app.use("/api", gameRoutes);
+/* Routes */
 
-// Global error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: "Something went wrong!" });
-});
+const userRoutes = require("./routes/user.route.js");
+const roomRoutes = require("./routes/room.route.js");
+const gameRoutes = require("./routes/game.route.js");
 
-// Start the server
-app.listen(PORT, () => {
+app.use("/api/user", userRoutes);
+app.use("/api/rooms", roomRoutes);
+app.use("/api/game", gameRoutes);
+
+/* Start the server */
+
+const server = require("http").createServer(app);
+const PORT = process.env.PORT || 3000;
+
+server.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
+
+/* Initialize socket.io */
+
+const SocketController = require("./socketHandle/socket.controller.js");
+new SocketController(server);
+
+module.exports = app;

@@ -1,12 +1,11 @@
-const express = require('express');
-const roleIndex = require('../controllers/role.controller.js');
-const { gameStart, gameEnd } = require('../controllers/game.controller.js');
-const auth = require('../middleware/auth.middleware.js');
+const express = require("express");
+const { roleIndex } = require("../controllers/role.controller.js");
+const { GameController } = require("../controllers/game.controller.js");
+const auth = require("../middleware/auth.middleware.js");
 
 const router = express.Router();
 
-router.get('/role', roleIndex);
-router.post('/game/start', auth, gameStart);
-router.post('/game/end', auth, gameEnd);
+router.get("/roles", roleIndex);
+router.post("/start", auth, GameController.gameStart);
 
 module.exports = router;

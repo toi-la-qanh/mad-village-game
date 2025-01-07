@@ -1,14 +1,14 @@
 const express = require('express');
-const { roomIndex, roomShow, roomCreate, roomJoin, roomLeave } = require('../controllers/room.controller.js');
+const { RoomController } = require('../controllers/room.controller.js');
 const auth = require('../middleware/auth.middleware.js');
 
 const router = express.Router();
 
-router.get('/room', roomIndex);
-router.get('/room/:id', roomShow);
-// router.get('/room', roomSearch);
-router.post('/room/:id/join', auth, roomJoin);
-router.post('/room', auth, roomCreate);
-router.post('/room/:id/leave', auth, roomLeave);
+router.get('/', RoomController.roomIndex);
+router.get('/:id', RoomController.getRoom);
+router.post('/:id/join', auth, RoomController.roomJoin);
+router.post('/', auth, RoomController.roomCreate);
+router.post('/:id/leave', auth, RoomController.roomLeave);
+router.post('/:id/delete', auth, RoomController.roomDelete);
 
 module.exports = router;

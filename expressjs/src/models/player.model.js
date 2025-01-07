@@ -1,47 +1,44 @@
-class Player {
-  constructor(role, status = {}, type) {
-    this.role = role;
-    this.status = {
-      isAlive: true,
-      getDebuff: false,
-      ...status,
-    };
-    this.type = type;
-  }
+const mongoose = require("mongoose");
 
-  // Method to check if player is alive
-  isAlive() {
-    return this.status.isAlive;
-  }
+const PlayerSchema = new mongoose.Schema({
+  player_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User", // Reference to the User model
+    required: true,
+  },
+  name: {
+    type: String,
+    required: true,
+  },
+  role: {
+    type: String,
+    required: true,
+  },
+  trait: {
+    type: String,
+    required: true,
+  },
+  count: {
+    //Specify how many times can a player use the skill
+    type: Number,
+    required: true,
+    default: 2,
+  },
+  status: {
+    isAlive: {
+      type: Boolean,
+      default: true,
+    },
+    isBeing: [
+      {
+        type: String,
+      },
+    ],
+    poisonDaysRemaining: {
+      type: Number,
+      default: 0, // Days remaining for poisoned players to survive
+    },
+  },
+});
 
-  // Method to check if player gets debuff
-  getDebuff() {
-    return this.status.getDebuff;
-  }
-
-  setRole(role) {
-    this.role = role;
-  }
-
-  setStatus(status) {
-    this.status = status;
-  }
-
-  setType(type) {
-    this.type = type;
-  }
-
-  getRole() {
-    return this.role;
-  }
-
-  getStatus() {
-    return this.status;
-  }
-
-  getType() {
-    return this.type;
-  }
-}
-
-module.exports = Player;
+module.exports = { PlayerSchema };
