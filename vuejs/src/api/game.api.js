@@ -8,6 +8,10 @@ export default class GameApi extends BaseApi {
     return this.get(`${url}/roles`, params);
   }
 
+  getSpecifiedRole(params) {
+    return this.get(`${url}/roles/info`, params);
+  }
+
   start(data) {
     return this.post(`${url}/start`, data);
   }

@@ -1,100 +1,59 @@
 import axios from "axios";
+import { authError, errorMessages, showSignUpForm } from "../store";
 
 export default class BaseApi {
   constructor() {
-    this._axios = axios;
+    this._axios = axios.create({
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      withCredentials: true
+    });
   }
 
-  async get(url, params = {}) {
-    try {
-      const { data } = await this._axios.get(url, {
-        params,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        withCredentials: true,
-      });
-      return data;
-    } catch (error) {
+  handleError(error) {
+    if (error.message === "Network Error") {
+      errorMessages.value = "Lỗi kết nối với máy chủ !";
+      return;
+    }
+    
+    if (error.response?.status === 401) {
+      authError.value = error.response.data.errors;
+      errorMessages.value = null;
+      showSignUpForm.value = true;
       throw error;
     }
+
+    throw error;
   }
 
-  async put(url, data) {
+  async request(method, url, data = null, params = null) {
     try {
-      const { response } = await this._axios.put(
-        url,
-        {
-          data,
-        },
-        {
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-        }
-      );
+      const response = await this._axios({ method, url, data, params });
       return response;
     } catch (error) {
-      throw error;
+      this.handleError(error);
     }
   }
 
-  async patch(url, data) {
-    try {
-      const { response } = await this._axios.patch(
-        url,
-        {
-          data,
-        },
-        {
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-        }
-      );
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+  get(url, params) {
+    return this.request('get', url, null, params);
   }
 
-  async post(url, data) {
-    try {
-      const { data: responseData } = await this._axios.post(url, data, {
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-        withCredentials: true,
-      });
-      return responseData;
-    } catch (error) {
-      throw error;
-    }
+  post(url, data) {
+    return this.request('post', url, data);
   }
 
-  async delete(url, data) {
-    try {
-      const { response } = await this._axios.delete(
-        url,
-        {
-          data,
-        },
-        {
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-        }
-      );
-      return response;
-    } catch (error) {
-      throw error;
-    }
+  put(url, data) {
+    return this.request('put', url, data);
+  }
+
+  patch(url, data) {
+    return this.request('patch', url, data);
+  }
+
+  delete(url) {
+    return this.request('delete', url);
   }
 }

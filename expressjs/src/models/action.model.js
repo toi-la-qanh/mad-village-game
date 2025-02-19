@@ -5,15 +5,23 @@ const ActionSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  targetSelector: {
-    // Person who makes decision
+  performer: {
+    // The player performing the action
     type: mongoose.Schema.Types.ObjectId,
     ref: "Player",
+    required: true,
   },
-  selectedTarget: {
-    // Target who has been chosen
+  target: {
+    // Target who has been selected
     type: mongoose.Schema.Types.ObjectId,
     ref: "Player",
+    required: false,
+  },
+  status: {
+    // Status of the action after resolution
+    type: String,
+    enum: ['pending', 'successful', 'failed'],
+    default: 'pending',
   },
 });
 

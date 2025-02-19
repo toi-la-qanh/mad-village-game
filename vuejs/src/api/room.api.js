@@ -4,23 +4,23 @@ let url = `${import.meta.env.VITE_BACKEND_URL}/api/rooms`;
 
 export default class RoomApi extends BaseApi {
 
-  getAllRooms(params) {
-    return this.get(`${url}/`, params);
+  getAllRooms() {
+    return this.get(`${url}/`);
   }
 
-  getRoom(id, params) {
-    return this.get(`${url}/${id}`, params);
+  getRoom(id) {
+    return this.get(`${url}`, id);
   }
 
-  joinRoom(id, data) {
-    return this.post(`${url}/${id}/join`, data);
+  joinRoom(id, params) {
+    return this.get(`${url}/${id}/join`, params);
   }
 
   createRoom(data) {
     return this.post(`${url}/`, data);
   }
 
-  leaveRoom(id, data) {
-    return this.post(`${url}/${id}/leave`, data);
+  leaveRoom(id) {
+    return this.delete(`${url}/${id}`);
   }
 };

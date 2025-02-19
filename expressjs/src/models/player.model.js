@@ -1,13 +1,17 @@
 const mongoose = require("mongoose");
 
 const PlayerSchema = new mongoose.Schema({
-  player_id: {
+  _id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "User", // Reference to the User model
     required: true,
+    ref: "User" // Add the ref here if you need it
   },
   name: {
     type: String,
+    required: true,
+  },
+  priority: {
+    type: Number,
     required: true,
   },
   role: {
@@ -19,7 +23,7 @@ const PlayerSchema = new mongoose.Schema({
     required: true,
   },
   count: {
-    //Specify how many times can a player use the skill
+    //Specify how many times a player can use skill
     type: Number,
     required: true,
     default: 2,

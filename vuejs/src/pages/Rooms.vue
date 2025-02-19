@@ -1,9 +1,13 @@
+<script setup>
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { faCircleInfo } from "@fortawesome/free-solid-svg-icons";
+</script>
 <template>
   <div
     class="flex py-12 w-full h-screen z-10 fixed justify-center items-center font-mono"
   >
     <div
-      class="w-full max-w-xl bg-white h-screen rounded-2xl border border-black p-3 overflow-y-auto scrollbar-none"
+      class="w-full max-w-xl bg-white h-screen rounded-lg border border-black p-3 overflow-y-auto scrollbar-none"
     >
       <button
         @click="goBack"
@@ -12,10 +16,26 @@
         < Trang chủ
       </button>
       <!-- Title -->
-      <div class="mt-4 flex justify-between">
+      <div class="mt-4 flex justify-between flex-wrap">
         <h3 class="text-2xl font-bold">Sảnh chờ</h3>
-        <input type="text" placeholder="Tìm phòng ..." class="outline-none" />
+        <div class="flex relative gap-2 items-center">
+          <FontAwesomeIcon
+            class="text-blue-900"
+            :icon="faCircleInfo"
+            @click="searchHelper"
+          />
+          <input
+            type="text"
+            placeholder="Tìm phòng ..."
+            class="outline-none"
+            @input="searchRooms"
+          />
+        </div>
       </div>
+
+      <span class="hidden text-gray-400" id="searchInfo">
+        Tìm phòng bằng mã phòng hoặc tên của chủ phòng
+      </span>
 
       <div class="mt-2 flex justify-between">
         <button
@@ -28,7 +48,7 @@
       </div>
 
       <div class="w-full h-96 mt-7">
-        <div v-if="rooms.length > 0">
+        <div v-if="rooms">
           <div
             v-for="(room, index) in rooms"
             :key="index"
@@ -56,9 +76,9 @@
       <!-- Create Room Popup (Conditional Rendering) -->
       <div
         v-if="showCreateRoom"
-        class="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex justify-center items-center z-20"
+        class="fixed top-0 left-0 w-full h-full bg-black bg-opacity-30 flex justify-center items-center z-20"
       >
-        <div class="bg-white p-4 rounded-xl w-full max-w-96">
+        <div class="bg-white rounded-xl w-full max-w-96">
           <CreateRoom @close="closeCreateRoom" />
         </div>
       </div>
@@ -77,6 +97,7 @@ export default {
   data() {
     return {
       rooms: [],
+      filteredRooms: [],
       error: null,
       showCreateRoom: false,
     };
@@ -84,9 +105,8 @@ export default {
   async mounted() {
     const room = new RoomApi();
     try {
-      const response = await room.getAllRooms();
-      console.log(response);
-      this.rooms = response.rooms;
+      this.rooms = await room.getAllRooms();
+      this.filteredRooms = this.rooms;
     } catch (error) {
       console.error(error);
       this.error = error.response?.data?.errors;
@@ -105,6 +125,28 @@ export default {
     closeCreateRoom() {
       // Close the CreateRoom popup
       this.showCreateRoom = false;
+    },
+    searchHelper() {
+      const info = document.getElementById("searchInfo");
+      if (info.classList.contains("flex")) {
+        info.classList.remove("flex");
+        info.classList.add("hidden");
+      } else {
+        info.classList.remove("hidden");
+        info.classList.add("flex");
+      }
+    },
+    searchRooms() {
+      this.filteredRooms = this.rooms.filter(
+        (room) =>
+          room.ownerName
+            .toLowerCase()
+            .includes(this.searchQuery.toLowerCase()) ||
+          room.roomID.toLowerCase().includes(this.searchQuery.toLowerCase())
+      );
+      if (this.filteredRooms) {
+        console.log("Not found");
+      }
     },
   },
 };

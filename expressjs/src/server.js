@@ -1,6 +1,15 @@
 const express = require("express");
 const app = express();
 
+/* Start the server */
+
+const server = require("http").createServer(app);
+const PORT = process.env.PORT || 3000;
+
+server.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
+});
+
 // Load environment variables
 const dotenv = require("dotenv");
 dotenv.config();
@@ -35,6 +44,10 @@ app.get("/", (req, res) => {
   res.send(`This is back-end application using Node.js version ${nodeVersion}`);
 });
 
+/* Initialize socket.io */
+const SocketController = require("./socketHandle/socket.controller.js");
+new SocketController(server);
+
 /* Routes */
 
 const userRoutes = require("./routes/user.route.js");
@@ -44,19 +57,4 @@ const gameRoutes = require("./routes/game.route.js");
 app.use("/api/user", userRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/game", gameRoutes);
-
-/* Start the server */
-
-const server = require("http").createServer(app);
-const PORT = process.env.PORT || 3000;
-
-server.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
-
-/* Initialize socket.io */
-
-const SocketController = require("./socketHandle/socket.controller.js");
-new SocketController(server);
-
 module.exports = app;

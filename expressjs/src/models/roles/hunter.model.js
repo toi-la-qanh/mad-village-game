@@ -1,42 +1,43 @@
 const Role = require("../role.model");
 
 class Hunter extends Role {
+  #trait;
   constructor(trait) {
-    let description =
-      "Đặt bẫy, úm ba la alaba trap. Khả năng: đặt bẫy vào 1 nhà, khoá chức năng trong 1 đêm.";
+    let name = "Hunter";
     let imagePath = "./src/models/roles/assets/hunter.png";
-    super("Thợ săn", description, {}, 0, imagePath);
-    this.trait = trait;
-    this.setAvailableAction("Trap");
-    this.setTrait(trait);
-  }
-
-  setAvailableAction(availableAction) {
-    this.availableAction = availableAction;
+    super(name, "", {}, [], 0, 0, imagePath);
+    this.#trait = trait;
+    this.setTrait(this.#trait);
   }
 
   setTrait(trait) {
     switch (trait) {
       case "mad":
         super.setCount(2);
-        this.abilities.canTrap = false;
+        this.getAbilities().canTrap = false;
+        this.setActionPriorities(2);
         break;
       case "bad":
-        super.setCount(11);
+        super.setCount(Infinity);
         super.setDescription(
-          "Đặt bẫy, úm ba la alaba trap. Khả năng: đặt bẫy vào 1 nhà, làm chết 1 người chơi."
+          "Đặt bẫy người chơi được chỉ định"
         );
-        this.abilities.canTrap = false;
+        this.getAbilities().canTrap = true;
+        this.setActionPriorities(2);
         break;
       default:
+        super.setDescription(
+          "Đặt bẫy người chơi được chỉ định"
+        );
         super.setCount(2);
-        this.abilities.canTrap = true;
+        this.setActionPriorities(1);
+        this.getAbilities().canTrap = true;
         break;
     }
   }
 
   getTrait() {
-    return this.trait;
+    return this.#trait;
   }
 }
 

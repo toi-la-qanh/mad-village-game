@@ -16,10 +16,6 @@ export const socket = io(URL, {
   extraHeaders: {
     "Content-Type": "application/json",
   },
-  reconnectionAttempts: Infinity, // Infinite reconnection attempts
-  reconnectionDelay: 1000, // Initial delay before retry
-  reconnectionDelayMax: 5000, // Max delay before retry
-  randomizationFactor: 0.5,
   transports: ["websocket"],
 });
 

@@ -1,43 +1,47 @@
 const Role = require("../role.model");
 
 class Bully extends Role {
+  #trait;
   constructor(trait) {
-    let description =
-      "Có quyền lực bậc nhất trong showbiz. Khả năng: bảo vệ chủ nhà được chỉ định, nếu thành công sẽ chết sau 1 đêm.";
+    let name = "Bully";
     let imagePath = "./src/models/roles/assets/bully.png";
-    super("Dân anh chị", description, {}, 0, imagePath);
-    this.trait = trait;
-    this.setAvailableAction("Protect");
-    this.setTrait(trait);
-  }
-
-  setAvailableAction(availableAction) {
-    this.availableAction = availableAction;
+    super(name, "", {}, [], 0, 0, imagePath);
+    this.#trait = trait;
+    this.setTrait(this.#trait);
   }
 
   setTrait(trait) {
     switch (trait) {
       case "mad":
-        this.abilities.canProtect = false;
+        this.getAbilities().canBlock = false;
+        this.getAbilities().canKill = false;
+        super.setDescription("Chặn hành động người chơi được chỉ định.");
+        this.setAvailableAction("block");
+        this.setActionPriorities(1);
         break;
       case "bad":
         super.setDescription(
-          "Có quyền lực bậc nhất trong showbiz. Khả năng: bạo hành chủ nhà được chỉ định, và lộ thông tin người đó."
+          "Chặn hành động và giết người chơi được chỉ định."
         );
-        super.setCount(11);
-        this.abilities.canProtect = false;
-        this.abilities.canBully = true;
-        this.setAvailableAction("Bully");
+        super.setCount(Infinity);
+        this.getAbilities().canBlock = true;
+        this.getAbilities().canKill = true;
+        this.setAvailableAction(["block", "kill"]);
+        this.setActionPriorities(1);
         break;
       default:
-        super.setCount(2);
-        this.abilities.canProtect = true;
+        super.setDescription("Chặn hành động người chơi được chỉ định.");
+        super.setCount(Infinity);
+        this.getAbilities().canBlock = true;
+        this.getAbilities().canKill = false;
+        this.setAvailableAction("block");
+        this.setActionPriorities(1);
         break;
     }
   }
 
   getTrait() {
-    return this.trait;
+    return this.#trait;
   }
 }
 

@@ -1,15 +1,33 @@
-<script setup>
-import BackGround from "./layouts/BackGround.vue";
-import SignUpForm from "./components/SignUpForm.vue";
-import { showSignUpForm, authError } from "./store";
-console.log(authError.value);
-console.log(showSignUpForm.value);
-</script>
-
 <template>
-  <BackGround :class="{'opacity-80': showSignUpForm}"/>
-  <router-view :class="{'opacity-90': showSignUpForm}"/>
+  <BackGround v-if="showBackground"/>
+  <router-view class="z-10 fixed"/>
   <SignUpForm v-if="showSignUpForm" />
+  <ErrorPopup v-if="errorMessages && !showSignUpForm"/>
+  <Loading v-if="isLoading"/>
 </template>
+ 
+<script>
+import { defineAsyncComponent } from 'vue';
+import { showSignUpForm, showBackground, errorMessages, isLoading } from './store';
 
-<style scoped></style>
+export default {
+  components: {
+    // Lazy load components
+    BackGround: defineAsyncComponent(() => import('./layouts/BackGround.vue')),
+    SignUpForm: defineAsyncComponent(() => import('./components/SignUpForm.vue')),
+    ErrorPopup: defineAsyncComponent(() => import('./components/ErrorPopup.vue')),
+    Loading: defineAsyncComponent(() => import('./components/Loading.vue')),
+  },
+  setup() {
+    console.log(errorMessages.value);
+    console.log(isLoading.value);
+
+    return {
+      showSignUpForm,
+      showBackground,
+      errorMessages,
+      isLoading,
+    };
+  },
+};
+</script>

@@ -3,16 +3,16 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faXmark } from "@fortawesome/free-solid-svg-icons";
 </script>
 <template>
-  <div class="relative flex flex-col gap-2">
+  <div class="relative flex flex-col gap-2 p-4">
     <h3 class="text-xl">Tạo phòng</h3>
-    <button class="absolute right-0 top-0" @click="closePopup">
+    <button class="absolute right-2 top-2 border-2 border-red-400 w-6 h-6" @click="closePopup">
       <FontAwesomeIcon class="text-red-600 hover:text-red-500 focus:text-red-500" :icon="faXmark" />
     </button>
     <form @submit.prevent="handleCreateRoom" class="w-full gap-2 flex flex-col">
-      <div class="flex justify-between w-full">
-        Số lượng người:
+      <div class="flex gap-2 w-full flex-wrap">
+        <p class="w-auto">Số lượng người:</p>
         <input
-          class="outline-none sm:placeholder:text-gray-400 placeholder:text-white sm:w-auto w-10"
+          class="outline-none w-auto"
           v-model="capacity"
           type="text"
           placeholder="Nhập số nguyên dương"
@@ -42,6 +42,8 @@ import { faXmark } from "@fortawesome/free-solid-svg-icons";
 
 <script>
 import RoomApi from "../api/room.api";
+import { roomID } from "../store";
+import { socket } from "../socket";
 
 export default {
   data() {
@@ -62,6 +64,9 @@ export default {
         const response = await room.createRoom({ capacity: this.capacity });
         console.log("Response from createRoom:", response);
         this.closePopup();
+        localStorage.setItem('roomID', response.roomID);
+        roomID.value = response.roomID;
+        socket.emit("room:created", response);
         this.$router.push({ name: "room", params: { id: response.roomID } });
       } catch (error) {
         if (error.status === 422) {

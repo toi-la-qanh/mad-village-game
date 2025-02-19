@@ -24,13 +24,5 @@ const RoomSchema = new mongoose.Schema(
   }
 );
 
-RoomSchema.index(
-  { createdAt: 1 },
-  {
-    expireAfterSeconds: 10800,
-    partialFilterExpression: { owner: null }
-  }
-);
-
 const Room = mongoose.model("Room", RoomSchema);
 module.exports = Room;

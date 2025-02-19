@@ -1,17 +1,19 @@
 const Role = require("../role.model");
 
 class Villager extends Role {
+  #trait;
   constructor() {
-    let name = "Dân làng";
-    let description = "Bị điên";
+    let name = "Villager";
+    let description = "Vai trò sẽ được chọn ngẫu nhiên";
     let imagePath = "./src/models/roles/assets/villager.png";
-    super(name, description, {}, 0, imagePath);
-    super.setCount(11);
-    this.setTrait("mad");
+    super(name, description, {}, [], 0, 0, imagePath);
+    super.setCount(Infinity);
+    this.#trait = "mad";
+    this.setTrait(this.#trait);
   }
 
   setTrait(trait) {
-    this.trait = trait;
+    this.#trait = trait;
   }
 }
 

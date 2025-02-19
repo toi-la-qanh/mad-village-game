@@ -1,16 +1,18 @@
 <script setup>
-import { showSignUpForm } from "../store";
+import { authError, showSignUpForm } from "../store";
 </script>
 
 <template>
   <div
     v-if="showSignUpForm"
-    class="fixed h-screen flex z-20 w-full justify-center items-center bg-inherit opacity-100"
+    class="fixed h-screen flex z-20 w-full justify-center items-center bg-opacity-20 bg-black"
   >
     <div
-      class="text-yellow-300 font-mono w-full max-w-md p-8 space-y-6 bg-lime-700 shadow-md rounded-lg"
+      class="font-mono w-full max-w-md sm:p-8 px-4 py-8 space-y-6 bg-white border border-lime-700 shadow-md rounded-xl"
     >
-      <h2 class="text-2xl font-semibold text-center">Tên của bạn là</h2>
+      <h2 class="text-2xl text-lime-700 font-semibold text-center">
+        Tên của bạn là
+      </h2>
 
       <!-- Signup Form -->
       <form @submit.prevent="handleSignup" class="space-y-4">
@@ -21,7 +23,7 @@ import { showSignUpForm } from "../store";
             id="username"
             type="text"
             required
-            class="w-full px-4 py-2 mt-1 text-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
+            class="focus:outline-none w-full px-4 py-2 mt-1 text-gray-700 border-2 border-lime-700 rounded-md outline-none focus:ring-2 focus:ring-gray-200"
           />
         </div>
 
@@ -30,15 +32,24 @@ import { showSignUpForm } from "../store";
           <button
             type="submit"
             :disabled="isSubmitting"
-            class="w-full px-4 py-2 bg-lime-900 rounded-md hover:bg-lime-800 focus:outline-none focus:ring-2 focus:ring-lime-800 disabled:bg-gray-400"
+            class="text-white w-full px-4 py-2 bg-lime-700 rounded-md hover:bg-lime-800 focus:outline-none focus:ring-2 focus:ring-gray-200 disabled:bg-gray-400"
           >
             Vào chơi thôi
           </button>
         </div>
 
         <!-- Error Message -->
-        <div v-if="error" class="mt-4 text-center text-red-500">
-          {{ error }}
+        <div v-if="error">
+          <p v-if="Array.isArray(error)" class="flex flex-col">
+            <span
+              v-for="(err, index) in error"
+              :key="index"
+              class="text-red-500 text-center"
+            >
+              {{ err }}
+            </span>
+          </p>
+          <p v-else class="text-red-500 text-center">{{ error }}</p>
         </div>
 
         <!-- Success Message -->
@@ -52,6 +63,7 @@ import { showSignUpForm } from "../store";
 
 <script>
 import UserApi from "../api/user.api"; // Import the UserApi class
+import { socket } from "../socket";
 
 export default {
   data() {
@@ -59,7 +71,7 @@ export default {
       name: "",
       isSubmitting: false,
       successMessage: "",
-      error: null,
+      error: authError.value,
     };
   },
   methods: {
@@ -68,20 +80,24 @@ export default {
       this.successMessage = "";
       this.error = null;
 
-      const user = new UserApi();
-
-      this.isSubmitting = false;
       try {
+        const user = new UserApi();
         await user.signup({
           name: this.name,
         });
+        if (!socket.connected) {
+          socket.connect();
+        }
         showSignUpForm.value = false;
       } catch (error) {
-        if (error.status === 422) {
-          this.error = error.response.data.errors.msg;
+        if (error.response?.status === 422) {
+          this.error = error.response?.data?.errors?.map((err) => err.msg);
         } else {
-          this.error = error.response.data?.errors;
+          this.error = error.response?.data?.errors;
         }
+      } finally {
+        // Set isSubmitting to false after all operations are complete
+        this.isSubmitting = false;
       }
     },
   },

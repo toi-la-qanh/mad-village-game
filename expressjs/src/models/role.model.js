@@ -1,106 +1,165 @@
-const fs = require('fs');
+const fs = require("fs");
 
 function convertImageToBase64(imagePath) {
-  const image = fs.readFileSync(imagePath); // Read the image file
-  return Buffer.from(image).toString("base64"); // Convert to Base64 string
+  const image = fs.readFileSync(imagePath);
+  return Buffer.from(image).toString("base64");
 }
 
 class Role {
-  constructor(name, description, abilities = {}, counts, imagePath) {
-    this.name = name;
-    this.description = description;
-    this.abilities = {
+  #name;
+  #description;
+  #abilities;
+  #availableAction;
+  #actionPriorities;
+  #counts;
+  #image;
+  #traits;
+
+  constructor(
+    name,
+    description,
+    abilities = {},
+    availableAction = [],
+    actionPriorities,
+    counts,
+    imagePath
+  ) {
+    this.#name = name;
+    this.#description = description;
+    this.#abilities = {
       canSave: false,
       canPoison: false,
       canProtect: false,
       canTrap: false,
       canStalk: false,
-      canBully: false,
+      canBlock: false,
+      canKill: false,
       ...abilities,
     };
-    this.counts = counts; //specify how many times the role can use skill
-    this.image = convertImageToBase64(imagePath);
+    this.#availableAction = availableAction;
+    this.#actionPriorities = actionPriorities;
+    this.#counts = counts;
+    this.#image = convertImageToBase64(imagePath);
+    this.#traits = [];
   }
 
-  // Action that checks if the player can perform an action (e.g., kill, protect)
+  hasTrait(trait) {
+    return this.#traits.includes(trait);
+  }
+
   canPerformAction(action, player) {
     if (!player.status.isAlive()) {
-      console.log(`${this.name} is not alive and cannot perform actions.`);
+      console.log(`${player.name} is not alive and cannot perform actions.`);
       return false;
     }
-
-    if (this.abilities[action]) {
-      return this.counts > 0; // Can only perform the action if the count > 0
+    if (player.status.isBeing === "blocked") {
+      console.log(`${player.name} is being blocked and cannot perform action.`);
+      return false;
     }
-
-    console.log(`${this.name} cannot perform the action: ${action}`);
-    return false;
+    if (!this.#abilities[action]) {
+      console.log(`${action} does not exist`);
+      return false;
+    }
+    if (action !== this.#availableAction) {
+      console.log(`${action} is not available`);
+      return false;
+    }
+    if (this.#counts < 1) {
+      console.log(`${this.#name} has no remaining uses for action: ${action}`);
+      return false;
+    }
+    return true;
   }
 
-  // Deducts from the ability count when the action is performed
-  useAction(action) {
-    if (this.canPerformAction(action)) {
-      this.counts--;
-      console.log(
-        `${this.name} performed the action: ${action}. Remaining uses: ${this.counts}`
-      );
-      return true;
+  useAction(action, performer) {
+    if (!this.canPerformAction(action, performer)) {
+      return false;
     }
-    return false;
+    if (this.hasTrait("mad")) {
+      console.log(`${this.#name} is mad; the action ${action} has no effect.`);
+      return false;
+    }
+    this.#counts--;
+    console.log(
+      `${this.#name} performed the action: ${action}. Remaining uses: ${this.#counts}`
+    );
+    return true;
+  }
+
+  setName(name) {
+    this.#name = name;
   }
 
   setDescription(description) {
-    this.description = description;
+    this.#description = description;
+  }
+
+  setImage(imagePath) {
+    this.#image = imagePath;
   }
 
   setAbilities(abilities) {
-    this.abilities = abilities;
+    this.#abilities = abilities;
+  }
+
+  setAvailableAction(availableAction = []) {
+    this.#availableAction = availableAction;
+  }
+
+  setActionPriorities(actionPriorities) {
+    this.#actionPriorities = actionPriorities;
   }
 
   setCount(counts) {
-    this.counts = counts;
+    this.#counts = counts;
   }
 
   getDescription() {
-    return this.description;
+    return this.#description;
   }
 
   getAbilities() {
-    return this.abilities;
+    return this.#abilities;
+  }
+
+  getActionPriorities() {
+    return this.#actionPriorities;
   }
 
   getCount() {
-    return this.counts;
+    return this.#counts;
   }
 
-  // Method to check if the role can save the other player
+  getImage() {
+    return this.#image;
+  }
+
+  getAvailableAction() {
+    return this.#availableAction;
+  }
+
   canSave() {
-    return this.abilities.canSave;
+    return this.#abilities.canSave;
   }
 
-  // Method to check if the role can poison the other player
   canPoison() {
-    return this.abilities.canPoison;
+    return this.#abilities.canPoison;
   }
 
-  // Method to check if the role can protect the other player
   canProtect() {
-    return this.abilities.canProtect;
+    return this.#abilities.canProtect;
   }
 
-  // Method to check if the role can trap the other player
   canTrap() {
-    return this.abilities.canTrap;
+    return this.#abilities.canTrap;
   }
 
-  // Method to check if the role can stalk the other player
   canStalk() {
-    return this.abilities.canStalk;
+    return this.#abilities.canStalk;
   }
 
-  // Method to check if the role can bully the other player
   canBully() {
-    return this.abilities.canBully;
+    return this.#abilities.canBully;
   }
 }
 

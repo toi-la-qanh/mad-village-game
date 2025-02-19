@@ -1,8 +1,9 @@
 <script setup>
+import { showBackground } from "../store";
 </script>
 
 <template>
-  <div class="w-full h-screen fixed">
+  <div v-if="showBackground" class="w-full h-screen fixed">
     <div
       class="absolute border border-gray-500 text-center w-full text-yellow-300 font-mono text-4xl"
     >

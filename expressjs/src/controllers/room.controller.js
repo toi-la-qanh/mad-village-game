@@ -1,9 +1,42 @@
 const { checkSchema, validationResult } = require("express-validator");
 const Room = require("../models/room.model");
-const User = require("../models/user.model");
 const { ObjectId } = require("mongodb");
 
 class RoomController {
+  static listenForEvents(io, socket) {
+    socket.on("room:join", (roomID) => {
+      socket.join(roomID);
+      console.log(`User ${socket.user} has joined the room ${roomID}`);
+      io.to(roomID).emit("room:update", roomID);
+    });
+    socket.on("room:check", async (roomID) => {
+      const room = await Room.findById(roomID);
+      if (!room) {
+        return io.to(roomID).emit("room:check:response", {
+          roomID: null,
+          isInRoom: null,
+        });
+      }
+      if (room.players.includes(socket.user)) {
+        return io.to(roomID).emit("room:check:response", {
+          roomID: roomID,
+          isInRoom: true,
+        });
+      }
+      return io.to(roomID).emit("room:check:response", {
+        roomID: roomID,
+        isInRoom: false,
+      });
+    });
+    socket.on("room:leave", (roomID) => {
+      if (!socket.rooms.has(roomID)) {
+        socket.leave(roomID);
+      }
+      console.log(`User ${socket.user} has left the room ${roomID}`);
+      io.to(roomID).emit("room:update", roomID);
+    });
+  }
+
   static roomIndex = async (req, res) => {
     // Get the last room id from the query params (or set it to null for initial load)
     const lastRoomId = req.query.lastRoomId || null;
@@ -13,10 +46,12 @@ class RoomController {
 
     // If it's the initial load, no `lastRoomId` will be provided
     if (!lastRoomId) {
-      rooms = await Room.find().limit(limit).populate('owner', 'name'); // Fetch the first 10 rooms
+      rooms = await Room.find().limit(limit).populate("owner", "name"); // Fetch the first 10 rooms
     } else {
       // If `lastRoomId` is provided, fetch the next 10 rooms after the last one
-      rooms = await Room.find({ _id: { $gt: lastRoomId } }).limit(limit).populate('owner', 'name');
+      rooms = await Room.find({ _id: { $gt: lastRoomId } })
+        .limit(limit)
+        .populate("owner", "name");
     }
 
     if (rooms.length === 0) {
@@ -26,8 +61,8 @@ class RoomController {
     const roomDetails = rooms.map((room) => ({
       roomID: room._id,
       capacity: room.capacity,
-      ownerName: room.owner?.name, 
-      playerCount: room.players.length, 
+      ownerName: room.owner?.name,
+      playerCount: room.players.length,
     }));
 
     const newLastRoomId = rooms[rooms.length - 1]._id;
@@ -56,19 +91,22 @@ class RoomController {
 
       const { id } = req.params;
 
-      const room = await Room.findById({ _id: id })
+      const room = await Room.findById(id)
         .populate("owner", "name")
         .populate("players", "name _id");
 
-      if (room.length === 0) {
+      if (!room) {
         return res.status(404).json({ errors: "Không tìm thấy phòng này!" });
       }
 
       const roomData = {
         roomID: room._id,
         capacity: room.capacity,
-        owner: { id: room.owner, name: room.owner?.name }, 
-        players: room.players.map(player => ({ id: player._id, name: player.name })), 
+        owner: room.owner,
+        players: room.players.map((player) => ({
+          id: player._id,
+          name: player.name,
+        })),
         playerCount: room.players.length,
       };
 
@@ -116,7 +154,9 @@ class RoomController {
 
       const roomID = room._id;
 
-      return res.status(200).json({ message: "Tạo phòng thành công !", roomID });
+      return res
+        .status(200)
+        .json({ message: "Tạo phòng thành công !", roomID });
     },
   ];
 
@@ -146,10 +186,12 @@ class RoomController {
         return res.status(404).json({ error: "Không tìm thấy phòng này !" });
       }
 
-      const user = req.user;
-      const checkIfUserInOtherRoom = await Room.findOne({ players: user });
+      if (room.players.length >= room.capacity) {
+        return res.status(400).json({ error: "Phòng đã đầy !" });
+      }
 
-      if (checkIfUserInOtherRoom) {
+      const user = req.user;
+      if (room.players.includes(user)) {
         return res.status(400).json({
           errors:
             "Không thể vào phòng này vì bạn đang ở trong một phòng khác !",
@@ -158,42 +200,41 @@ class RoomController {
 
       room.players.push(user);
       await room.save();
+      const roomID = room._id;
 
-      return res.status(200).json({ message: "Tham gia phòng thành công!" });
+      return res
+        .status(200)
+        .json({ message: "Tham gia phòng thành công!", roomID: roomID });
     },
   ];
 
   static roomLeave = async (req, res) => {
     const id = req.params.id;
-    const room = await Room.findOne({ _id: ObjectId.createFromHexString(id) });
+    const room = await Room.findById(id);
 
     if (!room) {
-      return res.status(404).json({ error: "Không tìm thấy phòng này !" });
+      return res.status(404).json({ errors: "Không tìm thấy phòng này !" });
     }
 
     const user = req.user;
+    if (user.toString() === room.owner.toString()) {
+      if (room.players.length > 1) {
+        return res.status(400).json({
+          errors:
+            "Bạn phải nhường chức chủ phòng cho một ai đó trước khi rời khỏi phòng!",
+        });
+      }
+      await room.deleteOne();
+      return res.status(200).json({ message: "Xoá phòng thành công!" });
+    }
     room.players.remove(user);
 
     await room.save();
+    const roomID = room._id;
 
-    return res.status(200).json({ message: "Rời phòng thành công!" });
-  };
-
-  static roomDelete = async (req, res) => {
-    const id = req.params;
-    const room = await Room.findOne({ _id: ObjectId.createFromHexString(id) });
-
-    if (!room) {
-      return res.status(404).json({ error: "Không tìm thấy phòng này !" });
-    }
-
-    if (room.players.length !== 0) {
-      return res.status(400).json({ error: "Vẫn còn người trong phòng !" });
-    }
-
-    await room.delete();
-
-    return res.status(200).json({ message: "Xoá phòng thành công!" });
+    return res
+      .status(200)
+      .json({ message: "Rời phòng thành công!", roomID: roomID });
   };
 }
 

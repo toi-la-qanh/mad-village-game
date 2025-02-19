@@ -1,30 +1,18 @@
-const { Server } = require("socket.io");
 const jwt = require("jsonwebtoken");
 const { parse } = require("cookie");
+const socket = require("./socket");
+const Game = require("../models/game.model");
 
 class SocketController {
   constructor(server) {
-    this.io = this.init(server);
-    this.setupSocketHandlers();
-  }
-
-  init(server) {
-    // Initialize the Socket.IO server
-    return new Server(server, {
-      cors: {
-        origin: process.env.FRONTEND_URL,
-        allowedHeaders: ["Content-Type", "Authorization"],
-        methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-        credentials: true,
-      },
-    });
-  }
-
-  getIO() {
-    if (!io) {
-      throw new Error("Socket.io not initialized!");
+    if (!server) {
+      throw new Error(
+        "Server instance is required to initialize SocketController"
+      );
     }
-    return io;
+    this.io = socket.init(server);
+    this.gameData = null;
+    this.setupSocketHandlers();
   }
 
   setupSocketHandlers() {
@@ -35,9 +23,9 @@ class SocketController {
         console.error("No cookies found in the request.");
         return next(new Error("Authentication error: No cookies found"));
       }
-    
-      const parsedCookies = parse(cookies);  // Parse cookies to get individual cookie values
-      const token = parsedCookies.token;  
+
+      const parsedCookies = parse(cookies); // Parse cookies to get individual cookie values
+      const token = parsedCookies.token;
 
       if (!token) {
         // Reject the connection if there is no token in the cookies
@@ -58,35 +46,35 @@ class SocketController {
       });
     });
     this.io.on("connection", (socket) => {
-      console.log("Client connected:", socket.id);
-
       console.log("User connected:", socket.user);
       /*
       frontend call gameStart api if it's successful then emit game:start 
       backend listen to game:start then emit game data to the frontend and call game events
       */
-      socket.on("game:start", (data) => {
-        io.emit('game:started', data.game);
-        this.setupGameEvents(socket, data.game);
-      });
+      this.setupRoomEvents(socket);
+      this.setupRoles(socket);
+      this.setupGameEvents(socket);
 
-      socket.on("disconnect", () => {
-        console.log("Client disconnected:", socket.id);
+      socket.on("disconnect", (reason) => {
+        console.log(`User ${socket.user} has disconnected because ${reason}`);
+        delete socket.user;
       });
     });
   }
 
-  setupGameEvents(socket, data) {
-    const { GameController } = require("../controllers/game.controller");
-    const game = new GameController(socket, data);
+  setupRoomEvents(socket) {
+    const { RoomController } = require("../controllers/room.controller");
+    RoomController.listenForEvents(this.io, socket);
+  }
 
-    game.showRoles();
-    game.chooseTargetToPerformAction();
-    game.performAction();
-    game.updatePhase();
-    game.dayPhase();
-    game.discussionPhase();
-    game.votePhase();
+  setupRoles(socket) {
+    const { RoleController } = require("../controllers/role.controller");
+    RoleController.listenForEvents(this.io, socket);
+  }
+  setupGameEvents(socket) {
+    const { GameController } = require("../controllers/game.controller");
+    const gameController = new GameController(this.io, socket);
+    gameController.listenForEvents();
   }
 }
 

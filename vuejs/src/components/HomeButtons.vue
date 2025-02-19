@@ -4,12 +4,12 @@
   >
     <button
       @click="toggleSignUpForm"
-      class="sm:w-40 w-32 sm:h-16 h-14 outline-none border border-black bg-lime-600 hover:bg-lime-500"
+      class="w-44 p-5 outline-none border-2 border-yellow-600 bg-lime-600 hover:bg-lime-500"
     >
       Chơi
     </button>
     <button
-      class="sm:w-40 w-32 sm:h-16 h-14 outline-none border border-black bg-lime-600 hover:bg-lime-500"
+      class="w-44 p-5 outline-none border-2 border-yellow-600 bg-lime-600 hover:bg-lime-500"
     >
       Hướng dẫn
     </button>
@@ -17,16 +17,10 @@
 </template>
 
 <script>
-import { showSignUpForm, authError } from "../store";
-
 export default {
   methods: {
     toggleSignUpForm() {
-      if (authError.value !== null) {
-        showSignUpForm.value = true;
-      } else {
-        this.$router.push({ name: "rooms" });
-      }
+      this.$router.push({ name: "rooms" });
     },
   },
 };

@@ -11,12 +11,17 @@ const GameSchema = new mongoose.Schema({
   phases: {
     type: String,
     required: true,
-    default: "night",
+    default: "showRoles",
   },
   day: {
     type: Number,
     required: true,
     default: 0,
+  },
+  period: {
+    type: String,
+    required: true,
+    default: "day",
   },
   discussion_time: {
     type: Number,
@@ -27,6 +32,11 @@ const GameSchema = new mongoose.Schema({
     type: Number,
     required: true,
     default: 30,
+  },
+  currentPriorityLevel: {
+    type: Number,
+    required: true,
+    default: 1,
   },
   players: [PlayerSchema],
   states: [ActionSchema],

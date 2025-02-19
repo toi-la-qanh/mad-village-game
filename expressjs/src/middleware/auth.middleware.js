@@ -6,7 +6,7 @@ const auth = (req, res, next) => {
   const token = req.cookies.token;
 
   if (!token) {
-    return res.status(401).json({ errors: "Bạn chưa đăng nhập" });
+    return res.status(401).json({ errors: "Bạn chưa tạo tài khoản hoặc tài khoản của bạn đã bị xóa !" });
   }
 
   jwt.verify(token, process.env.TOKEN_KEY, (err, decoded) => {

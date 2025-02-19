@@ -3,138 +3,229 @@ const Hunter = require("../models/roles/hunter.model");
 const Stalker = require("../models/roles/stalker.model");
 const Witch = require("../models/roles/witch.model");
 const Villager = require("../models/roles/villager.model");
+const { checkSchema,validationResult } = require("express-validator");
 
-/* Endpoint to show all roles of the game */
-const roleIndex = async (req, res) => {
-  // Define available traits and roles
-  const traits = ["good", "bad"];
-  const roleClasses = [Bully, Hunter, Stalker, Witch];
+class RoleController {
+  constructor(game) {
+    this.game = game; // The game instance
+    this.pendingActions = []; // Collect actions during the phase
+  }
 
-  // Function to create both "good" and "bad" roles for each role class
-  const createRolesForTrait = (RoleClass) => {
-    return traits.map((trait) => new RoleClass(trait));
+  static listenForEvents(io, socket) {
+    socket.on("role:select", (data) => {
+      io.to(data.roomID).emit("role:update", data.role);
+    });
+    socket.on("role:remove", (data) => {
+      io.to(data.roomID).emit("role:update", data.role);
+    });
+  }
+
+  /* Endpoint to show all roles of the game */
+  static roleIndex = async (req, res) => {
+    // Define available traits and roles
+    const traits = ["good", "bad"];
+    const roleClasses = [Bully, Hunter, Stalker, Witch];
+
+    // Function to create both "good" and "bad" roles for each role class
+    const createRolesForTrait = (RoleClass) => {
+      return traits.map((trait) => new RoleClass(trait));
+    };
+
+    // Create all roles (each role will have both "good" and "bad" variants)
+    const roles = roleClasses.flatMap(createRolesForTrait);
+    roles.push(new Villager());
+
+    const rolesDetail = roles.map((role) => ({
+      name: role.name,
+      trait: role.trait,
+      image: role.image,
+    }));
+
+    return res.status(200).json({ rolesDetail });
   };
 
-  // Create all roles (each role will have both "good" and "bad" variants)
-  const roles = roleClasses.flatMap(createRolesForTrait);
-  roles.push(new Villager());
+  static roleInfo = [
+    checkSchema({
+      name: {
+        notEmpty: {
+          errorMessage: "Tên vai trò không được để trống !",
+        },
+        isString: {
+          errorMessage: "Tên vai trò phải là một chuỗi ký tự !",
+        },
+      },
+      trait: {
+        notEmpty: {
+          errorMessage: "Thuộc tính của vai trò không được để trống !",
+        },
+        isString: {
+          errorMessage: "Thuộc tính của vai trò phải là một chuỗi ký tự !",
+        },
+        isIn: {
+          options: [["good", "bad", "mad"]],  // Valid trait values
+          errorMessage: "Thuộc tính vai trò không hợp lệ !",
+        }
+      },
+    }),
+    async (req, res) => {
+      const errors = validationResult(req);
 
-  const rolesDetail = roles.map((role) => ({
-    name: role.name,
-    trait: role.trait,
-    image: role.image
-  }));
+      if (!errors.isEmpty()) {
+        return res.status(422).json({ errors: errors.array() });
+      }
+      const { name, trait } = req.query;
+      const roleClasses = {
+        Bully,
+        Hunter,
+        Stalker,
+        Witch,
+        Villager,
+      };
 
-  return res.status(200).json({ rolesDetail });
-};
+      // Check if the requested role class exists
+      const RoleClass = roleClasses[name];
+      if (!RoleClass) {
+        return res
+          .status(404)
+          .json({ errors: `Role class '${name}' not found.` });
+      }
 
-const chooseRandomRoleForVillager = () => {
-  const roleClasses = [
-    new Bully(),
-    new Hunter(),
-    new Stalker(),
-    new Witch(),
-    new Villager(),
+      const role = new RoleClass(trait);
+
+      // Return the details of the requested role
+      return res.status(200).json({
+        name: role.getName(),
+        trait: role.getTrait(),
+        description: role.getDescription(),
+        image: role.getImage(),
+        action: role.getAvailableAction(),
+      });
+    },
   ];
 
-  // Generate a random index
-  const randomIndex = Math.floor(Math.random() * roleClasses.length);
+  static chooseRandomRoleForVillager() {
+    const roleClasses = [
+      new Bully(),
+      new Hunter(),
+      new Stalker(),
+      new Witch(),
+    ];
 
-  // Select the random class
-  const RandomRole = roleClasses[randomIndex];
+    // Generate a random index
+    const randomIndex = Math.floor(Math.random() * roleClasses.length);
 
-  return RandomRole.name;
-};
+    // Select the random class
+    const RandomRole = roleClasses[randomIndex];
 
-const save = async (target) => {
-  if (!target.status.isAlive) {
-    target.status.isAlive = true;
-    await target.save();
-    return `${target.name} was almost dead but someone has saved them`;
+    return RandomRole.name;
   }
-  return `${target.name} is already alive, no save needed.`;
-};
 
-const poison = async (target) => {
-  if (!target.status.isAlive) {
-    target.status.isAlive = true;
-    await target.save();
-    return `${target.name} was almost dead but someone has saved them`;
+  async chooseAction(action, target, trait) {
+    if (trait === "mad") {
+      return "no action";
+    }
+    switch (action) {
+      case "save":
+        save(target);
+        break;
+      case "poison":
+        poison(target);
+        break;
+      default:
+        console.log(`Unknown action: ${action}`);
+    }
   }
-  return `${target.name} is already alive, no save needed.`;
-};
 
-const chooseAction = async (action, target, trait) => {
-  if (trait === "mad") {
-    return "no action";
+  //get role of a player
+  static getRoleFromPlayer(role, trait) {
+    let roleInstance;
+    switch (role) {
+      case "Bully":
+        roleInstance = new Bully(trait);
+        break;
+      case "Hunter":
+        roleInstance = new Hunter(trait);
+        break;
+      case "Stalker":
+        roleInstance = new Stalker(trait);
+        break;
+      case "Witch":
+        roleInstance = new Witch(trait);
+        break;
+      default:
+        break;
+    }
+    return roleInstance;
   }
-  switch (action) {
-    case "save":
-      save(target);
-      break;
-    case "poison":
-      poison(target);
-      break;
-    default:
-      console.log(`Unknown action: ${action}`);
+
+  // Method to submit an action
+  submitAction(player, actionType, target) {
+    const role = getRoleFromPlayer(player.role, player.trait);
+
+    if (!role.canPerformAction(actionType, player)) {
+      console.log(`${player.name} cannot perform the action: ${actionType}`);
+      return false;
+    }
+
+    // Deduct action count
+    if (!role.useAction(actionType, player)) {
+      return false;
+    }
+
+    // Add to pending actions
+    this.pendingActions.push({
+      performer: player,
+      actionType: actionType,
+      target: target,
+      priority: role.getActionPriority(actionType),
+    });
+
+    return true;
   }
-};
 
-//get role of a player
-const getRoleFromPlayer = (role, trait) => {
-  switch (role) {
-    case "Bullier":
-      role = new Bully(trait);
-      break;
-    case "Hunter":
-      role = new Hunter(trait);
-      break;
-    case "Stalker":
-      role = new Stalker(trait);
-      break;
-    case "Witch":
-      role = new Witch(trait);
-      break;
-    default:
-      break;
+  // Method to resolve actions at the end of the phase
+  resolveActions() {
+    for (const action of this.pendingActions) {
+      const { performer, actionType, target } = action;
+
+      // Resolve action based on type
+      switch (actionType) {
+        case "block":
+          // Add target to blocked players
+          target.status.isBeing.push("blocked");
+          console.log(`${performer.name} blocks player ${target.name}`);
+          break;
+
+        case "protect":
+          target.status.isBeing.push("protected");
+          console.log(`${performer.name} blocks player ${target.name}`);
+          break;
+
+        case "save":
+          target.status.isAlive = true;
+          console.log(`${performer.name} saves player ${target.name}`);
+          break;
+
+        case "kill":
+          if(target.status.isBeing === "protected") {
+            console.log(`${performer.name} failed to kill player ${target.name} because someone has protected them.`);
+            break;
+          }
+          target.status.isAlive = false;
+          break;
+
+        case "stalk":
+          target.status.isBeing.push("watched");
+          break;
+
+        default:
+          console.log(`Unknown action type: ${actionType}`);
+      }
+    }
+
+    // Clear pending actions for the next phase
+    this.pendingActions = [];
   }
-  return role;
-};
+}
 
-//front end
-// const chooseRoles = async (role, trait) => {
-//   const roles = [];
-//   const traits = [];
-//   if (!["Bullier", "Hunter", "Witch"].includes(role)) {
-//     return ;
-//   }
-
-//   if (role === "Villager") {
-//     const randomRoles = ["Bullier", "Hunter", "Witch"];
-//     const randomRole = randomRoles[Math.floor(Math.random() * randomRoles.length)];
-//     roles.push(randomRole);
-//     traits.push("mad");
-//   } else {
-//     // For other roles, push the role and its trait
-//     roles.push(role);
-//     traits.push(trait);
-//   }
-
-//   return { roles, traits };
-// };
-
-const checkAvailableAction = (action, role, trait) => {
-  const roles = getRoleFromPlayer(role, trait);
-  if (action !== roles.availableAction) {
-    return false;
-  }
-  return true;
-};
-
-module.exports = {
-  getRoleFromPlayer,
-  roleIndex,
-  chooseRandomRoleForVillager,
-  checkAvailableAction,
-  chooseAction,
-};
+module.exports = { RoleController };

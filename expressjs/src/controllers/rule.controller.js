@@ -39,7 +39,7 @@ class RuleController {
     ];
     const roleNames = roleClasses.map((role) => role.name);
 
-    for (const role of this.getRoles()) {
+    for (const role of roles) {
       if (!roleNames.includes(role)) {
         return { rule: false, errors: "Vai trò không hợp lệ !" };
       }
@@ -66,7 +66,7 @@ class RuleController {
     }
 
     // Check if the number of the traits is equal to the number of players
-    if (this.getTraits().length !== this.getNumPlayers()) {
+    if (traits.length !== numPlayers) {
       return {
         rule: false,
         errors: "Số lượng thuộc tính phải bằng với số người chơi !",
@@ -74,10 +74,10 @@ class RuleController {
     }
 
     // Get the number of good and bad traits
-    const goodCount = this.getTraits().filter(
+    const goodCount = traits.filter(
       (trait) => trait === "good"
     ).length;
-    const badCount = this.getTraits().filter((trait) => trait === "bad").length;
+    const badCount = traits.filter((trait) => trait === "bad").length;
 
     // Check if there is at least one good trait
     if (goodCount < 1) {
@@ -88,7 +88,7 @@ class RuleController {
     }
 
     // Check if the number of good traits is less than half the number of players
-    if (goodCount >= Math.ceil(this.getNumPlayers() / 2)) {
+    if (goodCount >= Math.ceil(numPlayers / 2)) {
       return {
         rule: false,
         errors: "Thuộc tính tốt không được vượt quá một nửa số người chơi !",
@@ -104,7 +104,7 @@ class RuleController {
     }
 
     // Check if the number of bad traits is less than half the number of players
-    if (badCount >= Math.ceil(this.getNumPlayers() / 2)) {
+    if (badCount >= Math.ceil(numPlayers / 2)) {
       return {
         rule: false,
         errors: "Thuộc tính xấu không được vượt quá một nửa số người chơi !",
