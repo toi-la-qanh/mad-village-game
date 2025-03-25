@@ -33,13 +33,49 @@ const GameSchema = new mongoose.Schema({
     required: true,
     default: 30,
   },
-  currentPriorityLevel: {
+  currentPriorityLevel: { // change to currentTurn
     type: Number,
     required: true,
     default: 1,
   },
   players: [PlayerSchema],
   states: [ActionSchema],
+  gameTurns: [
+    {
+      turn: {
+        type: Number,
+        required: true,
+      },
+      playerNotYetAct: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
+      ],
+      playerActed: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
+      ],
+    },
+  ],
+  vote: [
+    {
+      count: {
+        type: Number,
+        required: true,
+        default: 0,
+      },
+      target: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true,
+      }
+    }
+  ],
 });
 
 const Game = mongoose.model("Game", GameSchema);

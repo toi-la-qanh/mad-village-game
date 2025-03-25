@@ -5,7 +5,7 @@ import { authError, showSignUpForm } from "../store";
 <template>
   <div
     v-if="showSignUpForm"
-    class="fixed h-screen flex z-20 w-full justify-center items-center bg-opacity-20 bg-black"
+    class="fixed h-screen flex z-20 w-full justify-center items-center bg-gray-900/20"
   >
     <div
       class="font-mono w-full max-w-md sm:p-8 px-4 py-8 space-y-6 bg-white border border-lime-700 shadow-md rounded-xl"

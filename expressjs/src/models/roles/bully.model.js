@@ -2,44 +2,58 @@ const Role = require("../role.model");
 
 class Bully extends Role {
   #trait;
-  constructor(trait) {
-    let name = "Bully";
-    let imagePath = "./src/models/roles/assets/bully.png";
-    super(name, "", {}, [], 0, 0, imagePath);
+  #abilityIconsPath = {
+    lock: "./src/models/roles/assets/lock-solid.svg",
+    knife: "./src/models/roles/assets/knife.png"
+  };
+  
+  constructor(trait = "") {
+    const name = "Bully";
+    const imagePath = "./src/models/roles/assets/bully.png";
+    super(name, "", {}, [], 1, 0, imagePath, []);
     this.#trait = trait;
-    this.setTrait(this.#trait);
+    this.configureTrait(trait);
   }
-
-  setTrait(trait) {
-    switch (trait) {
-      case "mad":
-        this.getAbilities().canBlock = false;
-        this.getAbilities().canKill = false;
-        super.setDescription("Chặn hành động người chơi được chỉ định.");
-        this.setAvailableAction("block");
-        this.setActionPriorities(1);
-        break;
-      case "bad":
-        super.setDescription(
-          "Chặn hành động và giết người chơi được chỉ định."
-        );
-        super.setCount(Infinity);
-        this.getAbilities().canBlock = true;
-        this.getAbilities().canKill = true;
-        this.setAvailableAction(["block", "kill"]);
-        this.setActionPriorities(1);
-        break;
-      default:
-        super.setDescription("Chặn hành động người chơi được chỉ định.");
-        super.setCount(Infinity);
-        this.getAbilities().canBlock = true;
-        this.getAbilities().canKill = false;
-        this.setAvailableAction("block");
-        this.setActionPriorities(1);
-        break;
+  
+  configureTrait(trait) {
+    const icons = [];
+    
+    // Default configuration
+    let abilities = { canBlock: true, canKill: false };
+    let description = "Chặn hành động người chơi được chỉ định.";
+    const availableAction = ["block"];
+    
+    // Trait-specific configurations
+    if (trait === "mad") {
+      abilities = { canBlock: false, canKill: false };
+    } else if (trait === "bad") {
+      abilities = { canBlock: true, canKill: true };
+      description = "Chặn hành động và giết người chơi được chỉ định.";
+      availableAction.push("kill");
     }
+    
+    // Add icons based on abilities
+    if (abilities.canBlock || trait === "mad") {
+      icons.push(super.convertImageToBase64(this.#abilityIconsPath.lock));
+    }
+    if (abilities.canKill) {
+      icons.push(super.convertImageToBase64(this.#abilityIconsPath.knife));
+    }
+    
+    // Apply configuration
+    this.setAbilities(abilities);
+    super.setDescription(description);
+    super.setCount(Infinity);
+    this.setAvailableAction(availableAction);
+    this.setActionPriorities(1);
+    super.setAbilitiesIcons(icons);
   }
-
+  
+  setTrait(trait) {
+    this.#trait = trait;
+    this.configureTrait(trait);
+  }
+  
   getTrait() {
     return this.#trait;
   }

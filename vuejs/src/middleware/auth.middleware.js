@@ -19,7 +19,7 @@ export default async function authMiddleware(to, from, next) {
       // Reset auth state
       authError.value = null;
       showSignUpForm.value = false;
-
+      isLoading.value = false;
       // Set user data
       user.value = {
         name: response.name,

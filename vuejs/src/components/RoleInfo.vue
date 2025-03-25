@@ -4,7 +4,7 @@ import { faXmark } from "@fortawesome/free-solid-svg-icons";
 </script>
 <template>
   <div
-    class="fixed top-0 left-0 w-full h-full bg-black bg-opacity-30 flex justify-center items-center z-20"
+    class="fixed top-0 left-0 w-full h-full bg-gray-900/30 flex justify-center items-center z-20"
   >
     <div
       class="w-full max-w-64 h-auto relative rounded-lg"
@@ -13,7 +13,6 @@ import { faXmark } from "@fortawesome/free-solid-svg-icons";
       <div class="px-6 py-5 flex gap-2 flex-col relative">
         <div class="flex flex-wrap justify-between items-center">
           <h3 class="text-2xl">{{ role.name }}</h3>
-          <p class="text-sm">{{ role.trait }}</p>
         </div>
         <img
           class="w-full h-56 border border-black"

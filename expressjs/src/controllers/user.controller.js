@@ -52,11 +52,19 @@ class UserController {
       const token = createSecretToken(user._id);
       res.cookie("token", token, {
         path: "/", // Cookie is accessible from all paths
-        expires: new Date(Date.now() + 8640000000), // Cookie expires in 100 day
+        expires: new Date(Date.now() + 8640000000), // Cookie expires in 100 day just for testing
         secure: false, // Cookie will only be sent over HTTPS
         httpOnly: true, // Cookie cannot be accessed via client-side scripts
         sameSite: "Lax",
       });
+
+      // res.cookie("token_expires", token, {
+      //   path: "/", // Cookie is accessible from all paths
+      //   expires: new Date(Date.now() + 86398200), // Notify to the user 30 mins before token expires
+      //   secure: false, // Cookie will only be sent over HTTPS
+      //   httpOnly: true, // Cookie cannot be accessed via client-side scripts
+      //   sameSite: "Lax",
+      // });
       
       return res.status(200).json({ message: "Tạo tài khoản thành công!", token: token });
     },

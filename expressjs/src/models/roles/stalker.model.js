@@ -2,42 +2,57 @@ const Role = require("../role.model");
 
 class Stalker extends Role {
   #trait;
-  constructor(trait) {
-    let name = "Stalker";
-    let imagePath = "./src/models/roles/assets/stalker.png";
-    super(name, "", {}, [], 0, 0, imagePath);
+  #abilityIconsPath = {
+    stalk: "./src/models/roles/assets/person-running-solid.svg",
+    knife: "./src/models/roles/assets/knife.png"
+  };
+
+  constructor(trait = "mad") {
+    const name = "Stalker";
+    const imagePath = "./src/models/roles/assets/stalker.png";
+    
+    super(name, "", {}, [], 2, 0, imagePath, []);
     this.#trait = trait;
+    this.configureTrait(trait);
+  }
+
+  configureTrait(trait) {
+    const icons = [];
+    const baseDescription = "Biết được những người có cùng mục tiêu với bản thân";
+    
+    // Default configuration
+    let abilities = { canStalk: true, canKill: false };
+    let description = baseDescription + ".";
+    let availableAction = "stalk";
+    
+    if (trait === "mad") {
+      abilities = { canStalk: false, canKill: false };
+    } else if (trait === "bad") {
+      abilities = { canStalk: true, canKill: true };
+      description = baseDescription + ". Có thể giết mục tiêu.";
+      availableAction = ["stalk", "kill"];
+    }
+    
+    // Add icons based on abilities
+    if (abilities.canStalk) {
+      icons.push(super.convertImageToBase64(this.#abilityIconsPath.stalk));
+    }
+    if (abilities.canKill) {
+      icons.push(super.convertImageToBase64(this.#abilityIconsPath.knife));
+    }
+    
+    // Apply configuration
+    this.setAbilities(abilities);
+    super.setDescription(description);
     super.setCount(Infinity);
-    this.setTrait(this.#trait);
+    this.setAvailableAction(availableAction);
+    this.setActionPriorities(2);
+    super.setAbilitiesIcons(icons);
   }
 
   setTrait(trait) {
-    switch (trait) {
-      case "mad":
-        this.setAvailableAction("stalk");
-        this.getAbilities().canStalk = false;
-        this.getAbilities().canKill = false;
-        this.setActionPriorities(2);
-        break;
-      case "bad":
-        super.setDescription(
-          "Biết được những người có cùng mục tiêu với bản thân. Có thể giết mục tiêu."
-        );
-        this.getAbilities().canStalk = true;
-        this.getAbilities().canKill = true;
-        this.setAvailableAction("stalk", "kill");
-        this.setActionPriorities(2);
-        break;
-      default:
-        super.setDescription(
-          "Biết được những người có cùng mục tiêu với bản thân."
-        );
-        this.getAbilities().canStalk = true;
-        this.getAbilities().canKill = false;
-        this.setAvailableAction("stalk");
-        this.setActionPriorities(2);
-        break;
-    }
+    this.#trait = trait;
+    this.configureTrait(trait);
   }
 
   getTrait() {

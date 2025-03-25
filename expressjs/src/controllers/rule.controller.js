@@ -9,17 +9,17 @@ class RuleController {
   static rulesForRoles(numPlayers, roles) {
     // Check if roles is an array and not empty
     if (!Array.isArray(roles) || roles.length === 0) {
-      throw new Error("Roles must be a non-empty array!");
+      return { rule: false, errors: "Vai trò không được để trống!" };
     }
 
     // Check that every element in roles is a string
     if (!roles.every((role) => typeof role === "string")) {
-      throw new Error("Each role must be a string!");
+      return { rule: false, errors: "Mỗi vai trò phải là một chuỗi!" };
     }
 
     // Check if numPlayers is a positive number
     if (typeof numPlayers !== "number" || numPlayers <= 0) {
-      throw new Error("Number of players must be a positive number!");
+      return { rule: false, errors: "Số người chơi phải là số dương!" };
     }
 
     // Check if the number of the roles is equal to the number of players
@@ -37,7 +37,7 @@ class RuleController {
       new Witch(),
       new Villager(),
     ];
-    const roleNames = roleClasses.map((role) => role.name);
+    const roleNames = roleClasses.map((role) => role.getName());
 
     for (const role of roles) {
       if (!roleNames.includes(role)) {
@@ -52,17 +52,17 @@ class RuleController {
   static rulesForTraits(numPlayers, traits) {
     // Check if traits is an array and not empty
     if (!Array.isArray(traits) || traits.length === 0) {
-      throw new Error("Traits must be a non-empty array!");
+      return { rule: false, errors: "Thuộc tính không được để trống!" };
     }
 
     // Check that every element in traits is a string
     if (!traits.every((trait) => typeof trait === "string")) {
-      throw new Error("Each trait must be a string!");
+      return { rule: false, errors: "Mỗi thuộc tính phải là một chuỗi!" };
     }
 
     // Check if numPlayers is a positive number
     if (typeof numPlayers !== "number" || numPlayers <= 0) {
-      throw new Error("Number of players must be a positive number!");
+      return { rule: false, errors: "Số người chơi phải là số dương!" };
     }
 
     // Check if the number of the traits is equal to the number of players
@@ -74,9 +74,7 @@ class RuleController {
     }
 
     // Get the number of good and bad traits
-    const goodCount = traits.filter(
-      (trait) => trait === "good"
-    ).length;
+    const goodCount = traits.filter((trait) => trait === "good").length;
     const badCount = traits.filter((trait) => trait === "bad").length;
 
     // Check if there is at least one good trait
@@ -118,12 +116,15 @@ class RuleController {
   static voteRule(alivePlayers, voteCount) {
     // Check if alivePlayers is a positive number
     if (typeof alivePlayers !== "number" || alivePlayers <= 0) {
-      throw new Error("Số người chơi còn sống phải là một số dương !");
+      return {
+        status: "error",
+        errors: "Số người chơi còn sống phải là một số dương !",
+      };
     }
 
     // Check if voteCount is a positive number
     if (typeof voteCount !== "number" || voteCount <= 0) {
-      throw new Error("Số phiếu bầu phải là một số dương !");
+      return { status: "error", errors: "Số phiếu bầu phải là một số dương !" };
     }
 
     // voteCount can not be less than half the number of alive players
@@ -131,24 +132,27 @@ class RuleController {
     if (voteCount < requiredVotes) {
       return false;
     }
+    
     return true;
   }
 
-  /* Rules for game over */
+  /* Rules for game end */
   static gameOver(alivePlayers, traits) {
     // Check if alivePlayers is a positive number
     if (typeof alivePlayers !== "number" || alivePlayers <= 0) {
-      throw new Error("Số người chơi còn sống phải là một số dương !");
+      return {
+        errors: "Số người chơi còn sống phải là một số dương !",
+      };
     }
 
     // Check if traits is an array and not empty
     if (!Array.isArray(traits) || traits.length === 0) {
-      throw new Error("Traits must be a non-empty array!");
+      return { errors: "Traits must be a non-empty array!" };
     }
 
     // Check that every element in traits is a string
     if (!traits.every((trait) => typeof trait === "string")) {
-      throw new Error("Each trait must be a string!");
+      return { errors: "Each trait must be a string!" };
     }
 
     // Get the number of bad traits

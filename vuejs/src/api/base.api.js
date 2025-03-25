@@ -22,7 +22,7 @@ export default class BaseApi {
       authError.value = error.response.data.errors;
       errorMessages.value = null;
       showSignUpForm.value = true;
-      throw error;
+      return;
     }
 
     throw error;
@@ -31,7 +31,7 @@ export default class BaseApi {
   async request(method, url, data = null, params = null) {
     try {
       const response = await this._axios({ method, url, data, params });
-      return response;
+      return JSON.parse(JSON.stringify(response.data));
     } catch (error) {
       this.handleError(error);
     }

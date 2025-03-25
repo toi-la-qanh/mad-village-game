@@ -1,10 +1,5 @@
 const fs = require("fs");
 
-function convertImageToBase64(imagePath) {
-  const image = fs.readFileSync(imagePath);
-  return Buffer.from(image).toString("base64");
-}
-
 class Role {
   #name;
   #description;
@@ -13,6 +8,7 @@ class Role {
   #actionPriorities;
   #counts;
   #image;
+  #abilityIcons;
   #traits;
 
   constructor(
@@ -22,7 +18,8 @@ class Role {
     availableAction = [],
     actionPriorities,
     counts,
-    imagePath
+    imagePath,
+    abilityIcons = []
   ) {
     this.#name = name;
     this.#description = description;
@@ -34,55 +31,75 @@ class Role {
       canStalk: false,
       canBlock: false,
       canKill: false,
+      canParalyze: false,
+      canDetoxify: false,
       ...abilities,
     };
     this.#availableAction = availableAction;
     this.#actionPriorities = actionPriorities;
     this.#counts = counts;
-    this.#image = convertImageToBase64(imagePath);
+    this.#image = this.convertImageToBase64(imagePath);
+    this.#abilityIcons = abilityIcons;
     this.#traits = [];
+  }
+
+  convertImageToBase64(imagePath) {
+    const image = fs.readFileSync(imagePath);
+    return Buffer.from(image).toString("base64");
   }
 
   hasTrait(trait) {
     return this.#traits.includes(trait);
   }
 
-  canPerformAction(action, player) {
-    if (!player.status.isAlive()) {
+  canPerformAction(action, player, target) {
+    // Check if player is alive
+    if (!player.status.isAlive) {
       console.log(`${player.name} is not alive and cannot perform actions.`);
       return false;
     }
+
+    // Check if player is being blocked
     if (player.status.isBeing === "blocked") {
       console.log(`${player.name} is being blocked and cannot perform action.`);
       return false;
     }
-    if (!this.#abilities[action]) {
-      console.log(`${action} does not exist`);
+
+    // Check if the target is alive
+    if (!target.status.isAlive) {
       return false;
     }
+
+    // Check if the action is available for the player's role
     if (action !== this.#availableAction) {
       console.log(`${action} is not available`);
       return false;
     }
-    if (this.#counts < 1) {
-      console.log(`${this.#name} has no remaining uses for action: ${action}`);
+
+    // Check if the player has enough counts for this action
+    if (player.count < 1) {
+      console.log(`${player.name} has no remaining uses for action: ${action}`);
       return false;
     }
+
     return true;
   }
 
-  useAction(action, performer) {
+  async useAction(action, performer) {
+    // Check if player can perform this action
     if (!this.canPerformAction(action, performer)) {
       return false;
     }
+
+    // Action is not effective if player has mad trait
     if (this.hasTrait("mad")) {
-      console.log(`${this.#name} is mad; the action ${action} has no effect.`);
       return false;
     }
-    this.#counts--;
-    console.log(
-      `${this.#name} performed the action: ${action}. Remaining uses: ${this.#counts}`
-    );
+
+    // Reduce the count of this action
+    performer.count--;
+    await performer.save();
+
     return true;
   }
 
@@ -106,12 +123,24 @@ class Role {
     this.#availableAction = availableAction;
   }
 
+  setAbilitiesIcons(abilityIcons = []) {
+    this.#abilityIcons = abilityIcons;
+  }
+
   setActionPriorities(actionPriorities) {
     this.#actionPriorities = actionPriorities;
   }
 
   setCount(counts) {
     this.#counts = counts;
+  }
+
+  getName() {
+    return this.#name;
+  }
+
+  getTrait() {
+    return this.#traits;
   }
 
   getDescription() {
@@ -132,6 +161,10 @@ class Role {
 
   getImage() {
     return this.#image;
+  }
+
+  getAbilityIcons() {
+    return this.#abilityIcons;
   }
 
   getAvailableAction() {

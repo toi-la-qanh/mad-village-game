@@ -1,20 +1,19 @@
-<script setup>
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faCircleInfo } from "@fortawesome/free-solid-svg-icons";
-</script>
 <template>
   <div
-    class="flex py-12 w-full h-screen z-10 fixed justify-center items-center font-mono"
+    class="flex py-11 w-full h-screen z-10 fixed justify-center items-center font-mono"
   >
     <div
-      class="w-full max-w-xl bg-white h-screen rounded-lg border border-black p-3 overflow-y-auto scrollbar-none"
+      class="w-full max-w-xl bg-white h-full rounded-lg border border-black p-3 overflow-y-auto"
+      style="scrollbar-width: none"
     >
+      <!-- Go back to Homepage -->
       <button
         @click="goBack"
         class="outline-none text-lime-700 hover:text-lime-600"
       >
         < Trang chủ
       </button>
+
       <!-- Title -->
       <div class="mt-4 flex justify-between flex-wrap">
         <h3 class="text-2xl font-bold">Sảnh chờ</h3>
@@ -33,26 +32,35 @@ import { faCircleInfo } from "@fortawesome/free-solid-svg-icons";
         </div>
       </div>
 
+      <!-- Search Helper -->
       <span class="hidden text-gray-400" id="searchInfo">
         Tìm phòng bằng mã phòng hoặc tên của chủ phòng
       </span>
 
       <div class="mt-2 flex justify-between">
+        <!-- Create Room Button -->
         <button
           @click="createRoom"
           class="text-lime-700 hover:text-lime-600 focus:text-lime-600"
         >
           + Tạo phòng
         </button>
-        <button>Bộ lọc</button>
+
+        <!-- Refresh Button -->
+        <div
+          class="flex gap-2 items-center text-lime-700 hover:text-lime-600 focus:text-lime-600"
+        >
+          <FontAwesomeIcon :icon="faRotate" />
+          <button @click="refreshRooms()">Tạo lại</button>
+        </div>
       </div>
 
-      <div class="w-full h-96 mt-7">
+      <div class="w-full h-auto min-h-96 mt-7">
         <div v-if="rooms">
           <div
-            v-for="(room, index) in rooms"
+            v-for="(room, index) in rooms.rooms"
             :key="index"
-            class="border-2 border-lime-700 p-2 my-2 gap-5"
+            class="mb-2 border-2 border-lime-700 p-2 my-2 gap-5"
           >
             <div class="flex justify-between">
               <p>Phòng {{ index + 1 }}</p>
@@ -70,13 +78,16 @@ import { faCircleInfo } from "@fortawesome/free-solid-svg-icons";
           </div>
         </div>
         <div v-else>
-          <p class="text-center">{{ error }}</p>
+          <div v-if="error">
+            <p class="text-center">{{ error }}</p>
+          </div>
         </div>
       </div>
+
       <!-- Create Room Popup (Conditional Rendering) -->
       <div
         v-if="showCreateRoom"
-        class="fixed top-0 left-0 w-full h-full bg-black bg-opacity-30 flex justify-center items-center z-20"
+        class="fixed top-0 left-0 w-full h-full bg-black/30 flex justify-center items-center z-20"
       >
         <div class="bg-white rounded-xl w-full max-w-96">
           <CreateRoom @close="closeCreateRoom" />
@@ -88,11 +99,20 @@ import { faCircleInfo } from "@fortawesome/free-solid-svg-icons";
 
 <script>
 import RoomApi from "../api/room.api";
-import CreateRoom from "../components/CreateRoom.vue";
+import { defineAsyncComponent } from "vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { faCircleInfo, faRotate } from "@fortawesome/free-solid-svg-icons";
+import { isLoading } from "../store";
 
 export default {
   components: {
-    CreateRoom,
+    CreateRoom: defineAsyncComponent(() =>
+      import("../components/CreateRoom.vue")
+    ),
+    FontAwesomeIcon,
+  },
+  setup() {
+    return { faCircleInfo, faRotate };
   },
   data() {
     return {
@@ -103,16 +123,19 @@ export default {
     };
   },
   async mounted() {
-    const room = new RoomApi();
-    try {
-      this.rooms = await room.getAllRooms();
-      this.filteredRooms = this.rooms;
-    } catch (error) {
-      console.error(error);
-      this.error = error.response?.data?.errors;
-    }
+    this.fetchRooms();
   },
   methods: {
+    async fetchRooms() {
+      const room = new RoomApi();
+      try {
+        this.rooms = await room.getAllRooms();
+        this.filteredRooms = this.rooms;
+      } catch (error) {
+        console.log(error);
+        this.error = error.response?.data?.errors;
+      }
+    },
     navigateToRoom(roomId) {
       this.$router.push({ name: "room", params: { id: roomId } });
     },
@@ -147,6 +170,17 @@ export default {
       if (this.filteredRooms) {
         console.log("Not found");
       }
+    },
+    refreshRooms() {
+      isLoading.value = true;
+      setTimeout(() => {
+        this.rooms = [];
+        this.filteredRooms = [];
+        this.searchQuery = "";
+        this.error = null;
+        this.fetchRooms();
+        isLoading.value = false;
+      }, 1000);
     },
   },
 };

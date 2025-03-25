@@ -2,38 +2,47 @@ const Role = require("../role.model");
 
 class Hunter extends Role {
   #trait;
-  constructor(trait) {
-    let name = "Hunter";
-    let imagePath = "./src/models/roles/assets/hunter.png";
-    super(name, "", {}, [], 0, 0, imagePath);
+  #abilityIcons = {
+    trap: "./src/models/roles/assets/trap.png",
+  };
+
+  constructor(trait = "mad") {
+    const name = "Hunter";
+    const imagePath = "./src/models/roles/assets/hunter.png";
+
+    super(name, "", {}, [], 2, 0, imagePath, []);
     this.#trait = trait;
-    this.setTrait(this.#trait);
+    this.configureTrait(trait);
+  }
+
+  configureTrait(trait) {
+    const defaultDescription = "Đặt bẫy người chơi được chỉ định";
+    const icons = [super.convertImageToBase64(this.#abilityIcons.trap)];
+
+    // Default configuration
+    let abilities = { canTrap: true };
+    let description = defaultDescription;
+    let count = 2;
+    let actionPriority = 2;
+    let availableAction = "trap";
+
+    // Trait-specific configurations
+    if (trait === "mad") {
+      abilities = { canTrap: false };
+    }
+
+    // Apply configuration
+    this.setAbilities(abilities);
+    super.setDescription(description);
+    super.setCount(count);
+    this.setActionPriorities(actionPriority);
+    this.setAvailableAction(availableAction);
+    super.setAbilitiesIcons(icons);
   }
 
   setTrait(trait) {
-    switch (trait) {
-      case "mad":
-        super.setCount(2);
-        this.getAbilities().canTrap = false;
-        this.setActionPriorities(2);
-        break;
-      case "bad":
-        super.setCount(Infinity);
-        super.setDescription(
-          "Đặt bẫy người chơi được chỉ định"
-        );
-        this.getAbilities().canTrap = true;
-        this.setActionPriorities(2);
-        break;
-      default:
-        super.setDescription(
-          "Đặt bẫy người chơi được chỉ định"
-        );
-        super.setCount(2);
-        this.setActionPriorities(1);
-        this.getAbilities().canTrap = true;
-        break;
-    }
+    this.#trait = trait;
+    this.configureTrait(trait);
   }
 
   getTrait() {

@@ -6,7 +6,7 @@ const { ObjectId } = require("mongodb");
 const { checkSchema, validationResult } = require("express-validator");
 const { RoleController } = require("./role.controller");
 
-// To choose random roles and traits for new game
+// Choose random roles and traits for new game
 function shuffle(array) {
   let currentIndex = array.length;
 
@@ -30,19 +30,34 @@ class GameController {
     this.io = io;
     this.socket = socket;
     this.playerID = this.socket.user;
-    this.stalker = null;
-    this.stalkerTarget = null;
   }
+
   async getGameData(id) {
     const game = await Game.findById(id);
     if (!game) {
       this.handleError("Không tìm thấy ván chơi!");
       this.socket.disconnect();
-      return null;
+      return;
     }
     return game;
   }
+
+  async updateGamePhase(game, phase) {
+    game.phases = phase;
+    await game.save();
+    this.socket.emit("game:update", game.phases);
+  }
+
+  emitTimeOut(timeout = null, message = null) {
+    this.socket.emit("game:timeOut", {
+      timeout: timeout,
+      message: message,
+    });
+  }
+
+  // Socket event handlers
   listenForEvents() {
+    // When the game has started, emit gameID to the client to navigate to the game page
     this.socket.on("game:start", async (gameID) => {
       const game = await this.getGameData(gameID);
       this.io
@@ -50,81 +65,175 @@ class GameController {
         .emit("game:started", game._id.toHexString());
     });
 
+    this.socket.onAny((eventName, ...args) => {
+      console.log(eventName, ...args);
+    });
+
+    this.socket.on("game:getAbilityIcons", async (gameID, callback) => {
+      const game = await this.getGameData(gameID);
+      const data = this.getAbilityIcons(game);
+      callback(data);
+    });
+
+    // Show roles event
+    const showRolesEvent = async (game) => {
+      const roleData = this.showRoles(game);
+
+      // Emit to client the time to show roles
+      const timeShow = 5000;
+      this.emitTimeOut(timeShow, "Trò chơi sẽ bắt đầu trong");
+
+      // Update game phase after 5 seconds
+      setTimeout(async () => {
+        await this.updateGamePhase(game, "performAction");
+      }, timeShow);
+
+      // Return the role data for the callback
+      return roleData;
+    };
+
+    // Perform action event
+    const performActionEvent = async (game) => {
+      // Get priority from player
+      const playerTurns = game.players.map((p) => p.priority);
+
+      // Get the max value to end the loop
+      const maxTurn = Math.max(...playerTurns);
+      if (game.currentPriorityLevel > maxTurn) {
+        await this.updateGamePhase(game, "day");
+
+        // Reset the game's turn
+        game.currentPriorityLevel = 1;
+        game.period = "day";
+        game.day += 1;
+        await game.save();
+
+        return {
+          status: "next",
+          message: "Chuyển qua giai đoạn tiếp theo",
+        };
+      }
+
+      // Emit timeout to client
+      const actionTimeout = 30000;
+      this.emitTimeOut(actionTimeout, "Thời gian hành động");
+
+      // Set a timeout to update turn
+      const timeoutId = setTimeout(async () => {
+        // After timeout, update the currentPriorityLevel
+        game.currentPriorityLevel += 1; // Move to the next priority level
+        await game.save(); // Save the updated game state
+      }, actionTimeout);
+
+      // Perform the action
+      await this.performAction(game);
+
+      // If action completes before timeout, clear the timeout
+      clearTimeout(timeoutId);
+    };
+
+    // Watch other players event
+    this.socket.on("game:watch", async (gameID, targetID, callback) => {
+      const game = await this.getGameData(gameID);
+      const data = await this.watchOtherPlayers(game, targetID);
+      callback(data);
+    });
+
+    // Day event
+    const dayPhaseEvent = async (game) => {
+      const data = await this.dayPhase(game);
+      return data;
+    };
+
+    // Discussion event
+    const discussionPhaseEvent = async (game) => {
+      const data = await this.discussionPhase(game);
+      this.emitTimeOut(game.discussion_time * 1000, "Thời gian thảo luận");
+      setTimeout(async () => {
+        await this.updateGamePhase(game, "vote");
+      }, game.discussion_time * 1000);
+
+      return data;
+    };
+
+    // Vote event
+    const votePhaseEvent = async (game) => {
+      const data = await this.votePhase(game);
+
+      this.emitTimeOut(game.vote_time * 1000, "Thời gian bỏ phiếu");
+      setTimeout(async () => {
+        await this.updateGamePhase(game, "handleVotes");
+        // Handle the vote event
+        const result = await this.afterVoteHandler(game);
+
+        // Emit to client
+        this.socket.emit("game:voteResult", result);
+
+        // Update to the next phase
+        setTimeout(async () => {
+          await this.updateGamePhase(game, "performAction");
+
+          // Update the game's period
+          game.period = "night";
+          await game.save();
+        }, 10000);
+      }, game.vote_time * 1000);
+
+      return data;
+    };
+
+    // Retrieve the game data to the client
     this.socket.on("game:data", async (gameID, callback) => {
       const game = await this.getGameData(gameID);
+      // console.log(game);
       callback(game);
     });
 
-    this.socket.once("game:showRoles", async (gameID, callback) => {
+    // Retrieve the game event to the client
+    this.socket.on("game:event", async (gameID, callback) => {
       const game = await this.getGameData(gameID);
-      const data = await this.showRoles(game);
-      callback(data);
-    });
+      let result;
 
-    this.socket.on("game:performAction", async (gameID, callback) => {
-      const game = await this.getGameData(gameID);
-      const data = await this.performAction(game);
-      callback(data);
-    });
+      switch (game.phases) {
+        case "showRoles":
+          result = await showRolesEvent(game);
+          result.phase = "showRoles"; // Add phase info
+          break;
+        case "performAction":
+          result = await performActionEvent(game);
+          result.phase = "performAction"; // Add phase info
+          break;
+        case "day":
+          result = await dayPhaseEvent(game);
+          result.phase = "day"; // Add phase info
+          break;
+        case "discussion":
+          result = await discussionPhaseEvent(game);
+          result.phase = "discussion"; // Add phase info
+          break;
+        case "vote":
+          result = await votePhaseEvent(game);
+          result.phase = "vote"; // Add phase info
+          break;
+        case "end":
+          await game.deleteOne();
+          result = { message: "Game has been ended!", phase: "end" }; // Add phase info
+          break;
+        default:
+          result = { event: "gameData", game, phase: game.phases || "unknown" }; // Include phase
+          break;
+      }
 
-    this.socket.on("game:watch", async (gameID, callback) => {
-      const game = await this.getGameData(gameID);
-      const data = await this.watchOtherPlayers(game);
-      callback(data);
-    });
-
-    // this.socket.on("game:updateTurns", async (callback) => {
-    //   const game = await Game.findById(this.gameID);
-    //   // Get priority from player
-    //   const priorityLevel = this.data.players.map((p) => p.priority);
-    //   // Get the max value to end the loop
-    //   const maxPriority = Math.max(...priorityLevel);
-    //   if (this.data.currentPriorityLevel > maxPriority) {
-    //     this.socket.emit("game:updatePhases");
-    //     return callback({
-    //       status: "next",
-    //       message: "Chuyển qua giai đoạn tiếp theo",
-    //     });
-    //   }
-    //   game.currentPriorityLevel += 1;
-    //   await game.save();
-    //   this.data = game;
-    //   return callback({
-    //     status: "success",
-    //     message: "Cập nhật lượt chơi thành công",
-    //   });
-    // });
-  }
-  // Helper function to wait for a selection with a timeout
-  waitForSelection(eventName, remainingTime, onTimeSpent) {
-    return new Promise((resolve) => {
-      const timeoutId = setTimeout(() => {
-        resolve(null); // Resolve with null if the timeout occurs
-      }, remainingTime);
-
-      // Start listening for the selection event
-      const startTime = Date.now();
-      this.socket.once(eventName, (selection) => {
-        const timeSpent = Date.now() - startTime; // Calculate time spent
-        clearTimeout(timeoutId); // Clear the timeout if selection is made
-        onTimeSpent(timeSpent); // Pass the time spent to the callback
-        resolve(selection); // Resolve with the selected data
-      });
+      callback(result); // Send the result with phase info back to the client
     });
   }
-  // Handle any errors occurred during the game
+
+  // Retrieve any errors occurred during the game
   handleError(error) {
     this.socket.emit("game:error", { errors: error });
   }
 
-  gameMessages(data) {
-    this.socket.emit("game:messages", { data });
-  }
-
-  gamePhases(data) {
-    this.socket.emit("game:phases", { data });
-  }
-
+  // Get the current player's information
   getPlayer(game) {
     if (!game || !game.players) {
       return null;
@@ -143,7 +252,7 @@ class GameController {
     return player;
   }
 
-  // Start a new game by http request
+  // Start a new game by HTTP request
   static gameStart = [
     checkSchema({
       roomID: {
@@ -174,18 +283,17 @@ class GameController {
       const ownerID = req.user;
       const { roomID, roles, traits } = req.body;
 
-      const room = await Room.findById(roomID);
-
       // Check if room is not found
+      const room = await Room.findById(roomID);
       if (!room) {
         return res.status(404).json({ errors: "Phòng không tồn tại!" });
       }
 
-      const checkIfGameHasStarted = await Game.findOne({
+      // Check if game already started
+      const gameExists = await Game.findOne({
         room: ObjectId.createFromHexString(roomID),
       });
-
-      if (checkIfGameHasStarted) {
+      if (gameExists) {
         return res.status(400).json({
           message: "Không thể bắt đầu trò chơi vì trò chơi đang diễn ra !",
         });
@@ -207,12 +315,14 @@ class GameController {
 
       const player_ids = room.players;
 
+      // Check if the input data is satisfied with the rule for roles
       const ruleRoles = RuleController.rulesForRoles(player_ids.length, roles);
       if (!ruleRoles.rule) {
         const roleErrors = ruleRoles.errors;
         return res.status(400).json({ errors: roleErrors });
       }
 
+      // Check if the input data is satisfied with the rule for traits
       const ruleTraits = RuleController.rulesForTraits(
         player_ids.length,
         traits
@@ -224,38 +334,55 @@ class GameController {
         });
       }
 
-      for (let i = 0; i < roles.length; i++) {
-        if (roles[i] === "Villager") {
-          roles[i] = RoleController.chooseRandomRoleForVillager();
-        }
-      }
+      // Replace generic villagers with specific roles
+      const processedRoles = roles.map((role) =>
+        role === "Villager"
+          ? RoleController.chooseRandomRoleForVillager()
+          : role
+      );
 
-      const shuffledRoles = shuffle(roles);
+      const shuffledRoles = shuffle(processedRoles);
       const shuffledTraits = shuffle(traits);
 
-      let players = [];
-      for (const index in player_ids) {
-        const player_id = player_ids[index];
-        const user = await User.findById(player_id);
-        const roleInstance = RoleController.getRoleFromPlayer(
-          shuffledRoles[index],
-          shuffledTraits[index]
-        );
+      const players = await Promise.all(
+        room.players.map(async (playerId, index) => {
+          const user = await User.findById(playerId);
+          const roleInstance = RoleController.getRoleFromPlayer(
+            shuffledRoles[index],
+            shuffledTraits[index]
+          );
 
-        players.push({
-          // player_id: player_id,
-          name: user.name,
-          priority: roleInstance.getActionPriorities(),
-          role: shuffledRoles[index],
-          trait: shuffledTraits[index],
-          count: roleInstance.getCount(),
-        });
-      }
+          return {
+            _id: playerId,
+            name: user.name,
+            priority: roleInstance.getActionPriorities(),
+            role: shuffledRoles[index],
+            trait: shuffledTraits[index],
+            count: roleInstance.getCount(),
+          };
+        })
+      );
+
+      // Create game turns structure
+      const turnMap = players.reduce((acc, player) => {
+        const turn = player.priority;
+        if (!acc[turn]) acc[turn] = [];
+        acc[turn].push(player._id);
+        return acc;
+      }, {});
+
+      const gameTurns = Object.entries(turnMap).map(([turn, playerIds]) => ({
+        turn: Number(turn),
+        playerNotYetAct: playerIds,
+        playerActed: [],
+      }));
 
       const game = new Game({
         room: roomID,
         players: players,
+        gameTurns: gameTurns,
       });
+
       await game.save();
       const gameID = game._id;
 
@@ -263,75 +390,44 @@ class GameController {
     },
   ];
 
-  // End a game
-  // async gameEnd() {
-  //   const { gameID } = this.data;
-
-  //   const game = await Game.findOne({
-  //     _id: ObjectId.createFromHexString(gameID),
-  //   });
-  //   if (!game) {
-  //     return res.status(404).json({ errors: "Không tìm thấy ván chơi !" });
-  //   }
-
-  //   const players = game.players;
-  //   const traits = players.map((player) => player.trait);
-
-  //   if (!gameOver(players.length, traits).isOver) {
-  //     return res
-  //       .status(200)
-  //       .json({ message: "Trò chơi không thể kết thúc vào lúc này !" });
-  //   }
-
-  //   // Show roles and traits of all players
-  //   const playersInfo = players.map((player) => ({
-  //     name: player.name,
-  //     role: player.role,
-  //     trait: player.trait,
-  //   }));
-
-  //   const reason = gameOver(players.length, traits).reason;
-  //   const winner = gameOver(players.length, traits).winner;
-
-  //   await Game.deleteOne({ _id: ObjectId.createFromHexString(gameID) });
-
-  //   const io = getIO();
-  //   io.emit("game:end", {
-  //     message: reason,
-  //     winner: winner,
-  //     players: playersInfo,
-  //   });
-
-  //   return res
-  //     .status(200)
-  //     .json({ message: reason, winner: winner, players: playersInfo });
-  // }
-
   // Show roles to the players
-  async showRoles(game) {
-    const player = this.getPlayer(game);
-    let role, roleName, trait, image, description;
-    if (player) {
-      role = RoleController.getRoleFromPlayer(player.role, player.trait);
-      roleName = role.name;
-      trait = role.trait;
-      image = role.image;
-      description = role.description;
-    }
-
+  showRoles(game) {
     if (game.phases !== "showRoles") {
-      return this.handleError("Không thể hiển thị vai trò vào lúc này !");
+      return {
+        status: 400,
+        message: "Wrong phase!",
+      };
     }
 
-    game.phases = "performAction";
-    await game.save();
-
-    return {
-      trait: trait,
-      role: roleName,
-      image: image,
-      description: description,
+    const player = this.getPlayer(game);
+    const role = RoleController.getRoleFromPlayer(player.role, player.trait);
+    const roleData = {
+      trait: role.getTrait(),
+      name: role.getName(),
+      image: role.getImage(),
+      description: role.getDescription(),
     };
+
+    return roleData;
+  }
+
+  // Retrieve the ability icons for the client
+  getAbilityIcons(game) {
+    // if (game.phases !== "showRoles") {
+    //   return {
+    //     status: 400,
+    //     message: "Wrong phase!",
+    //   };
+    // }
+
+    const player = this.getPlayer(game);
+    const role = RoleController.getRoleFromPlayer(player.role, player.trait);
+    const data = {
+      availableAction: role.getAvailableAction(),
+      abilityIcons: role.getAbilityIcons(),
+    };
+
+    return data;
   }
 
   /* In night phase, players can perform actions */
@@ -339,33 +435,30 @@ class GameController {
   // Choose target to perform actions
   async performAction(game) {
     if (game.phases !== "performAction") {
-      return this.handleError(
-        "Không thể chọn mục tiêu để hành động vào lúc này !"
-      );
+      return {
+        status: 400,
+        message: "Wrong phase!",
+      };
     }
-    let elapsedTime = 0; // Keep track of elapsed time
+
+    game.period = "night";
+    await game.save();
 
     const player = this.getPlayer(game);
-    const totalTimeout = 30000;
-    // Function to calculate remaining time
-    const getRemainingTime = () => totalTimeout - elapsedTime;
 
-    if (player.priority !== game.currentPriorityLevel) {
-      return this.handleError("Chưa tới lượt của bạn, xin hãy đợi tí");
-    }
-
-    this.socket.on("game:getTimeOut", () => {
-      this.socket.emit("game:timeOut", totalTimeout);
-    });
+    const waitForTarget = () => {
+      return new Promise((resolve) => {
+        this.socket.on("game:targetSelected", (data) => {
+          if (player.priority !== game.currentPriorityLevel) {
+            return this.emitTimeOut(null, "Chờ người khác hành động");
+          }
+          resolve(data);
+        });
+      });
+    };
 
     // Wait for the target selection or timeout
-    const targetID = await this.waitForSelection(
-      "game:targetSelected",
-      getRemainingTime(),
-      (timeSpent) => {
-        elapsedTime += timeSpent; // Track time spent on target selection
-      }
-    );
+    const targetID = await waitForTarget();
 
     // If no target was selected or timed out
     if (!targetID) {
@@ -381,69 +474,31 @@ class GameController {
     );
 
     if (!target) {
-      data = {
+      return {
         status: "error",
         message: "Không tìm thấy mục tiêu trong ván chơi !",
-      };
-      return data;
-    }
-
-    // Player can not perform action if they are blocked
-    if (player.status.isBeing.includes("blocked")) {
-      return {
-        status: "success",
-        message: "Bạn đang bị chặn và không thể hành động vào đêm nay!",
       };
     }
 
     const targetName = target.name;
 
-    // Check if the target is alive
-    if (!target.status.isAlive) {
-      data = {
-        status: "error",
-        message: `Không thể qua nhà ${targetName} vì người chơi này đã chết !`,
-      };
-      return data;
-    }
-
-    if (player.role === "Stalker") {
-      this.stalker = player;
-      this.stalkerTarget = targetID;
-      data = {
-        status: "success",
-        message: `Bạn đã chọn ${targetName} làm mục tiêu để thăm dò !`,
-      };
-      return data;
-    }
-
-    if (this.stalker && targetID.toString() === this.stalkerTarget.toString()) {
-      if (stalker.trait === "mad") {
-        // just want to emit random target
-        this.socket
-          .to(stalker._id.toString())
-          .emit("game:stalk", shuffle(this.data.players.name));
-      } else {
-        this.socket.to(stalker._id.toString()).emit("game:stalk", targetName);
-      }
-    }
-
     // Wait for the action selection or timeout
-    const inputAction = await this.waitForSelection(
-      "game:actionSelected",
-      getRemainingTime(),
-      (timeSpent) => {
-        elapsedTime += timeSpent; // Track time spent on action selection
-      }
-    );
+    const waitForAction = () => {
+      return new Promise((resolve) => {
+        this.socket.on("game:actionSelected", (data) => {
+          resolve(data);
+        });
+      });
+    };
+
+    const inputAction = await waitForAction();
 
     // If no action was selected or timed out
     if (!inputAction) {
-      data = {
+      return {
         status: "success",
         message: "Bạn đã không thực hiện hành động nào !",
       };
-      return data;
     }
 
     // Get the action that player wants to perform
@@ -452,16 +507,28 @@ class GameController {
     );
 
     if (action.status !== "pending") {
-      data = {
+      return {
         status: "error",
         message: "Bạn đã thực hiện hành động cho đêm nay rồi !",
       };
-      return data;
     }
 
+    if (!RoleController.submitAction(player, inputAction, target)) {
+      // Save the state of the action
+      action.status = "failed";
+      await action.save();
+      return {
+        status: "error",
+        message: "Không thể hành động lên người chơi này !",
+      };
+    }
+
+    await RoleController.resolveActions(player, inputAction, target);
     // Save the state of the action
-    game.states = action;
-    await game.save();
+    action.status = "successful";
+    action.performer.push(socket.user);
+    action.target.push(targetID);
+    await action.save();
 
     // Return success message
     return {
@@ -471,16 +538,23 @@ class GameController {
     };
   }
 
+  // Only specific role are allowed to watch other players
   watchOtherPlayers(game, targetID) {
     // Only wacth other players in perform action phase
     if (game.phases !== "performAction") {
-      return;
+      return {
+        status: 400,
+        message: "Wrong phase!",
+      };
     }
 
     const player = this.getPlayer(game);
     // Only stalker can watch other players
     if (player.role !== "Stalker") {
-      return;
+      return {
+        status: "error",
+        message: "Wrong role!",
+      };
     }
 
     const state = game.states.find(
@@ -490,19 +564,32 @@ class GameController {
       (target) => target._id.toString() === state.target.toString()
     );
     if (!target) {
-      this.handleError("Không tìm thấy mục tiêu !");
-      return;
+      return {
+        status: "error",
+        message: "Không tìm thấy mục tiêu !",
+      };
     }
 
     // If the target is not being watched, then the player choose not to do anything
     if (!target.status.isBeing.includes("watched")) {
-      return;
+      return {
+        status: "error",
+        message: "Mục tiêu không bị dò xét !",
+      };
     }
 
     // Player is mad, so we need to emit random performer name
     if (player.trait === "mad") {
       const playersName = game.players.map((player) => player.name);
-      return shuffle(playersName);
+      // Create a copy of the array and shuffle it
+      const shuffledNames = [...playersName];
+      shuffle(shuffledNames);
+
+      // Generate a random length between 1 and the total number of players
+      const randomLength = Math.floor(Math.random() * playersName.length) + 1;
+
+      // Return a slice of the shuffled array with random length
+      return shuffledNames.slice(0, randomLength);
     }
 
     const performerName = game.players.find(
@@ -512,204 +599,309 @@ class GameController {
     return performerName;
   }
 
-  /* Update game state */
+  // In the day phase, we will report last night's results
+  async dayPhase(game) {
+    if (game.phases !== "day") {
+      return {
+        status: 400,
+        message: "Wrong phase!",
+      };
+    }
+    const players = game.players;
 
-  // Update game phase
-  // static async updatePhase(socket, data) {
-  //   const { gameID, phase } = data;
-  //   const game = await Game.findOne({
-  //     _id: ObjectId.createFromHexString(gameID),
-  //   });
-  //   if (!game) {
-  //     throw new Error({ errors: "Không tìm thấy trò chơi !" });
-  //   }
+    //Get dead players
+    const deadPlayers = players.filter((player) => !player.status.isAlive);
 
-  //   game.phases = phase;
-  //   await game.save();
+    // Get the count of alive players
+    const alivePlayers = players.filter(
+      (player) => player.status.isAlive
+    ).length;
 
-  //   socket.emit("game:updatePhase", {
-  //     message: "Giai đoạn đã được cập nhật !",
-  //   });
-  // }
+    // Get the count of traits
+    const traitCount = players.reduce((count, player) => {
+      count[player.trait] = (count[player.trait] || 0) + 1;
+      return count;
+    }, {});
 
-  // In day phase, the game will report last night's results
-  // async dayPhase(callback) {
-  //   // Find game
-  //   const game = this.getGameData();
+    // Check if the game meets ending conditions
+    const gameEnd = RuleController.gameOver(alivePlayers, traitCount);
+    if (!gameEnd.errors && gameEnd.isOver) {
+      const reason = gameEnd.reason;
+      const winner = gameEnd.winner;
 
-  //   // Get players who died during the night phase
-  //   const deadPlayers = game.players.filter(
-  //     (player) => !player.status.isAlive && player.status.diedAt === "night"
-  //   );
+      game.phases = "end";
+      await game.save();
 
-  //   // Update game phase to discussion
-  //   game.phases = "discussion";
-  //   await game.save();
+      const playerDetails = players.map((player) => ({
+        name: player.name,
+        role: player.role,
+        trait: player.trait,
+      }));
 
-  //   if (deadPlayers.length === 0) {
-  //     throw new Error("Không có ai chết !");
-  //   }
+      return this.socket.emit("game:end", {
+        reason: reason,
+        winner: winner,
+        playerDetails: playerDetails,
+      });
+    }
 
-  //   // Broadcast day phase results to all clients
-  //   socket.broadcast.emit("game:dayResults", {
-  //     messages: [
-  //       {
-  //         text: "Đêm hôm qua ...",
-  //         delay: 0,
-  //       },
-  //       {
-  //         text:
-  //           deadPlayers.length === 0
-  //             ? "Không có ai chết !"
-  //             : `Có ${deadPlayers.length} người chết:`,
-  //         delay: 2000,
-  //         deadPlayers: deadPlayers.map((player) => ({
-  //           name: player.name,
-  //           role: player.role,
-  //         })),
-  //       },
-  //     ],
-  //   });
-  // }
+    // Update game phase and reset all the states
+    game.phases = "discussion";
+    game.states.forEach((action) => {
+      action.status = "pending";
+    });
+    await game.save();
 
-  // In discussion phase, players can chat with each other
-  // static async discussionPhase() {
-  //   const { gameID, message } = data;
-  //   const userID = socket.user; // Assuming user data is attached to socket
+    if (deadPlayers.length === 0) {
+      return {
+        status: "success",
+        message: "Đêm qua không có ai chết!",
+      };
+    }
 
-  //   // Validate data
-  //   if (!gameID || !message) {
-  //     throw new Error("Missing required fields");
-  //   }
+    const deadPlayerNames = deadPlayers.map((player) => player.name);
+    return {
+      status: "success",
+      message: "Đêm qua có " + deadPlayers.length + " người chết!",
+      data: deadPlayerNames,
+    };
+  }
 
-  //   // Find game
-  //   const game = await Game.findOne({
-  //     _id: ObjectId.createFromHexString(gameID),
-  //   });
+  // In the discussion phase, players can chat and discuss
+  async discussionPhase(game, message) {
+    if (game.phases !== "discussion") {
+      return {
+        status: 400,
+        message: "Wrong phase!",
+      };
+    }
 
-  //   if (!game) {
-  //     throw new Error("Không tìm thấy trò chơi !");
-  //   }
+    // Validate data
+    if (!message) {
+      return {
+        status: "error",
+        message: "Tin nhắn không được để trống!",
+      };
+    }
 
-  //   // Check if player exists and is alive
-  //   const player = game.players.find(
-  //     (player) => player.player_id.toString() === userID.toString()
-  //   );
-  //   if (!player) {
-  //     throw new Error("Bạn không phải người chơi trong ván này!");
-  //   }
-  //   if (!player.status.isAlive) {
-  //     throw new Error("Người chết không thể nói chuyện!");
-  //   }
+    // Check if player exists and is alive
+    const player = this.getPlayer(game);
 
-  //   switch (game.phases) {
-  //     case "night":
-  //       if (player.trait === "bad") {
-  //         socket.broadcast.emit("game:message", {
-  //           message: "Tin nhắn đã được gửi",
-  //           sender: player.name,
-  //           content: message,
-  //         });
-  //       }
-  //       throw new Error("Không thể trò chuyện vào lúc này !");
-  //     case "discussion":
-  //       socket.broadcast.emit("game:message", {
-  //         message: "Tin nhắn đã được gửi",
-  //         sender: player.name,
-  //         content: message,
-  //       });
-  //       break;
+    if (!player.status.isAlive) {
+      return {
+        status: "error",
+        message: "Bạn không thể nói chuyện!",
+      };
+    }
 
-  //     default:
-  //       throw new Error("Không thể thảo luận vào lúc này !");
-  //   }
-  // }
+    this.socket.broadcast
+      .to(game.room.toHexString())
+      .emit("game:fetchDayChat", {
+        playerName: player.name,
+        message: message,
+      });
 
-  // In vote phase, players can vote for the target to kill
-  // static async votePhase(socket, data) {
-  //   const { gameID, targetIDs } = data;
+    return {
+      status: "success",
+      message: "Tin nhắn đã được gửi!",
+    };
+  }
 
-  //   // Validate data
-  //   if (!gameID || !targetIDs) {
-  //     throw new Error("Missing required fields");
-  //   }
+  // Only specific roles can chat at night's period
+  async nightChat(game, message) {
+    if (game.period !== "night") {
+      return {
+        status: 400,
+        message: "Wrong phase!",
+      };
+    }
 
-  //   // Find game
-  //   const game = await Game.findOne({
-  //     _id: ObjectId.createFromHexString(gameID),
-  //   });
+    // Validate data
+    if (!message) {
+      return {
+        status: "error",
+        message: "Tin nhắn không được để trống!",
+      };
+    }
 
-  //   if (!game) {
-  //     throw new Error("Không tìm thấy trò chơi !");
-  //   }
+    // Check if player exists and is alive
+    const player = this.getPlayer(game);
 
-  //   if (game.phases !== "vote") {
-  //     throw new Error("Không thể bỏ phiếu vào giai đoạn này !");
-  //   }
+    if (!player.status.isAlive) {
+      return {
+        status: "error",
+        message: "Bạn không thể nói chuyện!",
+      };
+    }
 
-  //   const players = game.players;
-  //   const alivePlayers = players.filter(
-  //     (player) => player.status.isAlive
-  //   ).length;
+    this.socket.broadcast.to(player1, player2).emit("game:fetchNightChat", {
+      playerName: player.name,
+      message: message,
+    });
 
-  //   // Filter to keep only valid voters (players who are in the game and alive)
-  //   const voter = players.find(
-  //     (player) => player.player_id.toString() === socket.user.toString()
-  //   );
-  //   if (!voter) {
-  //     throw new Error("Bạn không phải là người chơi trong ván này !");
-  //   }
-  //   if (!voter.status.isAlive) {
-  //     throw new Error("Bạn đã chết nên không thể bỏ phiếu !");
-  //   }
+    return {
+      status: "success",
+      message: "Tin nhắn đã được gửi!",
+    };
+  }
 
-  //   // Count votes for each target
-  //   const voteCount = targetIDs.reduce((acc, targetID) => {
-  //     const target = players.find(
-  //       (player) => player.player_id.toString() === targetID.toString()
-  //     );
-  //     // Only count votes for valid targets
-  //     if (target && target.status.isAlive) {
-  //       acc[targetID] = (acc[targetID] || 0) + 1;
-  //     }
-  //     return acc;
-  //   }, {});
+  // In the vote phase, players can vote for the suspect and hang him on
+  async votePhase(game) {
+    // Check if current phase is "vote"
+    if (game.phases !== "vote") {
+      return {
+        status: 400,
+        message: "Wrong phase!",
+      };
+    }
 
-  //   if (Object.keys(voteCount).length === 0) {
-  //     throw new Error("Không có mục tiêu hợp lệ nào để bỏ phiếu!");
-  //   }
+    const waitForTargetID = () => {
+      return new Promise((resolve) => {
+        this.socket.on("game:voteTarget", (data) => {
+          resolve(data);
+        });
+      });
+    };
 
-  //   // Find the target with the most votes
-  //   const maxVotes = Math.max(...Object.values(voteCount));
+    // Wait for the target selection or timeout
+    const targetID = await waitForTargetID();
 
-  //   // Check if the vote count meets the required threshold
-  //   if (!RuleController.voteRule(alivePlayers, maxVotes)) {
-  //     throw new Error("Số phiếu bầu không đủ theo luật chơi !");
-  //   }
+    if (!targetID) {
+      return { status: success, message: "Bạn đã không bỏ phiếu ai !" };
+    }
 
-  //   const mostVotedTargets = Object.entries(voteCount)
-  //     .filter(([_, count]) => count === maxVotes)
-  //     .map(([targetID]) => targetID);
+    // Get target data
+    const target = game.players.find(
+      (player) => player._id.toString() === targetID.toString()
+    );
 
-  //   const selectedTargetID = mostVotedTargets[0];
-  //   const selectedTarget = players.find(
-  //     (player) => player.player_id.toString() === selectedTargetID
-  //   );
+    // Check if target exists
+    if (!target) {
+      return {
+        status: "error",
+        message: "Không tìm thấy mục tiêu!",
+      };
+    }
 
-  //   selectedTarget.status.isAlive = false;
-  //   // Change the phase to night
-  //   game.phases = "night";
-  //   await game.save();
+    // Check if target is alive
+    if (!target.status.isAlive) {
+      return {
+        status: "error",
+        message: "Chỉ được bỏ phiếu cho người chơi còn sống !",
+      };
+    }
+    const existingVoteIndex = game.vote.find(
+      (vote) => vote.target.toString() === targetID.toString()
+    );
 
-  //   // Broadcast vote results to all clients
-  //   socket.broadcast.emit("game:message", {
-  //     message: `Mục tiêu bị bỏ phiếu nhiều nhất: ${selectedTarget.name}`,
-  //     maxVotes: maxVotes,
-  //   });
+    if (existingVoteIndex) {
+      // If target exists, just increment the count
+      game.vote[existingVoteIndex].count += 1;
+    } else {
+      // If target doesn't exist, add it with count starting at 1
+      game.vote.push({
+        target: targetID,
+        count: 1,
+      });
+    }
+    await game.save();
+  }
 
-  //   this.gamePhases({ phase: game.phases });
-  // }
+  // Handle vote result
+  async afterVoteHandler(game) {
+    if (game.phases !== "handleVotes") {
+      return {
+        status: 400,
+        message: "Wrong phase!",
+      };
+    }
 
-  // need a function to update game priority
+    // Early return if no votes
+    if (!game.vote || !game.vote.length) {
+      return { status: "success", message: "Không ai bỏ phiếu!" };
+    }
+
+    const maxCount = Math.max(...game.vote.map((vote) => vote.count));
+    const alivePlayers = game.players.filter(
+      (player) => player.status.isAlive
+    ).length;
+
+    // Validate vote rules
+    const voteRules = RuleController.voteRule(alivePlayers, maxCount);
+    if (voteRules.errors) {
+      return { status: "error", message: voteRules.errors };
+    }
+
+    // Check for tie
+    const tiedVotes = game.vote.filter((vote) => vote.count === maxCount);
+    if (tiedVotes.length > 1) {
+      return {
+        status: "tie",
+        tiedTargets: tiedVotes.map((vote) => ({
+          target: vote.target,
+          count: vote.count,
+        })),
+        message: `Hoà với số phiếu ${maxCount} nên không ai bị treo cổ!`,
+      };
+    }
+
+    // Get the voted player
+    const targetId = tiedVotes[0].target.toString();
+    const player = game.players.find(
+      (player) => player._id.toString() === targetId
+    );
+
+    if (!player) {
+      return { status: "error", message: "Player not found" };
+    }
+
+    // Mark player as dead
+    player.status.isAlive = false;
+
+    // Count traits for game end check
+    const traitCount = game.players.reduce((count, player) => {
+      count[player.trait] = (count[player.trait] || 0) + 1;
+      return count;
+    }, {});
+
+    // Save game state
+    await game.save();
+
+    // Check end game conditions
+    const gameEnd = RuleController.gameOver(alivePlayers - 1, traitCount);
+    if (!gameEnd.errors && gameEnd.isOver) {
+      game.phases = "end";
+      await game.save();
+
+      const players = game.players;
+      const playerDetails = players.map((player) => ({
+        name: player.name,
+        role: player.role,
+        trait: player.trait,
+      }));
+      const reason = gameEnd.reason;
+      const winner = gameEnd.winner;
+
+      return this.socket.emit("game:end", {
+        reason: reason,
+        winner: winner,
+        playerDetails: playerDetails,
+      });
+    }
+
+    // Create appropriate message based on player role
+    const baseMessage = `Kẻ bị tình nghi ${player.name} là (${player.role}), đã bị dân làng treo cổ`;
+    const message =
+      player.role === "bad"
+        ? `${baseMessage}!`
+        : `${baseMessage}, nhưng rõ ràng người này không phải kẻ xấu !`;
+
+    return {
+      status: "success",
+      highestVote: player.name,
+      message,
+    };
+  }
 }
+
 module.exports = { GameController };

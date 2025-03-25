@@ -4,7 +4,7 @@ const PlayerSchema = new mongoose.Schema({
   _id: {
     type: mongoose.Schema.Types.ObjectId,
     required: true,
-    ref: "User" // Add the ref here if you need it
+    ref: "User" 
   },
   name: {
     type: String,

@@ -1,15 +1,11 @@
-<script setup>
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faXmark } from "@fortawesome/free-solid-svg-icons";
-</script>
 <template>
   <div class="relative flex flex-col gap-2 p-4">
     <h3 class="text-xl">Tạo phòng</h3>
-    <button class="absolute right-2 top-2 border-2 border-red-400 w-6 h-6" @click="closePopup">
-      <FontAwesomeIcon class="text-red-600 hover:text-red-500 focus:text-red-500" :icon="faXmark" />
+    <button class="absolute right-2 top-2 w-6 h-6" @click="closePopup">
+      <FontAwesomeIcon class="text-xl text-red-600 hover:text-red-400 focus:text-red-400" :icon="faXmark" />
     </button>
-    <form @submit.prevent="handleCreateRoom" class="w-full gap-2 flex flex-col">
-      <div class="flex gap-2 w-full flex-wrap">
+    <form @submit.prevent="handleCreateRoom" class="w-full gap-2 flex flex-col relative">
+      <div class="flex gap-2 w-full flex-wrap relative">
         <p class="w-auto">Số lượng người:</p>
         <input
           class="outline-none w-auto"
@@ -20,7 +16,7 @@ import { faXmark } from "@fortawesome/free-solid-svg-icons";
       </div>
       <button
         type="submit"
-        class="w-full bg-lime-700 rounded-lg text-yellow-300 hover:bg-lime-600 hover:text-white focus:text-white focus:bg-lime-600"
+        class="w-full border-2 border-yellow-600 bg-lime-600 rounded-lg text-yellow-300 hover:bg-lime-500 hover:text-white focus:text-white focus:bg-lime-600"
       >
         Tạo
       </button>
@@ -44,8 +40,18 @@ import { faXmark } from "@fortawesome/free-solid-svg-icons";
 import RoomApi from "../api/room.api";
 import { roomID } from "../store";
 import { socket } from "../socket";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { faXmark } from "@fortawesome/free-solid-svg-icons";
 
 export default {
+  setup() {
+    return {
+      faXmark,
+    };
+  },
+  components:{
+    FontAwesomeIcon,
+  },
   data() {
     return {
       capacity: "",

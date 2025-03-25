@@ -1,6 +1,6 @@
 <template>
   <BackGround v-if="showBackground"/>
-  <router-view class="z-10 fixed"/>
+  <router-view class="z-10 absolute"/>
   <SignUpForm v-if="showSignUpForm" />
   <ErrorPopup v-if="errorMessages && !showSignUpForm"/>
   <Loading v-if="isLoading"/>
@@ -19,9 +19,6 @@ export default {
     Loading: defineAsyncComponent(() => import('./components/Loading.vue')),
   },
   setup() {
-    console.log(errorMessages.value);
-    console.log(isLoading.value);
-
     return {
       showSignUpForm,
       showBackground,
