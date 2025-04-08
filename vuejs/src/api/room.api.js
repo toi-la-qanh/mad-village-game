@@ -12,12 +12,16 @@ export default class RoomApi extends BaseApi {
     return this.get(`${url}/${id}`);
   }
 
-  joinRoom(id) {
-    return this.get(`${url}/${id}/join`);
+  joinRoom(id, data) {
+    return this.post(`${url}/${id}/join`, data);
   }
 
   createRoom(data) {
     return this.post(`${url}/`, data);
+  }
+
+  updateRoom(data) {
+    return this.patch(`${url}/`, data);
   }
 
   leaveRoom(id) {

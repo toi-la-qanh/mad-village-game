@@ -10,6 +10,7 @@
     </button>
     <button
       class="w-44 p-5 outline-none border-2 border-yellow-600 bg-lime-600 hover:bg-lime-500"
+      @click="switchToInstructionPage"
     >
       Hướng dẫn
     </button>
@@ -22,6 +23,9 @@ export default {
     toggleSignUpForm() {
       this.$router.push({ name: "rooms" });
     },
+    switchToInstructionPage() {
+      this.$router.push({ name: "instruction" });
+    }
   },
 };
 </script>

@@ -51,14 +51,14 @@
           class="flex gap-2 items-center text-lime-700 hover:text-lime-600 focus:text-lime-600"
         >
           <FontAwesomeIcon :icon="faRotate" />
-          <button @click="refreshRooms()">Tạo lại</button>
+          <button @click="refreshRooms()">Tải lại</button>
         </div>
       </div>
 
       <div class="w-full h-auto min-h-96 mt-7">
-        <div v-if="rooms">
+        <div v-if="filteredRooms && filteredRooms.length > 0">
           <div
-            v-for="(room, index) in rooms.rooms"
+            v-for="(room, index) in filteredRooms"
             :key="index"
             class="mb-2 border-2 border-lime-700 p-2 my-2 gap-5"
           >
@@ -111,44 +111,67 @@ export default {
     ),
     FontAwesomeIcon,
   },
+  
   setup() {
     return { faCircleInfo, faRotate };
   },
+
   data() {
     return {
-      rooms: [],
+      rooms: null,
       filteredRooms: [],
       error: null,
       showCreateRoom: false,
+      searchQuery: "",
     };
   },
+
   async mounted() {
-    this.fetchRooms();
+    const cachedRooms = sessionStorage.getItem("rooms");
+    if (cachedRooms) {
+      this.rooms = JSON.parse(cachedRooms);
+      this.filteredRooms = this.rooms.rooms || [];
+    } else {
+      await this.fetchRooms();
+    }
   },
+
   methods: {
     async fetchRooms() {
+      isLoading.value = true;
       const room = new RoomApi();
       try {
-        this.rooms = await room.getAllRooms();
-        this.filteredRooms = this.rooms;
+        const response = await room.getAllRooms();
+        if (response) {
+          this.rooms = response;
+          this.filteredRooms = response.rooms || [];
+          sessionStorage.setItem("rooms", JSON.stringify(response));
+        }
       } catch (error) {
-        console.log(error);
-        this.error = error.response?.data?.errors;
+        sessionStorage.removeItem("rooms");
+        this.error = error.response?.data?.errors || "Không thể tải danh sách phòng";
+      } finally {
+        isLoading.value = false;
       }
     },
+
     navigateToRoom(roomId) {
       this.$router.push({ name: "room", params: { id: roomId } });
     },
+
     goBack() {
       this.$router.push("/home");
     },
+
     createRoom() {
       this.showCreateRoom = true;
     },
+
     closeCreateRoom() {
-      // Close the CreateRoom popup
       this.showCreateRoom = false;
+      this.refreshRooms();
     },
+
     searchHelper() {
       const info = document.getElementById("searchInfo");
       if (info.classList.contains("flex")) {
@@ -159,28 +182,34 @@ export default {
         info.classList.add("flex");
       }
     },
-    searchRooms() {
-      this.filteredRooms = this.rooms.filter(
-        (room) =>
-          room.ownerName
-            .toLowerCase()
-            .includes(this.searchQuery.toLowerCase()) ||
-          room.roomID.toLowerCase().includes(this.searchQuery.toLowerCase())
+
+    searchRooms(event) {
+      this.searchQuery = event.target.value || "";
+      
+      if (!this.rooms || !this.rooms.rooms) {
+        this.filteredRooms = [];
+        return;
+      }
+      
+      this.filteredRooms = this.rooms.rooms.filter(room => 
+        room.ownerName?.toLowerCase().includes(this.searchQuery.toLowerCase()) || 
+        room.roomID?.toLowerCase().includes(this.searchQuery.toLowerCase())
       );
-      if (this.filteredRooms) {
-        console.log("Not found");
+      
+      if (this.filteredRooms.length === 0 && this.searchQuery) {
+        this.error = "Không tìm thấy phòng nào khớp với yêu cầu!";
+      } else {
+        this.error = null;
       }
     },
+
     refreshRooms() {
       isLoading.value = true;
-      setTimeout(() => {
-        this.rooms = [];
-        this.filteredRooms = [];
-        this.searchQuery = "";
-        this.error = null;
-        this.fetchRooms();
-        isLoading.value = false;
-      }, 1000);
+      this.rooms = null;
+      this.filteredRooms = [];
+      this.searchQuery = "";
+      this.error = null;
+      this.fetchRooms();
     },
   },
 };

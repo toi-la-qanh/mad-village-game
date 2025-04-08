@@ -3,7 +3,7 @@ const Role = require("../role.model");
 class Bully extends Role {
   #trait;
   #abilityIconsPath = {
-    lock: "./src/models/roles/assets/lock-solid.svg",
+    lock: "./src/models/roles/assets/lock-solid.png",
     knife: "./src/models/roles/assets/knife.png"
   };
   

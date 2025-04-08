@@ -12,13 +12,13 @@ class Role {
   #traits;
 
   constructor(
-    name,
-    description,
+    name = "",
+    description = "",
     abilities = {},
     availableAction = [],
-    actionPriorities,
-    counts,
-    imagePath,
+    actionPriorities = 0,
+    counts = 0,
+    imagePath = "",
     abilityIcons = []
   ) {
     this.#name = name;

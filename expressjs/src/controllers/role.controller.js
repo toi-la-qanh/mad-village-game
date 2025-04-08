@@ -2,6 +2,7 @@ const Bully = require("../models/roles/bully.model");
 const Hunter = require("../models/roles/hunter.model");
 const Stalker = require("../models/roles/stalker.model");
 const Witch = require("../models/roles/witch.model");
+const Doctor = require("../models/roles/doctor.model");
 const Villager = require("../models/roles/villager.model");
 const { checkSchema, validationResult } = require("express-validator");
 const Room = require("../models/room.model");
@@ -39,7 +40,9 @@ class RoleController {
     });
   }
 
-  /* Endpoint to show all roles of the game */
+  /**
+   * Show all of the roles in the game
+   */
   static roleIndex = async (req, res) => {
     // Map role classes to their allowed traits
     const roleTraitMap = {
@@ -47,6 +50,7 @@ class RoleController {
       Hunter: ["good"],
       Stalker: ["good", "bad"],
       Witch: ["good", "bad"],
+      Doctor: ["good"],
     };
 
     // Create all roles based on allowed traits
@@ -63,6 +67,8 @@ class RoleController {
           ? Stalker
           : roleClassName === "Witch"
           ? Witch
+          : roleClassName === "Doctor"
+          ? Doctor
           : null;
 
       if (RoleClass) {
@@ -80,7 +86,7 @@ class RoleController {
     const rolesDetail = roles.map((role) => ({
       name: role.getName(),
       description: role.getDescription(),
-      counts: role.getCount(),
+      counts: role.getCount() === Infinity ? 'Vô số lần' : role.getCount() + " lần",
       image: role.getImage(),
       abilityIcons: role.getAbilityIcons(),
       trait: role.getTrait(),
@@ -177,7 +183,9 @@ class RoleController {
     }
   }
 
-  //get role of a player
+  /**
+   * Get the details in role class of a player
+   */
   static getRoleFromPlayer(role, trait) {
     switch (role) {
       case "Bully":
@@ -210,12 +218,13 @@ class RoleController {
     return true;
   }
 
-  // Method to resolve actions at the end of the phase
+  /**
+   * Method to resolve actions at the end of the phase
+   */
   static async resolveActions(performer, actionType, target) {
     // Resolve action based on type
     switch (actionType) {
       case "block":
-        // Add target to blocked players
         target.status.isBeing.push("blocked");
         await target.save();
         console.log(`${performer.name} blocks player ${target.name}`);
@@ -224,7 +233,7 @@ class RoleController {
       case "protect":
         target.status.isBeing.push("protected");
         await target.save();
-        console.log(`${performer.name} blocks player ${target.name}`);
+        console.log(`${performer.name} protects player ${target.name}`);
         break;
 
       case "save":
@@ -234,7 +243,7 @@ class RoleController {
         break;
 
       case "kill":
-        if (target.status.isBeing === "protected") {
+        if (target.status.isBeing.includes("protected")) {
           console.log(
             `${performer.name} failed to kill player ${target.name} because someone has protected them.`
           );
@@ -242,11 +251,43 @@ class RoleController {
         }
         target.status.isAlive = false;
         await target.save();
+        console.log(`${performer.name} killed player ${target.name}`);
         break;
 
       case "stalk":
         target.status.isBeing.push("watched");
         await target.save();
+        console.log(`${performer.name} stalks player ${target.name}`);
+        break;
+
+      case "poison":
+        target.status.isBeing.push("poisoned");
+        await target.save();
+        console.log(`${performer.name} poisons player ${target.name}`);
+        break;
+
+      case "paralyze":
+        target.status.isBeing.push("paralyzed");
+        await target.save();
+        console.log(`${performer.name} paralyzes player ${target.name}`);
+        break;
+
+      case "detox":
+        const toxinsToRemove = ["poisoned", "paralyzed"];
+        target.status.isBeing = target.status.isBeing.filter(
+          (status) => !toxinsToRemove.includes(status)
+        );
+        await target.save();
+        console.log(`${performer.name} detoxes player ${target.name}`);
+        break;
+
+      case "cure":
+        // New case to only remove poisoned status
+        target.status.isBeing = target.status.isBeing.filter(
+          (status) => status !== "poisoned"
+        );
+        await target.save();
+        console.log(`${performer.name} cures player ${target.name}`);
         break;
 
       default:

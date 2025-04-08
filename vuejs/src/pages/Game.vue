@@ -1,5 +1,5 @@
 <template>
-  <div v-if="game" class="overflow-hidden h-screen">
+  <div v-if="game" class="overflow-hidden h-screen w-screen">
     <!-- Game Errors -->
     <div v-if="error">
       <GameError :error="error" @close="error = null" />
@@ -9,18 +9,21 @@
     <div v-if="showGameButtons">
       <GameButtons
         @showRole="showRoleInfo"
+        @showInstruction="showInstructionInfo = true"
         @openChat="
           openChatSection = true;
           showGameButtons = false;
         "
         @openSettings="openSettingsSection = true"
-        @openVoteSection="openVoteSection = true"
       />
     </div>
 
     <!-- Settings -->
     <div v-if="openSettingsSection">
-      <GameSettings @close="openSettingsSection = false" />
+      <GameSettings
+        @close="openSettingsSection = false"
+        @changeSettings="updateSettings"
+      />
     </div>
 
     <!-- Time out  -->
@@ -37,11 +40,19 @@
       :playerCount="game.players.length"
       :event="event"
       :playerBeingWatched="playerBeingWatched"
+      :characterSpeed="characterSpeed"
+      :animation="animation"
+      :zoomLevel="zoomMap"
     />
 
     <!-- Role information -->
     <div v-if="role">
       <RoleInfo :role="role" @close="role = null" />
+    </div>
+
+    <!-- Instruction -->
+    <div v-if="showInstructionInfo">
+      <GameInstruction @close="showInstructionInfo = false" />
     </div>
 
     <!-- Chat Section -->
@@ -50,6 +61,9 @@
         :day="game.day"
         :dayChat="event.discussion"
         :nightChat="event.nightChat"
+        :gameMessage="gameMessage"
+        :players="game.players"
+        :voteEvent="event.vote"
         @close="
           openChatSection = false;
           showGameButtons = true;
@@ -57,23 +71,31 @@
       />
     </div>
 
-    <!-- Vote Section -->
-    <div v-if="openVoteSection">
-      <Vote :players="game.players" @close="openVoteSection = false" />
+    <!-- Game Over Notifications -->
+    <div v-if="event.end">
+      <GameEnd :playerDetails="playerDetails"/>
     </div>
   </div>
 
   <!-- Condition if there is no game data -->
   <div v-else>
-    <p v-if="loading">Loading...</p>
-    <p v-else>No game data available</p>
+    <div class="text-center w-screen absolute mt-12">
+      <p class="text-red-700">Lỗi không tìm thấy dữ liệu game</p>
+      <button
+        @click="reload()"
+        class="bg-green-400 hover:bg-green-300 border boder-black rounded-full p-2 mt-2"
+      >
+        Tải lại trang
+      </button>
+    </div>
   </div>
 </template>
 
 <script>
 import { socket } from "../socket"; // Import socket connection
 // import { gameID, roomID } from "../store";
-import { defineAsyncComponent, toRaw } from "vue";
+import { defineAsyncComponent } from "vue";
+import { showBackground } from "../store";
 
 export default {
   components: {
@@ -90,15 +112,18 @@ export default {
       import("../components/GameSettings.vue")
     ),
     Vote: defineAsyncComponent(() => import("../components/Vote.vue")),
+    GameInstruction: defineAsyncComponent(() => import("../components/GameInstruction.vue")),
+    GameEnd: defineAsyncComponent(() => import("../components/GameEnd.vue")),
   },
+
   data() {
     return {
       game: null, // Store game data
       loading: false, // Store loading state
       error: null, // Store error state
       role: null,
+      showInstructionInfo: false,
       openChatSection: false,
-      openVoteSection: false,
       showGameButtons: true,
       timeOut: null,
       timeOutMessage: null,
@@ -116,6 +141,10 @@ export default {
         end: false,
       },
       playerBeingWatched: null,
+      gameMessage: "",
+      characterSpeed: parseFloat(sessionStorage.getItem("speed")) || 1,
+      animation: JSON.parse(sessionStorage.getItem("animation")) || true,
+      playerDetails: null,
     };
   },
 
@@ -126,22 +155,29 @@ export default {
   },
 
   methods: {
+    reload() {
+      window.location.reload();
+    },
+    
     fetchGameData() {
       socket.on("game:error", (data) => {
         this.error = data;
       });
 
       socket.emit("game:data", localStorage.getItem("gameID"), (data) => {
-        console.log(data);
+        if (!data) {
+          showBackground.value = true;
+        }
+        showBackground.value = false;
         socket.emit("room:join", data.room);
         this.game = data;
-        console.log(this.game);
       });
     },
 
     setupGameEvents() {
       // Retrieve the current event of the game
       socket.emit("game:event", localStorage.getItem("gameID"), (data) => {
+        this.gameMessage = data.message;
         switch (data.phase) {
           case "showRoles":
             this.showRolesEvent(data);
@@ -232,7 +268,14 @@ export default {
 
     endEvent(data) {
       this.event.end = true;
-      console.log("End phase:", data);
+      this.playerDetails = data;
+    },
+
+    // Method to handle settings change
+    updateSettings({ newSpeed, newAnimation }) {
+      this.characterSpeed = newSpeed;
+      this.animation = newAnimation;
+      this.openSettingsSection = false; // Close settings panel
     },
   },
 

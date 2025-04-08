@@ -6,7 +6,7 @@ class Villager extends Role {
     let name = "Villager";
     let imagePath = "./src/models/roles/assets/villager.png";
     super(name, "", {}, [], 0, 0, imagePath, []);
-    super.setDescription("Vai trò sẽ được chọn ngẫu nhiên");
+    super.setDescription("Chọn ngẫu nhiên một vai trò với thuộc tính điên");
     super.setCount(Infinity);
     this.#trait = "mad";
   }

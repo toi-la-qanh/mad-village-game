@@ -1,31 +1,23 @@
 <template>
   <div
-    class="flex relative justify-center items-center w-screen h-full overflow-hidden"
+    class="flex absolute justify-center items-center w-screen h-screen cursor-grab active:cursor-grabbing"
   >
     <!-- Directly accessing the canvas element without ref -->
-    <canvas 
+    <canvas
       ref="gameCanvas"
       :width="canvasWidth"
       :height="canvasHeight"
-      @mousedown="startPanning"
-      @mousemove="handlePanning"
-      @mouseup="stopPanning"
-      @mouseleave="stopPanning"
-      class="absolute cursor-grab active:cursor-grabbing"
-      :class="{ 
+      class="absolute touch-pan-x touch-pan-y"
+      :class="{
         'brightness-75': game.period === 'night',
-        'touch-pan-x touch-pan-y': true 
-      }"
-      :style="{
-        transform: `translate(${offsetX}px, ${offsetY}px)`
       }"
     ></canvas>
 
-    <!-- Overlay button inside the canvas at house coordinates -->
+    <!-- House Interacting -->
     <div
       v-for="(house, index) in housePositions"
-      class="absolute"
       :key="index"
+      class="absolute"
       :style="{
         top: `${house.y}px`,
         left: `${house.x}px`,
@@ -36,7 +28,7 @@
       <!-- House Click -->
       <button
         @click="onButtonClick(index)"
-        class="absolute bottom-0 left-0 w-full h-full"
+        class="relative bottom-0 left-0 w-full h-full cursor-pointer"
       ></button>
 
       <!-- Display house details when clicked -->
@@ -47,7 +39,7 @@
         {{ playerNames[index] }}
       </p>
 
-      <!-- House Interacting -->
+      <!-- House Selected -->
       <transition
         name="fade"
         @before-enter="beforeEnter"
@@ -59,7 +51,8 @@
           v-if="
             clickedHouseIndex === index &&
             !selectButtonClicked &&
-            playerIDs[index] !== user_id
+            playerIDs[index] !== user_id &&
+            game.phase === 'performAction'
           "
           class="absolute bottom-0 left-0 w-full h-full flex justify-center items-center"
         >
@@ -80,8 +73,10 @@
         v-for="(icon, index) in abilityIcons"
         v-if="
           playerIDs[index] !== user_id &&
+          !selectButtonClicked &&
           endMoving &&
-          clickedHouseIndex === index
+          clickedHouseIndex === index &&
+          game.phase === 'performAction'
         "
         :key="index"
       >
@@ -89,11 +84,7 @@
           class="transform hover:scale-120 transition-all items-center flex w-8 h-8 p-1 justify-center bg-green-500 rounded-full"
         >
           <button class="" @click="handleAbilityIconsClick(index)">
-            <img
-              :src="'data:image/png;base64,' + icon"
-              alt="Ability Icon"
-              class=""
-            />
+            <img :src="'data:image/png;base64,' + icon" alt="Ability Icon" />
           </button>
         </div>
       </div>
@@ -101,37 +92,23 @@
 
     <!-- Character Animation -->
     <div
-      v-if="isMoving"
+      v-if="(isMoving || isBeingWatched) && animation && game.period !== 'day'"
       class="absolute"
       :style="{
         top: `${characterPosition.y}px`,
         left: `${characterPosition.x}px`,
       }"
     >
+      <p class="text-xs absolute top-[-20px] left-[-10px]">
+        {{ characterMovingName }}
+      </p>
       <!-- Character image or div -->
       <img :src="characterImageSrc" alt="Character" />
     </div>
 
-    <!-- Watch other player's action -->
-    <div>
-      <div
-        v-for="(position, index) in characterPositions"
-        :key="'player-' + index"
-        class="absolute"
-        :style="{
-          top: `${position.y}px`,
-          left: `${position.x}px`,
-        }"
-      >
-        <!-- Character image or div -->
-        <!-- <p>{{ player }}</p> -->
-        <img :src="characterImageSrc[index]" alt="Character" />
-      </div>
-    </div>
-
     <!-- Player is gathering -->
     <div
-      v-if="isGathering"
+      v-if="isGathering && game.period !== 'night'"
       v-for="(character, index) in charactersGathering"
       :key="index"
       class="absolute"
@@ -170,15 +147,26 @@ export default {
       type: Array,
       required: false,
     },
+    characterSpeed: {
+      type: Number,
+      required: true,
+    },
+    animation: {
+      type: Boolean,
+      required: true,
+    },
   },
+
   setup() {
     return {
       faXmark,
     };
   },
+
   components: {
     FontAwesomeIcon,
   },
+
   data() {
     return {
       canvasWidth: Math.max(window.innerWidth, 468),
@@ -191,6 +179,7 @@ export default {
       user_id: user.value.id,
       isMoving: false,
       isGathering: false,
+      isBeingWatched: false,
       characterPosition: { x: 0, y: 0, width: 0, height: 0 },
       targetPosition: { x: 0, y: 0, width: 0, height: 0 },
       moveSpeed: 2,
@@ -226,23 +215,9 @@ export default {
       availableActions: [],
       selectedActions: null,
       endMoving: false,
-      characterPositions: [],
-      characterImageSrcs: [],
-      charactersGathering: [],
-      // Panning state variables
-      isPanning: false,
-      startX: 0,
-      startY: 0,
-      offsetX: 0,
-      offsetY: 0,
-      
-      // Assuming these are your map dimensions
-      mapWidth: 2000,  // Total map width
-      mapHeight: 2000, // Total map height
-      
-      // Viewport dimensions
-      viewportWidth: 800,
-      viewportHeight: 600
+      characterMovingName: "",
+      currentDay: 0,
+      currentPeriod: "day",
     };
   },
 
@@ -250,96 +225,51 @@ export default {
     // Initial map load
     this.loadMapImage();
     this.fetchAbilityIcons();
-    this.placeCharacters();
-    console.log(this.charactersGathering);
+    this.resetGameState();
+    this.moveSpeed = this.characterSpeed;
+    // this.generateOtherPlayersToWatch();
+    // this.placeCharacters();
     window.addEventListener("resize", this.updateCanvasSize);
   },
 
   methods: {
-    // Start panning when mouse is pressed
-    startPanning(event) {
-      // Prevent default actions
-      event.preventDefault();
-      
-      // Change cursor to grabbing
-      this.isPanning = true;
-      
-      // Store initial mouse position
-      this.startX = event.clientX;
-      this.startY = event.clientY;
-    },
-    
-    // Handle ongoing panning
-    handlePanning(event) {
-      if (!this.isPanning) return;
-      
-      // Calculate mouse movement
-      const deltaX = event.clientX - this.startX;
-      const deltaY = event.clientY - this.startY;
-      
-      // Update offset with new position
-      // Add constraints to prevent panning beyond map boundaries
-      this.offsetX = Math.max(
-        Math.min(
-          this.offsetX + deltaX, 
-          0  // Left boundary
-        ),
-        -(this.mapWidth - this.viewportWidth)  // Right boundary
-      );
-      
-      this.offsetY = Math.max(
-        Math.min(
-          this.offsetY + deltaY, 
-          0  // Top boundary
-        ),
-        -(this.mapHeight - this.viewportHeight)  // Bottom boundary
-      );
-      
-      // Update starting position for next move
-      this.startX = event.clientX;
-      this.startY = event.clientY;
-    },
-    
-    // Stop panning when mouse is released
-    stopPanning() {
-      this.isPanning = false;
-    },
-
     loadMapImage() {
-      const canvas = this.$refs.gameCanvas; // Access canvas element
-      const ctx = canvas.getContext("2d");
+      this.$nextTick(() => {
+        const canvas = this.$refs.gameCanvas;
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
 
-      // Adjust canvas size based on player count
-      if (this.playerCount > 10) {
-        // Scale up for more players
-        const scaleFactor = 1 + (this.playerCount - 10) * 0.05; // 5% increase per player over 10
-        this.canvasWidth = Math.max(window.innerWidth, 468) * scaleFactor;
-        this.canvasHeight = Math.max(window.innerHeight, 600) * scaleFactor;
-
-        // Update canvas dimensions
+        // Adjust canvas size based on zoom level
         canvas.width = this.canvasWidth;
         canvas.height = this.canvasHeight;
-      }
 
-      const Ox = canvas.width / 2;
-      const Oy = canvas.height / 2;
+        const Ox = canvas.width / 2;
+        const Oy = canvas.height / 2;
 
-      // Adjust radius based on player count
-      const baseRadius = Math.min(canvas.width, canvas.height) / 3;
-      const radius =
-        this.playerCount > 10
-          ? baseRadius * (1 + (this.playerCount - 10) * 0.04)
-          : baseRadius;
+        // Adjust radius based on zoom level and player count
+        const baseRadius = Math.min(canvas.width, canvas.height) / 3;
+        let radius = baseRadius;
+        if (this.playerCount > 15) {
+          radius *= 1.15; // Apply 1.15 multiplier if playerCount is greater than 15
+        } else if (this.playerCount > 10) {
+          radius *= 1.1; // Apply 1.1 multiplier if playerCount is greater than 10
+        }
 
-      const map = new URL("../assets/map.png", import.meta.url);
+        const map = new URL("../assets/map.png", import.meta.url);
+        const mapImg = new Image();
+        mapImg.src = map.toString();
 
-      const mapImg = new Image();
-      mapImg.src = map.toString();
+        mapImg.onload = () => {
+          ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear previous canvas drawing
+          ctx.save(); // Save current canvas state
 
-      mapImg.onload = () => {
-        ctx.drawImage(mapImg, 0, 0, canvas.width, canvas.height);
-        this.placeHouses(ctx, Ox, Oy, radius, this.playerCount);
-      };
+          // Draw the map image
+          ctx.drawImage(mapImg, 0, 0, canvas.width, canvas.height);
+          this.placeHouses(ctx, Ox, Oy, radius, this.playerCount);
+
+          ctx.restore(); // Restore canvas state
+        };
+      });
     },
 
     placeHouses(ctx, Ox, Oy, radius, playerCount) {
@@ -355,90 +285,18 @@ export default {
           const angle = i * anglePerPlayer * (Math.PI / 180); // Convert to radians
           const x = Ox + radius * Math.cos(angle) - houseImg.width / 2;
           const y = Oy + radius * Math.sin(angle) - houseImg.height / 2;
-
           ctx.drawImage(houseImg, x, y);
+
+          // Store house position
           this.housePositions.push({
             x,
             y,
             width: houseImg.width,
             height: houseImg.height,
-          }); // Store house position
+          });
         }
       };
     },
-
-    // placeCharacters(ctx, Ox, Oy, houseRadius, playerCount) {
-    //   const anglePerPlayer = 360 / playerCount;
-
-    //   // Create a slightly larger radius for the characters so they are around the houses
-    //   const characterRadius = houseRadius - 100;
-
-    //   let angle;
-    //   // Loop through each player and position the character
-    //   for (let i = 0; i < playerCount; i++) {
-    //     angle = i * anglePerPlayer * (Math.PI / 180); // Convert to radians
-
-    //     // Position characters outside the houses' circle
-    //     const x = Ox + characterRadius * Math.cos(angle);
-    //     const y = Oy + characterRadius * Math.sin(angle);
-
-    //     // Determine the image based on the character's position
-    //     let characterImageSrc;
-
-    //     // Determine direction based on which axis has greater influence
-    //     if (Math.abs(Math.sin(angle)) > Math.abs(Math.cos(angle))) {
-    //       // Vertical direction dominates
-    //       if (Math.sin(angle) > 0) {
-    //         // Character is below (facing forward)
-    //         characterImageSrc = new URL(
-    //           "../assets/character_forward_look.png",
-    //           import.meta.url
-    //         ).toString();
-    //       } else {
-    //         // Character is above (facing backward)
-    //         characterImageSrc = new URL(
-    //           "../assets/character_backward_look.png",
-    //           import.meta.url
-    //         ).toString();
-    //       }
-    //     } else {
-    //       // Horizontal direction dominates
-    //       if (Math.cos(angle) > 0) {
-    //         // Character is on the right (facing left)
-    //         characterImageSrc = new URL(
-    //           "../assets/character_left_look.png",
-    //           import.meta.url
-    //         ).toString();
-    //       } else {
-    //         // Character is on the left (facing right)
-    //         characterImageSrc = new URL(
-    //           "../assets/character_right_look.png",
-    //           import.meta.url
-    //         ).toString();
-    //       }
-    //     }
-    //     // Create the image object for the character's direction
-    //     const characterImg = new Image();
-    //     characterImg.src = characterImageSrc;
-
-    //     characterImg.onload = () => {
-    //       // Draw the character at the calculated position
-    //       ctx.drawImage(
-    //         characterImg,
-    //         x - characterImg.width / 2,
-    //         y - characterImg.height / 2
-    //       );
-
-    //       // Store the character's position and image
-    //       this.characterPositions.push({
-    //         x,
-    //         y,
-    //         width: characterImg.width,
-    //         height: characterImg.height,
-    //       });
-    //     };
-    //   }
-    // },
 
     placeCharacters() {
       const anglePerPlayer = 360 / this.playerCount;
@@ -501,11 +359,17 @@ export default {
       }
     },
 
+    /**
+     * Transition
+     */
     beforeEnter(el) {
       // Set initial opacity to 0
       el.style.opacity = 0;
     },
 
+    /**
+     * Transition
+     */
     enter(el, done) {
       // Transition effect for fade-in
       el.offsetHeight; // trigger reflow
@@ -514,6 +378,9 @@ export default {
       done(); // Must call done to signal the end of the transition
     },
 
+    /**
+     * Transition
+     */
     leave(el, done) {
       // Transition effect for fade-out
       el.style.transition = "opacity 0.7s ease-in-out";
@@ -521,21 +388,49 @@ export default {
       done(); // Call done to finish the transition
     },
 
+    resetGameState() {
+      // Reset specific variables if the day/period has changed
+      if (this.game.day !== this.currentDay) {
+        this.isMoving = false;
+        this.isGathering = false;
+        this.isBeingWatched = false;
+        this.targetSelected = false;
+        this.endMoving = false;
+
+        // Update the current day and period to the new game state
+        this.currentDay = this.game.day;
+        this.currentPeriod = this.game.period;
+      }
+    },
+
     onButtonClick(index) {
       this.clickedHouseIndex = this.clickedHouseIndex === index ? null : index;
       console.log(this.targetSelected);
     },
 
-    getTarget(targetID, index) {
-      // if (this.event.performAction) {
-      // this.selectButtonClicked = true;
-      // socket.emit("game:targetSelected", targetID);
-      this.clickedHouseIndex = null;
-      // }
+    async getTarget(targetID, index) {
+      if (this.event.performAction) {
+        this.selectButtonClicked = true;
+        if (targetID) {
+          socket.emit("game:targetSelected", targetID);
+        }
+        this.clickedHouseIndex = null;
+      }
       const targetHouse = this.housePositions[index];
       this.targetPosition = targetHouse;
-      // this.characterMoving(targetHouse);
-      this.generateOtherPlayersToWatch();
+      if (this.animation) {
+        this.characterMoving(targetHouse);
+
+        // Loop through each character and call watchCharacterMoving with a delay
+        if (this.playerBeingWatched.length > 0) {
+          for (let i = 0; i < this.playerBeingWatched.length; i++) {
+            // Wait for the previous character to finish moving before calling the next one
+            await this.delay(i * 5000); // Delay each character by 500ms (you can adjust this time)
+            this.characterMovingName = this.characterss[i];
+            this.watchCharacterMoving(targetHouse);
+          }
+        }
+      }
     },
 
     characterMoving(targetHouse) {
@@ -666,9 +561,61 @@ export default {
       requestAnimationFrame(updateMovement);
     },
 
-    async updateCharacterImage(direction) {
+    watchCharacterMoving(targetHouse) {
+      // Generate random direction: 'left' or 'right'
+      const startDirection = Math.random() < 0.5 ? "left" : "right";
+
+      this.characterPosition = {
+        x:
+          targetHouse.x +
+          Math.floor(targetHouse.width / 3) +
+          (startDirection === "left" ? 80 : -80),
+        y: targetHouse.y + targetHouse.height,
+        width: 14,
+        height: 19,
+      };
+
+      let movingHorizontally = true;
+      let direction = "";
+      this.updateCharacterImage(direction);
+      this.isMoving = true;
+
+      const updateMovement = async () => {
+        if (movingHorizontally) {
+          const targetX = targetHouse.x + Math.floor(targetHouse.width / 3); // Door position (X)
+          const dx = targetX - this.characterPosition.x;
+          const distance = Math.abs(dx);
+
+          direction = dx < 0 ? "left" : "right"; // Determine the direction
+          this.updateCharacterImage(direction);
+
+          // If the character is very close to the door (within moveSpeed), stop
+          if (distance <= this.moveSpeed) {
+            this.characterPosition.x = targetX; // Set exact position at the door
+            this.isMoving = false; // Stop movement
+            console.log("Character reached the door.");
+            this.endMoving = true;
+
+            this.characterPosition = null; // Or you could set a visibility flag to false
+            this.characterImageSrc = "";
+            return;
+          } else {
+            // Continue moving towards the door
+            const moveX = (dx / distance) * this.moveSpeed;
+            this.characterPosition.x += moveX;
+          }
+        }
+
+        if (this.isMoving) {
+          requestAnimationFrame(updateMovement); // Keep updating movement until it's finished
+        }
+      };
+
+      requestAnimationFrame(updateMovement); // Start movement loop
+    },
+
+    async updateCharacterImage(direction, index) {
       let imageSrc = "";
-      let index = 0;
       switch (direction) {
         case "left":
           if (this.characterWalking.left.left) {
@@ -830,59 +777,6 @@ export default {
       console.log(this.characterImageSrcs);
     },
 
-    generateOtherPlayersToWatch() {
-      // Clear previous positions
-      this.characterPositions = [];
-      this.characterImageSrcs = [];
-
-      // For each player being watched
-      let playerss = ["qanh1", "qanh2"];
-      playerss.forEach((player, index) => {
-        const direction = Math.random() < 0.5 ? "left" : "right";
-        const position = {
-          x: this.targetPosition.x + (direction === "left" ? 20 : -20),
-          y: this.targetPosition.y,
-          width: 14,
-          height: 19,
-        };
-
-        this.characterPositions.push(position);
-        this.characterImageSrcs.push(null); // Will be set by updateCharacterImage
-
-        this.animateCharacter(index, direction);
-      });
-    },
-
-    animateCharacter(index, direction) {
-      const targetX = this.targetPosition.x;
-      const stepSize = 5;
-      const totalSteps = 20;
-      let stepCount = 0;
-
-      const moveInterval = setInterval(() => {
-        const position = { ...this.characterPositions[index] };
-
-        if (direction === "left") {
-          position.x -= stepSize;
-        } else {
-          position.x += stepSize;
-        }
-
-        stepCount++;
-
-        if (
-          stepCount >= totalSteps ||
-          Math.abs(position.x - targetX) <= stepSize
-        ) {
-          clearInterval(moveInterval);
-          position.x = targetX;
-        }
-
-        this.characterPositions[index] = position;
-        this.updateCharacterImage(direction, index);
-      }, 50);
-    },
-
     delay(ms) {
       return new Promise((resolve) => setTimeout(resolve, ms));
     },
@@ -909,6 +803,12 @@ export default {
       this.canvasHeight = window.innerHeight;
       this.loadMapImage(); // Re-load map after resize
     },
+  },
+
+  watch: {
+    // Watch for changes in the game's current day or period
+    "game.day": "resetGameState",
+    "game.period": "resetGameState",
   },
 
   beforeDestroy() {

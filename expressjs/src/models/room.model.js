@@ -15,8 +15,13 @@ const RoomSchema = new mongoose.Schema(
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User", // Reference to the User model
+        required: true,
       },
     ],
+    password: {
+      type: String,
+      default: "",
+    },
     createdAt: { type: Date, default: Date.now },
   },
   {

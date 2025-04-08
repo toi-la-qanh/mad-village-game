@@ -1,6 +1,9 @@
 import axios from "axios";
 import { authError, errorMessages, showSignUpForm } from "../store";
 
+/**
+ * Default base api implementation
+ */
 export default class BaseApi {
   constructor() {
     this._axios = axios.create({

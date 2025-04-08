@@ -5,7 +5,9 @@ const Villager = require("../models/roles/villager.model");
 const Witch = require("../models/roles/witch.model");
 
 class RuleController {
-  /* Rules for roles */
+  /**
+   * Rules for roles in the game
+   */
   static rulesForRoles(numPlayers, roles) {
     // Check if roles is an array and not empty
     if (!Array.isArray(roles) || roles.length === 0) {
@@ -37,6 +39,7 @@ class RuleController {
       new Witch(),
       new Villager(),
     ];
+
     const roleNames = roleClasses.map((role) => role.getName());
 
     for (const role of roles) {
@@ -48,7 +51,9 @@ class RuleController {
     return { rule: true, errors: null };
   }
 
-  /* Rules for traits */
+  /**
+   * Rules for traits in the game
+   */
   static rulesForTraits(numPlayers, traits) {
     // Check if traits is an array and not empty
     if (!Array.isArray(traits) || traits.length === 0) {
@@ -112,7 +117,9 @@ class RuleController {
     return { rule: true, errors: null };
   }
 
-  /* Vote rule */
+  /**
+   * Vote rule in the game
+   */
   static voteRule(alivePlayers, voteCount) {
     // Check if alivePlayers is a positive number
     if (typeof alivePlayers !== "number" || alivePlayers <= 0) {
@@ -132,11 +139,13 @@ class RuleController {
     if (voteCount < requiredVotes) {
       return false;
     }
-    
+
     return true;
   }
 
-  /* Rules for game end */
+  /**
+   * Condition to end the game
+   */
   static gameOver(alivePlayers, traits) {
     // Check if alivePlayers is a positive number
     if (typeof alivePlayers !== "number" || alivePlayers <= 0) {

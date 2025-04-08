@@ -9,7 +9,7 @@
       <!-- Close Vote Section -->
       <button @click="close" class="absolute right-3 top-1 z-10">
         <FontAwesomeIcon
-          class="text-2xl text-red-400 hover:text-red-200"
+          class="text-2xl text-red-700 hover:text-red-400"
           :icon="faXmark"
         />
       </button>

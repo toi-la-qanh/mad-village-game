@@ -18,6 +18,10 @@ dotenv.config();
 const dbConnection = require("./database/db.js");
 dbConnection();
 
+// Redis client setup
+const client = require("./database/redis.js");
+client.connect();
+
 // Middleware for parsing request bodies and cookies
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -39,9 +43,7 @@ app.use(cors(corsOptions));
 
 // Root route
 app.get("/", (req, res) => {
-  const nodeVersion = process.versions.node;
-
-  res.send(`This is back-end application using Node.js version ${nodeVersion}`);
+  res.send("Hello from the backend!");
 });
 
 /* Initialize socket.io */
@@ -53,8 +55,18 @@ new SocketController(server);
 const userRoutes = require("./routes/user.route.js");
 const roomRoutes = require("./routes/room.route.js");
 const gameRoutes = require("./routes/game.route.js");
+const llmRoutes = require("./routes/llm.route.js");
 
 app.use("/api/user", userRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/game", gameRoutes);
+app.use("/api/llm", llmRoutes);
+
+// Cron jobs
+// const checkForExpiringUsers = require("./cron/user.cron.js");
+// checkForExpiringUsers();
+
+// const updateLLMResponse = require("./cron/llm.cron.js");
+// updateLLMResponse();
+
 module.exports = app;

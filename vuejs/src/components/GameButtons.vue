@@ -12,7 +12,7 @@
     <!-- Right Arrow -->
     <button v-if="isArrowClicked" @click="toggleArrow">
       <FontAwesomeIcon
-        class="text-white hover:text-gray-300"
+        class="text-white hover:text-gray-300 stroke-black stroke-3"
         :icon="faCaretRight"
       />
     </button>
@@ -26,7 +26,7 @@
     </button>
 
     <!-- Helper -->
-    <button v-if="isArrowClicked">
+    <button v-if="isArrowClicked" @click="showInstruction">
       <div
         v-html="helpSVG"
         class="hover:shadow-white rounded-full hover:shadow-sm hover:bg-gray-400"
@@ -51,14 +51,6 @@
         :icon="faCommentDots"
       />
     </button>
-
-    <!-- Vote -->
-    <button @click="openVoteSection">
-      <FontAwesomeIcon
-        class="text-white text-xl hover:text-gray-300"
-        :icon="faRectangleList"
-      />
-    </button>
   </div>
 </template>
 
@@ -75,7 +67,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 
 export default {
-  emits: ["showRole", "openChat" ,"openSettings", "openVoteSection"],
+  emits: ["showRole", "showInstruction", "openChat" ,"openSettings"],
   setup() {
     return {
       settingSVG,
@@ -83,8 +75,7 @@ export default {
       infoSVG,
       faCaretLeft,
       faCaretRight,
-      faCommentDots,
-      faRectangleList
+      faCommentDots
     };
   },
   components: {
@@ -102,15 +93,24 @@ export default {
     showRole() {
       this.$emit("showRole");
     },
+    showInstruction() {
+      this.$emit("showInstruction");
+    },
     openChat() {
       this.$emit("openChat");
     },
     openSettings() {
       this.$emit("openSettings");
     },
-    openVoteSection() {
-      this.$emit("openVoteSection");
-    },
   },
 };
 </script>
+
+<style scoped>
+.icon-with-border {
+  color: black;
+  -webkit-text-fill-color: white; /* Will override color (regardless of order) */
+  -webkit-text-stroke-width: 1px;
+  -webkit-text-stroke-color: black;
+}
+</style>

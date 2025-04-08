@@ -8,8 +8,8 @@ class Doctor extends Role {
   };
 
   constructor(trait = "mad") {
-    const name = "Witch";
-    const imagePath = "./src/models/roles/assets/witch.png";
+    const name = "Doctor";
+    const imagePath = "./src/models/roles/assets/doctor.png";
 
     super(name, "", {}, [], 3, 0, imagePath, []);
     this.#trait = trait;
@@ -22,14 +22,14 @@ class Doctor extends Role {
     // Default configuration (normal trait)
     let abilities = { canCure: true, canSave: true };
     let description =
-      "Kim tiêm: chữa trị cho người chơi chỉ định. Băng gạc: cầm máu cho người chơi chỉ định.";
+      "Kim tiêm: chữa trị (loại bỏ độc tố) cho người chơi chỉ định. Băng gạc: cầm máu (cứu) cho người chơi chỉ định.";
     let count = 2;
-    let availableAction = ["cure"];
+    let availableAction = ["cure", "save"];
     let actionPriority = 4;
 
     // Trait-specific configurations
     if (trait === "mad") {
-      abilities = { canDetoxify: false, canPoison: false };
+      abilities = { canCure: false, canSave: false };
       count = Infinity;
     }
 

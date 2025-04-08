@@ -2,9 +2,15 @@
   <div class="relative flex flex-col gap-2 p-4">
     <h3 class="text-xl">Tạo phòng</h3>
     <button class="absolute right-2 top-2 w-6 h-6" @click="closePopup">
-      <FontAwesomeIcon class="text-xl text-red-600 hover:text-red-400 focus:text-red-400" :icon="faXmark" />
+      <FontAwesomeIcon
+        class="text-xl text-red-600 hover:text-red-400 focus:text-red-400"
+        :icon="faXmark"
+      />
     </button>
-    <form @submit.prevent="handleCreateRoom" class="w-full gap-2 flex flex-col relative">
+    <form
+      @submit.prevent="handleCreateRoom"
+      class="w-full gap-2 flex flex-col relative"
+    >
       <div class="flex gap-2 w-full flex-wrap relative">
         <p class="w-auto">Số lượng người:</p>
         <input
@@ -14,9 +20,18 @@
           placeholder="Nhập số nguyên dương"
         />
       </div>
+      <div class="flex gap-2 w-full flex-wrap relative">
+        <p class="w-auto">Mật khẩu:</p>
+        <input
+          class="outline-none w-auto"
+          v-model="password"
+          type="text"
+          placeholder="Không bắt buộc"
+        />
+      </div>
       <button
         type="submit"
-        class="w-full border-2 border-yellow-600 bg-lime-600 rounded-lg text-yellow-300 hover:bg-lime-500 hover:text-white focus:text-white focus:bg-lime-600"
+        class="text-gray-600 bg-green-300 w-full hover:bg-green-500 rounded-md py-2 font-semibold transition-colors duration-200"
       >
         Tạo
       </button>
@@ -49,12 +64,13 @@ export default {
       faXmark,
     };
   },
-  components:{
+  components: {
     FontAwesomeIcon,
   },
   data() {
     return {
       capacity: "",
+      password: "",
       error: [],
     };
   },
@@ -63,14 +79,24 @@ export default {
       // Emit an event to notify the parent to close the popup
       this.$emit("close");
     },
+
     async handleCreateRoom() {
       this.error = [];
       const room = new RoomApi();
       try {
-        const response = await room.createRoom({ capacity: this.capacity });
-        console.log("Response from createRoom:", response);
+        const roomData = {
+          capacity: this.capacity,
+        };
+
+        // Only add password if it's not an empty string
+        if (this.password !== "") {
+          roomData.password = this.password;
+        }
+
+        const response = await room.createRoom(roomData);
+
         this.closePopup();
-        localStorage.setItem('roomID', response.roomID);
+        localStorage.setItem("roomID", response.roomID);
         roomID.value = response.roomID;
         socket.emit("room:created", response);
         this.$router.push({ name: "room", params: { id: response.roomID } });

@@ -32,7 +32,7 @@ import { authError, showSignUpForm } from "../store";
           <button
             type="submit"
             :disabled="isSubmitting"
-            class="text-white w-full px-4 py-2 bg-lime-700 rounded-md hover:bg-lime-800 focus:outline-none focus:ring-2 focus:ring-gray-200 disabled:bg-gray-400"
+            class="text-white w-full px-4 py-2 bg-lime-700 rounded-md hover:bg-lime-600 focus:outline-none focus:ring-2 focus:ring-gray-200 disabled:bg-gray-400"
           >
             Vào chơi thôi
           </button>
@@ -82,22 +82,22 @@ export default {
 
       try {
         const user = new UserApi();
-        await user.signup({
+        const response = await user.signup({
           name: this.name,
         });
-        if (!socket.connected) {
-          socket.connect();
+        if (response != null) {
+          if (!socket.connected) {
+            socket.connect();
+          }
+          this.isSubmitting = false;
+          showSignUpForm.value = false;
         }
-        showSignUpForm.value = false;
       } catch (error) {
         if (error.response?.status === 422) {
           this.error = error.response?.data?.errors?.map((err) => err.msg);
         } else {
           this.error = error.response?.data?.errors;
         }
-      } finally {
-        // Set isSubmitting to false after all operations are complete
-        this.isSubmitting = false;
       }
     },
   },

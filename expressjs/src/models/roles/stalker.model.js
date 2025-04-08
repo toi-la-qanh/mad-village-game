@@ -3,7 +3,7 @@ const Role = require("../role.model");
 class Stalker extends Role {
   #trait;
   #abilityIconsPath = {
-    stalk: "./src/models/roles/assets/person-running-solid.svg",
+    stalk: "./src/models/roles/assets/person-running-solid.png",
     knife: "./src/models/roles/assets/knife.png"
   };
 

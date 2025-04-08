@@ -3,7 +3,7 @@
     class="flex py-12 w-full h-screen z-10 fixed justify-center items-center font-mono"
   >
     <div
-      class="w-full max-w-xl bg-white h-full rounded-2xl border border-black p-3 overflow-y-auto"
+      class="w-full max-w-xl relative bg-white h-full rounded-2xl border border-black p-3 overflow-y-auto"
       style="scrollbar-width: none"
     >
       <!-- Go back -->
@@ -19,111 +19,227 @@
         <p class="text-center">{{ error }}</p>
       </div>
 
-      <div v-else>
-        <!-- Loading -->
-        <div v-if="loading">
-          <p class="text-center">Chờ tí nhé ...</p>
-        </div>
+      <div v-else class="space-y-3">
+        <!-- Title -->
+        <h3 class="text-2xl text-center">
+          Phòng chờ ({{ room.playerCount }}/{{ room.capacity }})
+        </h3>
 
-        <div v-else>
-          <!-- Title -->
-          <h3 class="text-2xl text-center">
-            Phòng chờ ({{ room.playerCount }}/{{ room.capacity }})
-          </h3>
+        <!-- Room Owner -->
+        <p>Chủ phòng: {{ room.owner?.name }}</p>
 
-          <!-- Room Owner -->
-          <p>Chủ phòng: {{ room.owner?.name }}</p>
+        <!-- Player -->
+        <p>
+          Người chơi:
+          <span v-for="(player, index) in room.players" :key="index">
+            {{ player.name }}
+            <span v-if="index !== room.players.length - 1">, </span>
+          </span>
+        </p>
 
-          <!-- Player -->
-          <p>
-            Người chơi:
-            <span v-for="(player, index) in room.players" :key="index">
-              {{ player.name }}
-              <span v-if="index !== room.players.length - 1">, </span>
-            </span>
+        <!-- User is not in the room -->
+        <div v-if="!userInRoom" class="relative">
+          <div class="mt-5 text-center flex flex-wrap justify-center gap-3">
+            <p class="text-2xl">Mật khẩu phòng:</p>
+
+            <!-- Password Input -->
+            <div class="flex items-center">
+              <input
+                :type="isPasswordVisible ? 'text' : 'password'"
+                placeholder="Nhập mật khẩu"
+                v-model="inputPassword"
+                class="outline-none w-30"
+              />
+
+              <!-- Show/Hide Password Button -->
+              <button @click="togglePasswordVisibility">
+                <FontAwesomeIcon
+                  :icon="isPasswordVisible ? faEyeSlash : faEye"
+                />
+              </button>
+            </div>
+          </div>
+
+          <!-- Button to join the room -->
+          <button
+            type="submit"
+            class="mt-5 text-gray-600 bg-green-300 w-full hover:bg-green-500 rounded-md py-2 font-semibold transition-colors duration-200"
+            @click="joinRoom"
+          >
+            Vào phòng
+          </button>
+
+          <!-- Error messages -->
+          <p class="text-red-500 text-center" v-if="errorWhenJoiningRoom">
+            {{ errorWhenJoiningRoom }}
           </p>
 
-          <!-- Settings -->
-          <h3 class="text-2xl text-center mb-4">Cài đặt</h3>
-          <div class="flex gap-5 flex-col h-auto relative min-h-80">
-            <div class="flex flex-row gap-2">
-              <p>Số lượng người:</p>
-              <input
-                type="number"
-                :placeholder="room.capacity"
-                min="0"
-                name=""
-                class="w-10 outline-0"
-              />
-            </div>
-            <!-- Role Section -->
-            <div class="flex flex-wrap flex-row gap-2 relative">
-              Chọn vai trò:
-              <div v-for="(role, index) in roles" :key="index">
-                <div class="flex gap-0.5">
-                  <img
-                    class="w-[30px] h-[30px] border-2 border-black hover:shadow-gray-500 hover:shadow-md"
-                    :class="
-                      role.trait === 'bad' ? 'bg-red-500' : 'bg-green-500'
-                    "
-                    :src="'data:image/png;base64,' + role.image"
-                    @click="chooseRole(role)"
-                    alt="Role Image"
-                  />
-                  <FontAwesomeIcon
-                    class="text-sm text-blue-900 -top-2 relative hover:text-gray-500"
-                    :icon="faCircleInfo"
-                    @click="openRoleInfoPopup(role)"
-                  />
-                </div>
+          <!-- Helper details -->
+          <p class="mt-10 text-center">
+            Thông tin phòng sẽ hiện ra khi bạn đã vào phòng
+          </p>
+        </div>
+
+        <!-- User is in the room -->
+        <div v-else class="space-y-3">
+          <!-- Room Settings -->
+          <div>
+            <h3 class="text-2xl text-center">Cài đặt phòng</h3>
+            <h4 class="text-center text-gray-500">
+              Bạn có thể cập nhật lại cài đặt phòng ở đây
+            </h4>
+            <div class="flex gap-1 flex-col h-auto relative">
+              <div class="flex flex-row gap-2">
+                <p>Số lượng người:</p>
+                <input
+                  type="number"
+                  :placeholder="room.capacity"
+                  min="0"
+                  v-model="newCapacity"
+                  class="w-10 outline-0"
+                />
+              </div>
+              <div class="flex flex-row gap-2">
+                <p>Mật khẩu phòng:</p>
+                <input
+                  type="text"
+                  placeholder="Nhập mật khẩu mới"
+                  v-model="newPassword"
+                  class="w-30 outline-0"
+                />
+              </div>
+              <button
+                class="w-full font-bold text-gray-600 bg-green-300 p-2 rounded-lg hover:bg-green-500 hover:text-white"
+                @click="updateRoom"
+                :disabled="disableButton()"
+              >
+                Cập nhật
+              </button>
+
+              <!-- Error message -->
+              <div v-if="errorWhenUpdatingRoom">
+                <p
+                  v-if="Array.isArray(errorWhenUpdatingRoom)"
+                  class="flex flex-col"
+                >
+                  <span
+                    v-for="(err, index) in errorWhenUpdatingRoom"
+                    :key="index"
+                    class="text-red-500 text-center"
+                  >
+                    {{ err }}
+                  </span>
+                </p>
+                <p v-else class="text-red-500 text-center">
+                  {{ errorWhenUpdatingRoom }}
+                </p>
               </div>
             </div>
+          </div>
 
-            <!-- Submit form to start the game -->
-            <form
-              @submit.prevent="startGame"
-              class="flex gap-2 flex-col h-full min-h-20"
-            >
+          <!-- Game Settings -->
+          <div>
+            <h3 class="text-2xl text-center">Cài đặt game</h3>
+            <h4 class="text-center text-gray-500">
+              Chọn ít nhất 1 vai trò tốt, 1 vai trò xấu
+            </h4>
+            <div class="flex gap-1 flex-col h-auto relative mt-4">
+              <!-- Role Section -->
+              <div class="flex flex-wrap flex-row gap-2 relative">
+                Chọn vai trò:
+                <div v-for="(role, index) in roles" :key="index">
+                  <div class="flex gap-0.5">
+                    <img
+                      class="w-[30px] h-[30px] border-2 border-black hover:shadow-gray-500 hover:shadow-md"
+                      :class="
+                        role.trait === 'bad' ? 'bg-red-500' : 'bg-green-500'
+                      "
+                      :src="'data:image/png;base64,' + role.image"
+                      @click="chooseRole(role)"
+                      alt="Role Image"
+                    />
+                    <FontAwesomeIcon
+                      class="text-sm text-blue-900 -top-2 relative hover:text-gray-500"
+                      :icon="faCircleInfo"
+                      @click="openRoleInfoPopup(role)"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <!-- Selected roles -->
               <div class="flex flex-wrap flex-row gap-4 relative">
                 Các vai trò đã chọn:
-                <div
-                  v-for="(role, index) in selectedRoles"
-                  :key="index"
-                  class="relative flex flex-row"
-                >
-                  <img
-                    class="w-[30px] h-[30px] border-2 border-black"
-                    :class="
-                      role.trait === 'bad' ? 'bg-red-500' : 'bg-green-500'
-                    "
-                    :src="'data:image/png;base64,' + role.image"
-                    alt="Role Image"
-                  />
-                  <FontAwesomeIcon
-                    :icon="faXmark"
-                    class="absolute right-[-10px] top-[-10px] text-red-500 cursor-pointer"
-                    @click="removeRole(index)"
-                  />
+                <div class="flex flex-row gap-5 relative">
+                  <div v-for="(role, index) in selectedRoles" :key="index">
+                    <div class="flex relative gap-0.5">
+                      <img
+                        class="w-[30px] h-[30px] border-2 border-black"
+                        :class="
+                          role.trait === 'bad' ? 'bg-red-500' : 'bg-green-500'
+                        "
+                        :src="'data:image/png;base64,' + role.image"
+                        alt="Role Image"
+                      />
+                      <FontAwesomeIcon
+                        :icon="faXmark"
+                        class="absolute right-[-10px] top-[-10px] text-red-500 cursor-pointer"
+                        @click="removeRole(index)"
+                      />
+                    </div>
+                  </div>
                 </div>
+              </div>
+
+              <!-- Vote time -->
+              <div>
+                Thời gian bỏ phiếu:
+                <input
+                  type="number"
+                  :placeholder="vote_time"
+                  min="30"
+                  max="300"
+                  class="outline-none w-10"
+                />
+                (giây)
+              </div>
+
+              <!-- Discussion time -->
+              <div>
+                Thời gian thảo luận:
+                <input
+                  type="number"
+                  :placeholder="discussion_time"
+                  min="60"
+                  max="600"
+                  class="outline-none w-10"
+                />
+                (giây)
               </div>
 
               <!-- Start game button -->
               <button
-                class="absolute bottom-0 w-full bg-lime-700 text-yellow-300 p-2 rounded-lg hover:bg-lime-600 hover:text-white"
+                class="w-full font-bold text-gray-600 bg-green-300 p-2 rounded-lg hover:bg-green-500 hover:text-white"
+                :disabled="disableButton()"
               >
-                Bắt đầu trò chơi
+                Bắt đầu chơi
               </button>
-            </form>
 
-            <!-- Error message from the form -->
-            <div v-if="gameError">
-              <p class="text-red-500 text-center flex relative justify-center">
-                {{ gameError }}
-              </p>
+              <!-- Error message from the form -->
+              <div v-if="gameError">
+                <p v-if="Array.isArray(gameError)" class="flex flex-col">
+                  <span
+                    v-for="(err, index) in gameError"
+                    :key="index"
+                    class="text-red-500 text-center"
+                  >
+                    {{ err }}
+                  </span>
+                </p>
+                <p v-else class="text-red-500 text-center">{{ gameError }}</p>
+              </div>
             </div>
           </div>
-
           <!-- Role info section -->
           <RoleInfo
             v-if="isRoleInfoVisible"
@@ -140,54 +256,79 @@
 import RoomApi from "../api/room.api";
 import GameApi from "../api/game.api";
 import { socket } from "../socket";
-import { isLoading, roomID } from "../store";
+import { isLoading, roomID, user } from "../store";
 import { defineAsyncComponent } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faEye, faEyeSlash, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { faCircleInfo } from "@fortawesome/free-solid-svg-icons";
 
 export default {
   setup() {
-    return { faXmark, faCircleInfo };
+    return { faXmark, faCircleInfo, faEye, faEyeSlash };
   },
+
   components: {
     RoleInfo: defineAsyncComponent(() => import("../components/RoleInfo.vue")),
     FontAwesomeIcon,
   },
+
   data() {
     return {
       room: {},
+      userID: user.value.id,
+      userInRoom: false,
       roles: [],
       selectedRoles: [],
       error: null,
-      loading: false,
+      errorWhenJoiningRoom: null,
       gameError: null,
       isRoleInfoVisible: false,
       selectedRoleForPopup: [],
+      isPasswordVisible: false,
+      inputPassword: "",
+      newCapacity: 6,
+      newPassword: "",
+      errorWhenUpdatingRoom: null,
+      vote_time: 30,
+      discussion_time: 120,
     };
   },
+
   async mounted() {
-    await this.joinRoom(this.$route.params.id);
-    await this.fetchRoom(this.$route.params.id);
-    // console.log(this.error);
-    if (!this.error) {
-      roomID.value = this.$route.params.id;
+    this.room = JSON.parse(sessionStorage.getItem("room"));
+    console.log(this.room);
+    if (this.room == null) {
+      await this.fetchRoom(this.$route.params.id);
+    }
+
+    if (!this.error && this.room) {
+      if (this.room._id !== roomID.value) {
+        this.userInRoom = false;
+      } else {
+        this.userInRoom = true;
+      }
       this.handleSocketEvents();
-      await this.fetchRoles();
-    } else {
-      roomID.value = null;
+
+      // Get roles from session storage or fetch them
+      this.roles = JSON.parse(sessionStorage.getItem("all_roles"));
+      if (!this.roles) await this.fetchRoles();
     }
   },
-  beforeUnmount() {
-    // Leave the Socket.IO room when the component is destroyed
-    // socket.emit('leaveRoom', this.$route.params.id);
 
+  beforeUnmount() {
     // Clean up the socket listener to prevent memory leaks
-    socket.off("room:join");
-    socket.off("room:update");
-    socket.off("role:update");
-    socket.off("game:started");
+    ["room:join", "room:update", "role:update", "game:started"].forEach(
+      (event) => {
+        socket.off(event);
+      }
+    );
+
+    // Clear local storage if leaving the component
+    if (this.error) {
+      localStorage.removeItem("roomID");
+    }
   },
+
   methods: {
     handleSocketEvents() {
       // Update the room data when it changes
@@ -206,13 +347,21 @@ export default {
         this.$router.push({ name: "game", params: { id: gameID } });
       });
     },
+
     async fetchRoom(id) {
-      const room = new RoomApi();
+      isLoading.value = true;
       try {
+        const room = new RoomApi();
         const response = await room.getRoom(id);
-        this.room = response?.roomData;
+        isLoading.value = false;
+        if (response != null) {
+          this.room = response?.roomData;
+          sessionStorage.setItem("room", JSON.stringify(this.room));
+        }
       } catch (error) {
         console.log(error.response?.data?.errors);
+        isLoading.value = false;
+        sessionStorage.removeItem("room");
         if (error.response?.status === 404) {
           this.error = error.response?.data?.errors;
         } else {
@@ -220,67 +369,92 @@ export default {
         }
       }
     },
-    async joinRoom(id) {
-      const room = new RoomApi();
+
+    async joinRoom() {
+      isLoading.value = true;
       try {
-        const response = await room.joinRoom(id);
-        localStorage.setItem("roomID", response.roomID);
-        roomID.value = response.roomID;
-        socket.emit("room:join", response.roomID);
+        const room = new RoomApi();
+        const data = {};
+
+        if (this.inputPassword) {
+          data.password = this.inputPassword; // Only add the password if it's not an empty string
+        }
+
+        const response = await room.joinRoom(this.$route.params.id, data);
+        if (response != null) {
+          isLoading.value = false;
+          this.userInRoom = true;
+          socket.emit("room:join", this.room._id);
+          roomID.value = this.room._id;
+        }
       } catch (error) {
-        console.log(error.response?.data?.errors);
-        this.error = error.response?.data?.errors;
+        isLoading.value = false;
+        console.log(error);
+        this.errorWhenJoiningRoom = error.response?.data?.errors;
       }
     },
+
+    togglePasswordVisibility() {
+      // Toggle password visibility
+      this.isPasswordVisible = !this.isPasswordVisible;
+    },
+
     async goBack() {
       if (!this.error) {
         const isConfirmed = window.confirm("Bạn có chắc muốn rời khỏi phòng?");
-        if (isConfirmed) {
-          try {
-            const room = new RoomApi();
-            await room.leaveRoom(this.$route.params.id);
-            socket.emit("room:leave", this.$route.params.id);
-            if (localStorage.getItem("roomID"))
-              localStorage.removeItem("roomID");
-            await this.$router.push("/rooms");
-          } catch (error) {
-            if (error.response?.status === 404) {
-              this.error = error.response?.data?.errors;
-            } else {
-              this.error = error.message;
-            }
-          }
+        if (!isConfirmed) return;
+
+        try {
+          const room = new RoomApi();
+          await room.leaveRoom(this.room._id);
+          socket.emit("room:leave", this.room._id);
+          roomID.value = null;
+          this.$router.push("/rooms");
+        } catch (error) {
+          console.error("Leave room error:", error);
+          this.error = error.response?.data?.error || error.message;
         }
       } else {
-        if (localStorage.getItem("roomID")) localStorage.removeItem("roomID");
-        await this.$router.push("/rooms");
+        roomID.value = null;
+        this.$router.push("/rooms");
       }
     },
+
     async fetchRoles() {
       const game = new GameApi();
       try {
         const response = await game.getRoles();
-        this.roles = response?.rolesDetail;
+        if (response != null) {
+          this.roles = response?.rolesDetail;
+          sessionStorage.setItem(
+            "all_roles",
+            JSON.stringify(response?.rolesDetail)
+          );
+        }
       } catch (error) {
         this.error = error.message;
       }
     },
+
     chooseRole(role) {
+      if (this.userID !== this.room.owner._id) return;
       this.selectedRoles.push(role);
-      localStorage.setItem("selectedRoles", JSON.stringify(this.selectedRoles));
-      socket.emit("role:select", {
-        role: JSON.parse(localStorage.getItem("selectedRoles")),
-        roomID: this.room?.roomID,
-      });
+      this.syncRolesWithServer();
     },
+
     removeRole(index) {
+      if (this.userID !== this.room.owner._id) return;
       this.selectedRoles.splice(index, 1);
-      localStorage.setItem("selectedRoles", JSON.stringify(this.selectedRoles));
-      socket.emit("role:remove", {
-        role: JSON.parse(localStorage.getItem("selectedRoles")),
+      this.syncRolesWithServer();
+    },
+
+    syncRolesWithServer() {
+      socket.emit("role:select", {
+        role: this.selectedRoles,
         roomID: this.room?.roomID,
       });
     },
+
     async startGame() {
       const game = new GameApi();
       isLoading.value = true;
@@ -289,23 +463,70 @@ export default {
           roomID: this.room.roomID,
           roles: this.selectedRoles.map((role) => role.name),
           traits: this.selectedRoles.map((role) => role.trait),
+          vote_time: this.vote_time,
+          discussion_time: this.discussion_time,
         });
         isLoading.value = false;
-        localStorage.setItem("gameID", response.gameID);
-        socket.emit("game:start", response.gameID);
+        if (response != null) {
+          localStorage.setItem("gameID", response.gameID);
+          socket.emit("game:start", response.gameID);
+        }
       } catch (error) {
         isLoading.value = false;
         console.log(error);
-        this.gameError = error.response?.data?.errors;
+        if (error.status === 422) {
+          this.gameError = error.response?.data?.errors.map(
+            (err) => err.msg || err
+          );
+        } else {
+          this.gameError = error.response?.data?.errors;
+        }
       }
     },
+
     openRoleInfoPopup(role) {
       this.selectedRoleForPopup = role;
       this.isRoleInfoVisible = true;
     },
+
     closeRoleInfoPopup() {
       this.isRoleInfoVisible = false;
       this.selectedRoleForPopup = null;
+    },
+
+    async updateRoom() {
+      isLoading.value = true;
+      try {
+        const room = new RoomApi();
+        const passRoom = this.newPassword?.trim() || "";
+
+        const response = await room.updateRoom({
+          capacity: this.newCapacity,
+          password: passRoom,
+        });
+        isLoading.value = false;
+
+        if (response != null && response?.roomID) {
+          socket.emit("room:refresh", response.roomID);
+        }
+      } catch (error) {
+        isLoading.value = false;
+        console.log(error);
+        if (error.status === 422) {
+          this.errorWhenUpdatingRoom = error.response?.data?.errors.map(
+            (err) => err.msg || err
+          );
+        } else {
+          this.errorWhenUpdatingRoom = error.response?.data?.errors;
+        }
+      }
+    },
+
+    /**
+     * Method to allow only the owner of the room can access to api
+     */
+    disableButton() {
+      return this.userID !== this.room.owner?._id;
     },
   },
 };

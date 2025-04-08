@@ -1,7 +1,6 @@
 const jwt = require("jsonwebtoken");
 const { parse } = require("cookie");
 const socket = require("./socket");
-const Game = require("../models/game.model");
 
 class SocketController {
   constructor(server) {
@@ -45,11 +44,12 @@ class SocketController {
         next();
       });
     });
-    this.io.on("connection", (socket) => {
+
+    this.io.on("connection", async (socket) => {
       console.log("User connected:", socket.user);
       /*
-      frontend call gameStart api if it's successful then emit game:start 
-      backend listen to game:start then emit game data to the frontend and call game events
+      frontend call gameStart api, then emit game:start 
+      backend listen to 'game:start' event then emit game data to the frontend and call game events
       */
       this.setupRoomEvents(socket);
       this.setupRoles(socket);

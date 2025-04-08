@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
 const { PlayerSchema } = require("./player.model");
-const { ActionSchema } = require("./action.model");
 
 const GameSchema = new mongoose.Schema({
   room: {
@@ -8,38 +7,45 @@ const GameSchema = new mongoose.Schema({
     ref: "Room", // Reference to the Room model
     required: true,
   },
+
   phases: {
     type: String,
     required: true,
     default: "showRoles",
   },
+
   day: {
     type: Number,
     required: true,
     default: 0,
   },
+
   period: {
     type: String,
     required: true,
     default: "day",
   },
+
   discussion_time: {
     type: Number,
     required: true,
     default: 120,
   },
+
   vote_time: {
     type: Number,
     required: true,
     default: 30,
   },
-  currentPriorityLevel: { // change to currentTurn
+
+  currentTurn: {
     type: Number,
     required: true,
     default: 1,
   },
+
   players: [PlayerSchema],
-  states: [ActionSchema],
+  
   gameTurns: [
     {
       turn: {
@@ -61,20 +67,6 @@ const GameSchema = new mongoose.Schema({
         },
       ],
     },
-  ],
-  vote: [
-    {
-      count: {
-        type: Number,
-        required: true,
-        default: 0,
-      },
-      target: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        required: true,
-      }
-    }
   ],
 });
 
