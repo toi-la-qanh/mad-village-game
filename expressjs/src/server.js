@@ -41,7 +41,7 @@ const cors = require('cors');
 const corsOptions = {
   origin: process.env.Frontend_URL, 
   methods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH'], 
-  allowedHeaders: ['Content-Type'], 
+  allowedHeaders: ['Content-Type', 'Authorization'], 
   credentials: true,
 };
 
