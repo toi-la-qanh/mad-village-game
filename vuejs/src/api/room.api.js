@@ -20,11 +20,15 @@ export default class RoomApi extends BaseApi {
     return this.post(`${url}/`, data);
   }
 
-  updateRoom(data) {
-    return this.patch(`${url}/`, data);
+  updateRoom(id, data) {
+    return this.patch(`${url}/${id}`, data);
   }
 
   leaveRoom(id) {
-    return this.delete(`${url}/${id}`);
+    return this.delete(`${url}/${id}/leave`);
+  }
+
+  kickPlayer(id, data) {
+    return this.patch(`${url}/${id}/kick`, data);
   }
 };

@@ -16,7 +16,12 @@
 
       <!-- Error -->
       <div v-if="error">
-        <p class="text-center">{{ error }}</p>
+        <p v-if="Array.isArray(error)" class="flex flex-col">
+          <span v-for="(err, index) in error" :key="index" class="text-center">
+            {{ err }}
+          </span>
+        </p>
+        <p v-else class="text-center">{{ error }}</p>
       </div>
 
       <div v-else class="space-y-3">
@@ -29,13 +34,40 @@
         <p>Chủ phòng: {{ room.owner?.name }}</p>
 
         <!-- Player -->
-        <p>
+        <div>
           Người chơi:
-          <span v-for="(player, index) in room.players" :key="index">
+          <span
+            v-for="(player, index) in filteredPlayers"
+            :key="index"
+          >
             {{ player.name }}
-            <span v-if="index !== room.players.length - 1">, </span>
+
+            <button
+              v-if="userID === room.owner?._id && player._id !== userID"
+              @click="kickPlayer(index)"
+              class="relative -top-2"
+            >
+              <FontAwesomeIcon
+                class="text-red-700 hover:text-gray-400"
+                :icon="faXmark"
+              />
+            </button>
+            <span v-if="index !== room.players.length - 2">, </span>
           </span>
-        </p>
+        </div>
+
+        <div v-if="errorWhenKickPlayer">
+          <p v-if="Array.isArray(errorWhenKickPlayer)" class="flex flex-col">
+            <span
+              v-for="(err, index) in errorWhenKickPlayer"
+              :key="index"
+              class="text-center"
+            >
+              {{ err }}
+            </span>
+          </p>
+          <p v-else class="text-center">{{ errorWhenKickPlayer }}</p>
+        </div>
 
         <!-- User is not in the room -->
         <div v-if="!userInRoom" class="relative">
@@ -240,6 +272,7 @@
               </div>
             </div>
           </div>
+
           <!-- Role info section -->
           <RoleInfo
             v-if="isRoleInfoVisible"
@@ -274,7 +307,14 @@ export default {
 
   data() {
     return {
-      room: {},
+      room: {
+        players: [
+          {
+            _id: "",
+            name: "",
+          },
+        ],
+      },
       userID: user.value.id,
       userInRoom: false,
       roles: [],
@@ -291,7 +331,18 @@ export default {
       errorWhenUpdatingRoom: null,
       vote_time: 30,
       discussion_time: 120,
+      errorWhenKickPlayer: null,
     };
+  },
+
+  computed: {
+    filteredPlayers() {
+      return (
+        this.room.players?.filter(
+          (player) => player.name !== this.room.owner?.name
+        ) || []
+      );
+    },
   },
 
   async mounted() {
@@ -359,10 +410,13 @@ export default {
           sessionStorage.setItem("room", JSON.stringify(this.room));
         }
       } catch (error) {
-        console.log(error.response?.data?.errors);
         isLoading.value = false;
         sessionStorage.removeItem("room");
-        if (error.response?.status === 404) {
+        if (error.status === 422) {
+          this.error = error.response?.data?.errors.map(
+            (err) => err.msg || err
+          );
+        } else if (error.status === 404) {
           this.error = error.response?.data?.errors;
         } else {
           this.error = error.message;
@@ -527,6 +581,37 @@ export default {
      */
     disableButton() {
       return this.userID !== this.room.owner?._id;
+    },
+
+    async kickPlayer(index) {
+      const userConfirmed = window.confirm(
+        "Bạn có chắc muốn đá người chơi này ra khỏi phòng?"
+      );
+
+      if (!userConfirmed) {
+        return; // If the user cancels, exit the function without doing anything
+      }
+
+      const playerId = this.room.players[index + 1].id;
+      console.log(playerId);
+      isLoading.value = true;
+      try {
+        const room = new RoomApi();
+        const response = await room.kickPlayer(this.room._id, { user_id: playerId });
+        if (response) {
+          socket.emit("room:refresh", response.roomID);
+        }
+        isLoading.value = false;
+      } catch (error) {
+        isLoading.value = false;
+        if (error.status === 422) {
+          this.errorWhenKickPlayer = error.response?.data?.errors.map(
+            (err) => err.msg || err
+          );
+        } else {
+          this.errorWhenKickPlayer = error.response?.data?.errors;
+        }
+      }
     },
   },
 };

@@ -30,6 +30,10 @@ export default async function authMiddleware(to, from, next) {
 
       roomID.value = response.room;
 
+      if(response.message) {
+        alert(response.message);
+      }
+
       ensureSocketConnection();
       isLoading.value = false;
       return next();

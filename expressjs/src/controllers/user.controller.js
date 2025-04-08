@@ -84,6 +84,20 @@ class UserController {
         .json({ message: "Tạo tài khoản thành công!", token: token });
     },
   ];
+
+  /**
+   * Method to delete an user
+   */
+  static deleteAccount = async (req, res) => {
+    const deletedUser = await User.findByIdAndDelete(req.user);
+
+    // Check if the user was found and deleted
+    if (!deletedUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    
+    return res.status(200).json({ message: "Your account has been deleted successfully!" });
+  };
 }
 
 module.exports = { UserController };

@@ -6,16 +6,16 @@
       class="w-full max-w-[700px] px-3 pb-3 h-5/6 gap-3 flex flex-col bg-white rounded-2xl text-black relative"
     >
       <!-- Close Button -->
-      <button @click="close" class="absolute left-3 z-10">
+      <button @click="close" class="absolute left-3 top-2 z-10">
         <FontAwesomeIcon
-          class="text-green-700 hover:text-gray-400"
+          class="text-green-700 text-xl hover:text-gray-400"
           :icon="faArrowLeft"
         />
       </button>
 
       <!-- Show List of Contents Button -->
       <div
-        class="absolute z-10 bg-white border-r-0 border-t-0"
+        class="absolute z-10 top-2 bg-white border-r-0 border-t-0"
         :class="{
           'right-0 p-1 rounded-tr-2xl border border-black': listOfContents,
           'right-3': !listOfContents,
@@ -23,7 +23,7 @@
       >
         <button @click="showListOfContents">
           <FontAwesomeIcon
-            class="text-green-700 hover:text-gray-400"
+            class="text-xl text-green-700 hover:text-gray-400"
             :icon="faListUl"
           />
         </button>
@@ -48,7 +48,7 @@
       <div class="overflow-y-auto" style="scrollbar-width: none">
         <!-- Instructions -->
         <div class="relative">
-          <h3 class="text-center text-2xl sticky top-0 p-1 bg-white">
+          <h3 class="text-center text-2xl sticky top-0 p-2 bg-white">
             Hướng dẫn chơi
           </h3>
           <div v-html="text" id="guide"></div>
@@ -56,7 +56,7 @@
 
         <!-- Roles details -->
         <div class="relative">
-          <h3 class="text-center text-2xl sticky top-0 p-1 bg-white" id="roles">
+          <h3 class="text-center text-2xl sticky top-0 p-2 bg-white" id="roles">
             Các vai trò
           </h3>
           <div class="flex flex-col gap-5">
@@ -71,7 +71,7 @@
                   {{ role.name }} {{ role.trait }}
                 </h4>
                 <img
-                  class="w-30 h-30 border border-black bg-green-500"
+                  class="w-30 h-30 object-contain border border-black bg-green-500"
                   :class="{ 'bg-red-500': role.trait === 'bad' }"
                   :src="'data:image/png;base64,' + role.image"
                   alt="Role Image"
@@ -83,7 +83,7 @@
                 <ul class="list-decimal list-inside space-y-2">
                   <li>Mô tả: {{ role.description }}</li>
                   <li>Số lần sử dụng kỹ năng: {{ role.counts }}</li>
-                    <div class="flex space-x-2 flex-wrap">
+                    <div class="flex space-x-2 flex-wrap items-center">
                       <li>Hình ảnh kỹ năng:</li>
                       <img
                         v-for="(icon, index) in role.abilityIcons"

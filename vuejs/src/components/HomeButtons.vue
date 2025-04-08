@@ -14,6 +14,12 @@
     >
       Hướng dẫn
     </button>
+    <button
+      class="w-44 p-5 outline-none border-2 border-yellow-600 bg-lime-600 hover:bg-lime-500"
+      @click="goToSettingsPage"
+    >
+      Cài đặt
+    </button>
   </div>
 </template>
 
@@ -25,7 +31,10 @@ export default {
     },
     switchToInstructionPage() {
       this.$router.push({ name: "instruction" });
-    }
+    },
+    goToSettingsPage() {
+      this.$router.push({ name: "settings" });
+    },
   },
 };
 </script>

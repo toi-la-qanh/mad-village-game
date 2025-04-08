@@ -283,7 +283,7 @@ class RoomController {
   ];
 
   /**
-   * Method to remove a user from the specific room
+   * Method to allow user to leave the specific room
    */
   static roomLeave = [
     checkSchema({
@@ -352,6 +352,10 @@ class RoomController {
             "Số người trong phòng phải là số nguyên dương lớn hơn 0 !",
         },
       },
+      password: {
+        optional: true,
+        isString: { errorMessage: "Mật khẩu phải là chuỗi!" },
+      },
     }),
     async (req, res) => {
       const errors = validationResult(req);
@@ -368,27 +372,114 @@ class RoomController {
 
       const user = req.user;
       // Check if user is already in the room
-      if (!room.owner.includes(user)) {
+      if (!room.owner.equals(user)) {
         return res.status(403).json({
           errors: "Bạn không có quyền chỉnh sửa thông tin trong phòng này!",
         });
       }
 
-      const { capacity } = req.body;
+      const { capacity, password } = req.body;
+      const updateData = {};
 
-      if (capacity < room.players.length) {
-        return res.status(400).json({
-          errors:
-            "Số lượng người không được nhỏ hơn số người hiện tại ở trong phòng!",
-        });
+      // Validate capacity if provided
+      if (capacity) {
+        if (capacity < room.players.length) {
+          return res.status(400).json({
+            errors:
+              "Số lượng người không được nhỏ hơn số người hiện tại ở trong phòng!",
+          });
+        }
+        updateData.capacity = capacity;
       }
 
-      if (capacity) await room.updateOne({ capacity });
-      const roomID = room._id;
+      // Hash password if provided
+      if (password) {
+        updateData.hashedPassword = await bcrypt.hash(password, 10);
+      }
+
+      // Update room with validated data
+      await Room.findByIdAndUpdate(id, updateData);
 
       return res
         .status(200)
-        .json({ message: "Cập nhật phòng thành công!", roomID: roomID });
+        .json({ message: "Cập nhật phòng thành công!", roomID: room._id });
+    },
+  ];
+
+  /**
+   * Method to remove a user out from the specific room
+   */
+  static roomKick = [
+    checkSchema({
+      id: {
+        notEmpty: {
+          errorMessage: "Mã phòng không được để trống !",
+        },
+        isMongoId: {
+          errorMessage: "Mã phòng không hợp lệ !",
+        },
+      },
+      user_id: {
+        notEmpty: {
+          errorMessage: "Mã người dùng không được để trống !",
+        },
+        isMongoId: {
+          errorMessage: "Mã người dùng không hợp lệ !",
+        },
+      },
+    }),
+    async (req, res) => {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(422).json({ errors: errors.array() });
+      }
+
+      const { id } = req.params;
+      const room = await Room.findById(id);
+
+      if (!room) {
+        return res.status(404).json({ errors: "Không tìm thấy phòng này !" });
+      }
+
+      const user = req.user;
+      // Check if user is already in the room
+      if (!room.owner.equals(user)) {
+        return res.status(403).json({
+          errors: "Bạn không có quyền đuổi người chơi ra khỏi phòng này!",
+        });
+      }
+
+      const { user_id } = req.body;
+
+      // Prevent owner from kicking themselves
+      if (user_id === user.toString()) {
+        return res.status(400).json({
+          error: "Chủ phòng không thể tự đuổi mình ra khỏi phòng!",
+        });
+      }
+
+      // Check if the user is part of the room (i.e., they exist in the room's players)
+      const playerIndex = room.players.findIndex(
+        (player) => player._id.toString() === user_id
+      );
+
+      // If user not found in the room
+      if (playerIndex === -1) {
+        return res
+          .status(404)
+          .json({ errors: "Không tìm thấy người dùng này trong phòng !" });
+      }
+
+      // Remove the user from the players array
+      room.players.splice(playerIndex, 1);
+
+      // Save the updated room document
+      await room.save();
+
+      return res.status(200).json({
+        message: "Đã xoá một người dùng ra khỏi phòng!",
+        roomID: room._id,
+      });
     },
   ];
 }

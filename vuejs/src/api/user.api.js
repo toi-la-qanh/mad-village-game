@@ -10,4 +10,8 @@ export default class UserApi extends BaseApi {
   signup(data) {
     return this.post(`${url}/signup`, data);
   }
+
+  deleteAccount() {
+    return this.delete(`${url}`);
+  }
 };

@@ -19,7 +19,8 @@ router.get('/', RoomController.roomIndex);
 router.get('/:id', RoomController.getRoom);
 router.post('/:id/join', auth, RoomController.roomJoin);
 router.post('/', auth, limiter, RoomController.roomCreate);
-router.patch('/', auth, limiter, RoomController.roomUpdate);
-router.delete('/:id', auth, RoomController.roomLeave);
+router.patch('/:id', auth, limiter, RoomController.roomUpdate);
+router.delete('/:id/leave', auth, RoomController.roomLeave);
+router.patch('/:id/kick', auth, RoomController.roomKick);
 
 module.exports = router;

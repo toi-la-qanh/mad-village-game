@@ -28,6 +28,11 @@ const routes = [
     component: () => import("../components/GameInstruction.vue"),
   },
   {
+    path: "/settings",
+    name: "settings",
+    component: () => import("../pages/Settings.vue"),
+  },
+  {
     path: "/",
     name: "home",
     component: () => import("../pages/Home.vue"),

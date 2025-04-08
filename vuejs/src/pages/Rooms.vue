@@ -26,7 +26,7 @@
           <input
             type="text"
             placeholder="Tìm phòng ..."
-            class="outline-none"
+            class="outline-none max-w-35"
             @input="searchRooms"
           />
         </div>
