@@ -63,10 +63,10 @@ app.use("/api/game", gameRoutes);
 app.use("/api/llm", llmRoutes);
 
 // Cron jobs
-// const checkForExpiringUsers = require("./cron/user.cron.js");
-// checkForExpiringUsers();
+const checkForExpiringUsers = require("./cron/user.cron.js");
+checkForExpiringUsers();
 
-// const updateLLMResponse = require("./cron/llm.cron.js");
-// updateLLMResponse();
+const updateLLMResponse = require("./cron/llm.cron.js");
+updateLLMResponse();
 
 module.exports = app;
