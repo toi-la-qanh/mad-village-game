@@ -7,12 +7,14 @@ const server = require("http").createServer(app);
 const PORT = process.env.PORT || 3000;
 
 // Bind to 0.0.0.0 (necessary for Render)
-// server.listen(PORT, '0.0.0.0', () => {
-//   console.log(`Server is running on port ${PORT}`);
-// });
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
+// Local
+// server.listen(PORT, () => {
+//   console.log(`Server is running on port ${PORT}`);
+// });
 
 // Load environment variables
 const dotenv = require("dotenv");
@@ -45,6 +47,9 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
+// Handle preflight requests (OPTIONS)
+app.options('*', cors(corsOptions));
+
 // Root route
 app.get("/", (req, res) => {
   res.send("Hello from the backend!");
@@ -67,10 +72,10 @@ app.use("/api/game", gameRoutes);
 app.use("/api/llm", llmRoutes);
 
 // Cron jobs for production
-// const checkForExpiringUsers = require("./cron/user.cron.js");
-// checkForExpiringUsers();
+const checkForExpiringUsers = require("./cron/user.cron.js");
+checkForExpiringUsers();
 
-// const updateLLMResponse = require("./cron/llm.cron.js");
-// updateLLMResponse();
+const updateLLMResponse = require("./cron/llm.cron.js");
+updateLLMResponse();
 
 module.exports = app;
