@@ -466,7 +466,7 @@ export default {
         try {
           const room = new RoomApi();
           await room.leaveRoom(this.room._id);
-          socket.emit("room:leave", this.room._id);
+          this.$socket.emit("room:leave", this.room._id);
           roomID.value = null;
           this.$router.push("/rooms");
         } catch (error) {
