@@ -120,7 +120,6 @@
 import { faTurnUp, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { user } from "../store";
-import { socket } from "../socket";
 
 export default {
   props: {

@@ -1,5 +1,4 @@
 import UserApi from "../api/user.api";
-import { socket } from "../socket";
 import { authError, errorMessages, isLoading, roomID, showSignUpForm, user } from "../store";
 
 // Create singleton instance outside function to avoid recreating on each route change
@@ -57,8 +56,8 @@ function resetAuthState() {
 }
 
 function ensureSocketConnection() {
-  if (!socket.connected) {
-    socket.connect();
+  if (!this.$socket.connected) {
+    this.$socket.connect();
   }
 }
 
@@ -69,7 +68,7 @@ function handleAuthError(error) {
   authError.value = error.response?.data?.errors;
   showSignUpForm.value = true;
   
-  if (socket.connected) {
-    socket.disconnect();
+  if (this.$socket.connected) {
+    this.$socket.disconnect();
   }
 }

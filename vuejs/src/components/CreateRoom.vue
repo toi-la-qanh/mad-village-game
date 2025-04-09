@@ -54,7 +54,6 @@
 <script>
 import RoomApi from "../api/room.api";
 import { roomID } from "../store";
-import { socket } from "../socket";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faXmark } from "@fortawesome/free-solid-svg-icons";
 
@@ -98,7 +97,7 @@ export default {
         this.closePopup();
         localStorage.setItem("roomID", response.roomID);
         roomID.value = response.roomID;
-        socket.emit("room:created", response);
+        this.$socket.emit("room:created", response);
         this.$router.push({ name: "room", params: { id: response.roomID } });
       } catch (error) {
         if (error.status === 422) {

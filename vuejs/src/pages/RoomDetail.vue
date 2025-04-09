@@ -71,7 +71,7 @@
 
         <!-- User is not in the room -->
         <div v-if="!userInRoom" class="relative">
-          <div class="mt-5 text-center flex flex-wrap justify-center gap-3">
+          <div v-if="room.password" class="mt-5 text-center flex flex-wrap justify-center gap-3">
             <p class="text-2xl">Mật khẩu phòng:</p>
 
             <!-- Password Input -->
@@ -289,7 +289,6 @@
 <script>
 import RoomApi from "../api/room.api";
 import GameApi from "../api/game.api";
-import { socket } from "../socket";
 import { isLoading, roomID, user } from "../store";
 import { defineAsyncComponent } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -385,17 +384,17 @@ export default {
   methods: {
     handleSocketEvents() {
       // Update the room data when it changes
-      socket.on("room:update", async (roomID) => {
+      this.$socket.on("room:update", async (roomID) => {
         await this.fetchRoom(roomID);
       });
 
       // Update the selected roles
-      socket.on("role:update", (data) => {
+      this.$socket.on("role:update", (data) => {
         this.selectedRoles = data;
       });
 
       // Take the user to the game page
-      socket.on("game:started", (gameID) => {
+      this.$socket.on("game:started", (gameID) => {
         localStorage.setItem("gameID", gameID);
         this.$router.push({ name: "game", params: { id: gameID } });
       });
@@ -444,7 +443,7 @@ export default {
         if (response != null) {
           isLoading.value = false;
           this.userInRoom = true;
-          socket.emit("room:join", this.room._id);
+          this.$socket.emit("room:join", this.room._id);
           roomID.value = this.room._id;
         }
       } catch (error) {
@@ -509,7 +508,7 @@ export default {
     },
 
     syncRolesWithServer() {
-      socket.emit("role:select", {
+      this.$socket.emit("role:select", {
         role: this.selectedRoles,
         roomID: this.room?.roomID,
       });
@@ -530,7 +529,7 @@ export default {
         if (response != null) {
           localStorage.setItem("gameID", response.gameID);
           this.$router.push({ name: "game", params: { id: response.gameID } });
-          socket.emit("game:start", response.gameID);
+          this.$socket.emit("game:start", response.gameID);
         }
       } catch (error) {
         isLoading.value = false;
@@ -569,7 +568,7 @@ export default {
 
         if (response != null && response.roomID) {
           this.fetchRoom(response.roomID);
-          socket.emit("room:refresh", response.roomID);
+          this.$socket.emit("room:refresh", response.roomID);
         }
       } catch (error) {
         isLoading.value = false;
@@ -609,7 +608,7 @@ export default {
           user_id: playerId,
         });
         if (response) {
-          socket.emit("room:refresh", response.roomID);
+          this.$socket.emit("room:refresh", response.roomID);
           this.fetchRoom(response.roomID);
         }
         isLoading.value = false;

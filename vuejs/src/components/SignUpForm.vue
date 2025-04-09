@@ -63,7 +63,6 @@ import { authError, showSignUpForm } from "../store";
 
 <script>
 import UserApi from "../api/user.api"; // Import the UserApi class
-import { socket } from "../socket";
 
 export default {
   data() {
@@ -86,8 +85,8 @@ export default {
           name: this.name,
         });
         if (response != null) {
-          if (!socket.connected) {
-            socket.connect();
+          if (!this.$socket.connected) {
+            this.$socket.connect();
           }
           this.isSubmitting = false;
           showSignUpForm.value = false;
