@@ -3,6 +3,10 @@ const User = require("../models/user.model");
 const Room = require("../models/room.model");
 const createSecretToken = require("../auth/token");
 
+// Load environment variables
+const dotenv = require("dotenv");
+dotenv.config();
+
 class UserController {
   /**
    * Method to get the user data and check their account status
