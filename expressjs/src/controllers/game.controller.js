@@ -79,10 +79,6 @@ class GameController {
         .emit("game:started", game._id.toHexString());
     });
 
-    // this.socket.onAny((eventName, ...args) => {
-    //   console.log(eventName, ...args);
-    // });
-
     this.socket.on("game:getAbilityIcons", async (gameID, callback) => {
       const game = await this.getGameData(gameID);
       const data = this.getAbilityIcons(game);
@@ -117,6 +113,7 @@ class GameController {
 
       // Get the max value to end the loop
       const maxTurn = Math.max(...playerTurns);
+      console.log(maxTurn);
 
       // Move to the next phase
       if (game.currentTurn > maxTurn) {
@@ -145,10 +142,12 @@ class GameController {
       }, actionTimeout);
 
       // Perform the action
-      await this.performAction(game);
+      const result = await this.performAction(game);
 
       // If action completes before timeout, clear the timeout
       clearTimeout(timeoutId);
+
+      return result;
     };
 
     // Watch other players event
@@ -180,9 +179,6 @@ class GameController {
 
     // Vote event
     const votePhaseEvent = async (game) => {
-      const gameVoteKey = `game:${game._id}:votes`;
-      await redis.set(gameVoteKey, JSON.stringify(game.vote));
-
       const data = await this.votePhase(game);
 
       this.emitTimeOut(game.vote_time * 1000, "Thời gian bỏ phiếu");
@@ -200,7 +196,9 @@ class GameController {
         setTimeout(async () => {
           // Get current votes from Redis
           const gameVoteKey = `game:${game._id}:votes`;
-          await redis.del(gameVoteKey);
+          if (gameVoteKey) {
+            await redis.del(gameVoteKey);
+          }
 
           await this.updateGamePhase(game, "performAction");
 
@@ -232,7 +230,7 @@ class GameController {
     // Retrieve the game event to the client
     this.socket.on("game:event", async (gameID, callback) => {
       const game = await this.getGameData(gameID);
-      // console.log(game);
+      console.log(`The game is at ${game.phases} phase`);
       let result;
 
       switch (game.phases) {
@@ -455,7 +453,9 @@ class GameController {
       const game = new Game(gameData);
       await game.save();
 
-      return res.status(200).json({ message: "Trò chơi đã bắt đầu!", gameID: game._id });
+      return res
+        .status(200)
+        .json({ message: "Trò chơi đã bắt đầu!", gameID: game._id });
     },
   ];
 
@@ -698,7 +698,7 @@ class GameController {
         message: `Bạn nhìn thấy ${performerNames} qua nhà ${targetName}`,
       };
     }
-
+ 
     performerNames = game.players.find(
       (player) => player._id.toString() === action.performer.toString()
     ).name;
@@ -775,13 +775,23 @@ class GameController {
   /**
    * Method to allow players to chat and discuss in the morning
    */
-  async discussionPhase(game, message) {
+  async discussionPhase(game) {
     if (game.phases !== "discussion") {
       return {
         status: 400,
         message: "Wrong phase!",
       };
     }
+
+    const waitForMessage = () => {
+      return new Promise((resolve) => {
+        this.socket.on("game:discussion", (data) => {
+          resolve(data);
+        });
+      });
+    };
+
+    const message = await waitForMessage();
 
     // Validate data
     if (!message) {
@@ -922,6 +932,7 @@ class GameController {
       currentVotes.push({ target: targetID, count: 1 });
     }
 
+    this.socket.emit("fetchVotes", currentVotes);
     // Save updated votes back to Redis
     await redis.set(gameVoteKey, JSON.stringify(currentVotes), () => resolve());
 

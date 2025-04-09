@@ -17,10 +17,22 @@ export const socket = io(URL, {
     "Content-Type": "application/json",
   },
   transports: ["websocket"],
+  autoConnect: true,
+  reconnection: true, // Enable reconnection
+  reconnectionAttempts: Infinity, // Keep trying to reconnect
+  reconnectionDelay: 1000,
 });
 
 socket.on("connect", () => {
   state.connected = true;
+});
+
+socket.on("connect_error", (err) => {
+  console.log(`connect_error due to ${err.message}`);
+});
+
+socket.on("reconnect_attempt", (attempt) => {
+  console.log(`Reconnection attempt #${attempt}`);
 });
 
 socket.on("disconnect", () => {

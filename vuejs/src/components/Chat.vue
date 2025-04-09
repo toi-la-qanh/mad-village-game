@@ -40,7 +40,7 @@
         </div>
 
         <!-- Vote Section -->
-        <div>
+        <div v-if="voteEvent">
           <div class="">
             <h3 class="font-bold">Bot</h3>
             <p>Thông tin bỏ phiếu ngày {{ day }}</p>
@@ -187,7 +187,7 @@ export default {
       if (!this.newMessage.trim()) return; // Don't send if the input is empty
 
       // Emit the message to the server
-      socket.emit(
+      this.$socket.emit(
         "game:discussion",
         localStorage.getItem("gameID"),
         this.newMessage,
@@ -208,7 +208,7 @@ export default {
 
     fetchMessages() {
       // Fetch the chat messages from the server
-      socket.on("game:fetchDayChat", (data) => {
+      this.$socket.on("game:fetchDayChat", (data) => {
         console.log(data);
         this.chat.push({
           name: data.playerName,
@@ -219,19 +219,19 @@ export default {
 
     toggleVote(index) {
       this.isVoted = !this.isVoted;
-      // this.socket.emit("game:voteTarget", players[index]._id);
+      this.$socket.emit("game:voteTarget", this.players[index]._id);
     },
 
     fetchVotes() {
       // Fetch the votes from the server
-      socket.on("game:fetchVotes", (data) => {
+      this.$socket.on("game:fetchVotes", (data) => {
         sessionStorage.setItem("votes", JSON.stringify(data));
         this.votes = data;
       });
     },
 
     getVoteResult() {
-      socket.on("game:voteResult", (data) => {
+      this.$socket.on("game:voteResult", (data) => {
         if (data.status === "success") {
           sessionStorage.setItem("voteResult", data.message);
           this.voteResult = data.message;

@@ -26,7 +26,7 @@ const updateLLMResponse = async () => {
         ],
       },
     ],
-    model: "openrouter/quasar-alpha",
+    model: "deepseek/deepseek-chat-v3-0324:free",
   });
 
   const result = response.choices[0].message.content;

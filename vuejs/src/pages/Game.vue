@@ -39,10 +39,8 @@
       :game="game"
       :playerCount="game.players.length"
       :event="event"
-      :playerBeingWatched="playerBeingWatched"
       :characterSpeed="characterSpeed"
       :animation="animation"
-      :zoomLevel="zoomMap"
     />
 
     <!-- Role information -->
@@ -59,7 +57,7 @@
     <div v-if="openChatSection">
       <Chat
         :day="game.day"
-        :dayChat="event.discussion"
+        :dayChat="game.period === 'day'"
         :nightChat="event.nightChat"
         :gameMessage="gameMessage"
         :players="game.players"
@@ -73,7 +71,7 @@
 
     <!-- Game Over Notifications -->
     <div v-if="event.end">
-      <GameEnd :playerDetails="playerDetails"/>
+      <GameEnd :playerDetails="playerDetails" />
     </div>
   </div>
 
@@ -92,8 +90,6 @@
 </template>
 
 <script>
-import { socket } from "../socket"; // Import socket connection
-// import { gameID, roomID } from "../store";
 import { defineAsyncComponent } from "vue";
 import { showBackground } from "../store";
 
@@ -112,7 +108,9 @@ export default {
       import("../components/GameSettings.vue")
     ),
     Vote: defineAsyncComponent(() => import("../components/Vote.vue")),
-    GameInstruction: defineAsyncComponent(() => import("../components/GameInstruction.vue")),
+    GameInstruction: defineAsyncComponent(() =>
+      import("../components/GameInstruction.vue")
+    ),
     GameEnd: defineAsyncComponent(() => import("../components/GameEnd.vue")),
   },
 
@@ -131,16 +129,12 @@ export default {
       event: {
         showRoles: false,
         performAction: false,
-        showRoles: false,
-        performAction: false,
         day: false,
         discussion: false,
         nightChat: false,
         vote: false,
-        watchPeople: false,
         end: false,
       },
-      playerBeingWatched: null,
       gameMessage: "",
       characterSpeed: parseFloat(sessionStorage.getItem("speed")) || 1,
       animation: JSON.parse(sessionStorage.getItem("animation")) || true,
@@ -149,69 +143,87 @@ export default {
   },
 
   async mounted() {
-    this.fetchGameData();
     this.setupGameEvents();
-    this.startCountdown();
   },
 
   methods: {
     reload() {
       window.location.reload();
     },
-    
-    fetchGameData() {
-      socket.on("game:error", (data) => {
-        this.error = data;
-      });
 
-      socket.emit("game:data", localStorage.getItem("gameID"), (data) => {
+    fetchGameData() {
+      this.$socket.emit("game:data", localStorage.getItem("gameID"), (data) => {
         if (!data) {
           showBackground.value = true;
         }
         showBackground.value = false;
-        socket.emit("room:join", data.room);
+        this.$socket.emit("room:join", data.room);
         this.game = data;
       });
     },
 
     setupGameEvents() {
-      // Retrieve the current event of the game
-      socket.emit("game:event", localStorage.getItem("gameID"), (data) => {
-        this.gameMessage = data.message;
-        switch (data.phase) {
-          case "showRoles":
-            this.showRolesEvent(data);
-            break;
-          case "performAction":
-            this.performActionEvent(data);
-            break;
-          case "day":
-            this.dayEvent(data);
-            break;
-          case "discussion":
-            this.discussionEvent(data);
-            break;
-          case "vote":
-            this.voteEvent(data);
-            break;
-          case "end":
-            this.endEvent(data);
-            break;
-          default:
-            break;
-        }
-      });
-
       // Get the timeout and messages
-      socket.on("game:timeout", (data) => {
+      this.$socket.on("game:timeout", (data) => {
         if (data) {
           this.timeOut = data.timeout;
           this.timeOutMessage = data.message;
+          this.startCountdown();
         } else {
           this.timeOut = null;
           this.timeOutMessage = null;
         }
       });
+
+      this.$socket.on("game:error", (data) => {
+        this.error = data;
+      });
+
+      this.$socket.onAny((eventName, ...args) => {
+        console.log(eventName);
+      });
+
+      this.fetchGameData();
+      this.getGameEvents(); 
+
+      this.$socket.on("game:update", () => {
+        this.fetchGameData();
+        this.getGameEvents();  
+      });
+    },
+
+    getGameEvents() {
+      // Retrieve the current event of the game
+      this.$socket.emit(
+        "game:event",
+        localStorage.getItem("gameID"),
+        (data) => {
+          console.log("yes");
+          this.gameMessage = data.message;
+          switch (data.phase) {
+            case "showRoles":
+              this.showRolesEvent(data);
+              break;
+            case "performAction":
+              this.performActionEvent(data);
+              break;
+            case "day":
+              this.dayEvent(data);
+              break;
+            case "discussion":
+              this.discussionEvent(data);
+              break;
+            case "vote":
+              this.voteEvent(data);
+              break;
+            case "end":
+              this.endEvent(data);
+              break;
+            default:
+              break;
+          }
+        }
+      );
     },
 
     // Count down the timeouts
@@ -242,13 +254,6 @@ export default {
       this.event.performAction = true;
       // Handle error cases consistently
       this.error = data.status === "error" ? data.message : null;
-
-      this.socket.emit("game:watch", localStorage.getItem("gameID"), (data) => {
-        if (data.status !== "error") {
-          this.watchPeople = true;
-          this.playerBeingWatched = data;
-        }
-      });
     },
 
     dayEvent(data) {
@@ -281,8 +286,8 @@ export default {
 
   beforeUnmount() {
     // Cleanup the socket listener when the component is destroyed
-    socket.off("game:error");
-    socket.off("game:timeout");
+    this.$socket.off("game:error");
+    this.$socket.off("game:timeout");
   },
 };
 </script>

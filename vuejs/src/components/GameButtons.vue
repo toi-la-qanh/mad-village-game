@@ -1,10 +1,10 @@
 <template>
   <!-- Top right buttons -->
-  <div class="fixed w-full flex justify-end p-1 gap-3 z-20">
+  <div class="fixed w-full flex justify-end p-1 gap-3 z-20 items-center">
     <!-- Left Arrow -->
     <button v-if="!isArrowClicked" @click="toggleArrow">
       <FontAwesomeIcon
-        class="text-white hover:text-gray-300"
+        class="text-white text-3xl hover:text-gray-300"
         :icon="faCaretLeft"
       />
     </button>
@@ -12,7 +12,7 @@
     <!-- Right Arrow -->
     <button v-if="isArrowClicked" @click="toggleArrow">
       <FontAwesomeIcon
-        class="text-white hover:text-gray-300 stroke-black stroke-3"
+        class="text-white text-3xl hover:text-gray-300 stroke-black stroke-3"
         :icon="faCaretRight"
       />
     </button>
@@ -21,7 +21,7 @@
     <button v-if="isArrowClicked" @click="showRole">
       <div
         v-html="infoSVG"
-        class="hover:shadow-white rounded-full hover:shadow-sm hover:bg-gray-400"
+        class="hover:shadow-white scale-125 rounded-full hover:shadow-sm hover:bg-gray-400"
       ></div>
     </button>
 
@@ -29,7 +29,7 @@
     <button v-if="isArrowClicked" @click="showInstruction">
       <div
         v-html="helpSVG"
-        class="hover:shadow-white rounded-full hover:shadow-sm hover:bg-gray-400"
+        class="hover:shadow-white scale-125 rounded-full hover:shadow-sm hover:bg-gray-400"
       ></div>
     </button>
 
@@ -37,7 +37,7 @@
     <button @click="openSettings">
       <div
         v-html="settingSVG"
-        class="hover:shadow-white rounded-full hover:shadow-sm hover:bg-gray-400"
+        class="hover:shadow-white scale-125 rounded-full hover:shadow-sm hover:bg-gray-400"
       ></div>
     </button>
   </div>
@@ -47,7 +47,7 @@
     <!-- Chat -->
     <button @click="openChat">
       <FontAwesomeIcon
-        class="text-white text-xl  hover:text-gray-300"
+        class="text-white text-3xl hover:text-gray-300"
         :icon="faCommentDots"
       />
     </button>
@@ -63,7 +63,6 @@ import {
   faCaretLeft,
   faCaretRight,
   faCommentDots,
-  faRectangleList,
 } from "@fortawesome/free-solid-svg-icons";
 
 export default {

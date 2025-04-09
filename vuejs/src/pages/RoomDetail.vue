@@ -26,9 +26,12 @@
 
       <div v-else class="space-y-3">
         <!-- Title -->
-        <h3 class="text-2xl text-center">
-          Phòng chờ ({{ room.playerCount }}/{{ room.capacity }})
-        </h3>
+        <div class="flex justify-center gap-1">
+          <h3 class="text-2xl text-center">
+            Phòng chờ ({{ room.playerCount }}/{{ room.capacity }})
+          </h3>
+          <button @click="copyRoomLink"><FontAwesomeIcon :icon="faCopy"/></button>
+        </div>
 
         <!-- Room Owner -->
         <p>Chủ phòng: {{ room.owner?.name }}</p>
@@ -36,10 +39,7 @@
         <!-- Player -->
         <div>
           Người chơi:
-          <span
-            v-for="(player, index) in filteredPlayers"
-            :key="index"
-          >
+          <span v-for="(player, index) in filteredPlayers" :key="index">
             {{ player.name }}
 
             <button
@@ -253,6 +253,7 @@
               <button
                 class="w-full font-bold text-gray-600 bg-green-300 p-2 rounded-lg hover:bg-green-500 hover:text-white"
                 :disabled="disableButton()"
+                @click="startGame"
               >
                 Bắt đầu chơi
               </button>
@@ -293,11 +294,12 @@ import { isLoading, roomID, user } from "../store";
 import { defineAsyncComponent } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faEye, faEyeSlash, faXmark } from "@fortawesome/free-solid-svg-icons";
+import {faCopy} from "@fortawesome/free-regular-svg-icons"
 import { faCircleInfo } from "@fortawesome/free-solid-svg-icons";
 
 export default {
   setup() {
-    return { faXmark, faCircleInfo, faEye, faEyeSlash };
+    return { faXmark, faCircleInfo, faEye, faEyeSlash, faCopy };
   },
 
   components: {
@@ -424,6 +426,10 @@ export default {
       }
     },
 
+    copyRoomLink() {
+      navigator.clipboard.writeText(window.location.href);
+    },
+
     async joinRoom() {
       isLoading.value = true;
       try {
@@ -514,7 +520,7 @@ export default {
       isLoading.value = true;
       try {
         const response = await game.start({
-          roomID: this.room.roomID,
+          roomID: this.room._id,
           roles: this.selectedRoles.map((role) => role.name),
           traits: this.selectedRoles.map((role) => role.trait),
           vote_time: this.vote_time,
@@ -523,6 +529,7 @@ export default {
         isLoading.value = false;
         if (response != null) {
           localStorage.setItem("gameID", response.gameID);
+          this.$router.push({ name: "game", params: { id: response.gameID } });
           socket.emit("game:start", response.gameID);
         }
       } catch (error) {
@@ -560,7 +567,8 @@ export default {
         });
         isLoading.value = false;
 
-        if (response != null && response?.roomID) {
+        if (response != null && response.roomID) {
+          this.fetchRoom(response.roomID);
           socket.emit("room:refresh", response.roomID);
         }
       } catch (error) {
@@ -597,9 +605,12 @@ export default {
       isLoading.value = true;
       try {
         const room = new RoomApi();
-        const response = await room.kickPlayer(this.room._id, { user_id: playerId });
+        const response = await room.kickPlayer(this.room._id, {
+          user_id: playerId,
+        });
         if (response) {
           socket.emit("room:refresh", response.roomID);
+          this.fetchRoom(response.roomID);
         }
         isLoading.value = false;
       } catch (error) {

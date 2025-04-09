@@ -1,9 +1,9 @@
 <template>
   <div
-    class="top-0 w-screen h-full bg-inherit flex justify-center items-center"
+    class="top-0 w-screen h-full bg-inherit flex justify-center items-center z-20 fixed"
   >
     <div
-      class="w-full max-w-[700px] px-3 pb-3 h-5/6 gap-3 flex flex-col bg-white rounded-2xl text-black relative"
+      class="w-full max-w-[700px] md:border md:border-black px-3 pb-3 h-5/6 gap-3 flex flex-col bg-white rounded-2xl text-black relative"
     >
       <!-- Close Button -->
       <button @click="close" class="absolute left-3 top-2 z-10">

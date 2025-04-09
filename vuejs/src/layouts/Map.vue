@@ -1,7 +1,5 @@
 <template>
-  <div
-    class="flex absolute justify-center items-center w-screen h-screen cursor-grab active:cursor-grabbing"
-  >
+  <div class="flex absolute justify-center items-center w-screen h-screen">
     <!-- Directly accessing the canvas element without ref -->
     <canvas
       ref="gameCanvas"
@@ -34,7 +32,7 @@
       <!-- Display house details when clicked -->
       <p
         v-if="clickedHouseIndex === index"
-        class="h-full w-full flex items-end justify-center mt-4 text-xs"
+        class="flex items-end justify-center text-xs"
       >
         {{ playerNames[index] }}
       </p>
@@ -52,7 +50,7 @@
             clickedHouseIndex === index &&
             !selectButtonClicked &&
             playerIDs[index] !== user_id &&
-            game.phase === 'performAction'
+            event.performAction
           "
           class="absolute bottom-0 left-0 w-full h-full flex justify-center items-center"
         >
@@ -124,7 +122,6 @@
 </template>
 
 <script>
-import { socket } from "../socket";
 import { user } from "../store";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faXmark } from "@fortawesome/free-solid-svg-icons";
@@ -218,6 +215,7 @@ export default {
       characterMovingName: "",
       currentDay: 0,
       currentPeriod: "day",
+      playerBeingWatched: null,
     };
   },
 
@@ -227,8 +225,7 @@ export default {
     this.fetchAbilityIcons();
     this.resetGameState();
     this.moveSpeed = this.characterSpeed;
-    // this.generateOtherPlayersToWatch();
-    // this.placeCharacters();
+    this.placeCharacters();
     window.addEventListener("resize", this.updateCanvasSize);
   },
 
@@ -405,14 +402,24 @@ export default {
 
     onButtonClick(index) {
       this.clickedHouseIndex = this.clickedHouseIndex === index ? null : index;
-      console.log(this.targetSelected);
     },
 
     async getTarget(targetID, index) {
       if (this.event.performAction) {
         this.selectButtonClicked = true;
         if (targetID) {
-          socket.emit("game:targetSelected", targetID);
+          this.$socket.emit("game:targetSelected", targetID);
+
+          this.$socket.emit(
+            "game:watch",
+            localStorage.getItem("gameID"),
+            targetID,
+            (data) => {
+              if (data.status !== "error") {
+                this.playerBeingWatched = data.performers;
+              }
+            }
+          );
         }
         this.clickedHouseIndex = null;
       }
@@ -464,23 +471,6 @@ export default {
           if (house === targetHouse) {
             continue; // Skip collision check for the target house's door
           }
-          // if (house === startHouse) {
-          //   const startHouseExitX =
-          //     startHouse.x + Math.floor(startHouse.width / 3);
-          //   const startHouseExitY = startHouse.y + startHouse.height - 10;
-
-          //   // Allow the character to exit the start house without collision
-          //   if (
-          //     x >= startHouseExitX &&
-          //     x + this.characterPosition.width <=
-          //       startHouseExitX + startHouse.width &&
-          //     y >= startHouseExitY &&
-          //     y + this.characterPosition.height <=
-          //       startHouseExitY + startHouse.height
-          //   ) {
-          //     continue;
-          //   }
-          // }
           if (
             x < house.x + house.width &&
             x + this.characterPosition.width > house.x &&
