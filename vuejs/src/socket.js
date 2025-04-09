@@ -27,10 +27,6 @@ socket.on("connect", () => {
   state.connected = true;
 });
 
-socket.on("connect_error", (err) => {
-  console.log(`connect_error due to ${err.message}`);
-});
-
 socket.on("reconnect_attempt", (attempt) => {
   console.log(`Reconnection attempt #${attempt}`);
 });
