@@ -107,7 +107,6 @@ export default {
     GameSettings: defineAsyncComponent(() =>
       import("../components/GameSettings.vue")
     ),
-    Vote: defineAsyncComponent(() => import("../components/Vote.vue")),
     GameInstruction: defineAsyncComponent(() =>
       import("../components/GameInstruction.vue")
     ),
