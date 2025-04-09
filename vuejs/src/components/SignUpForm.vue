@@ -85,7 +85,7 @@ export default {
           name: this.name,
         });
         if (response != null) {
-          if (!this.$socket.connected) {
+          if (!this.$socketState.connected) {
             this.$socket.connect();
           }
           this.isSubmitting = false;

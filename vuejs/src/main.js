@@ -11,7 +11,7 @@ app.use(router);
 
 // Optionally make socket globally available
 app.config.globalProperties.$socket = socket;
-app.config.globalProperties.$socketState = state;
+app.config.globalProperties.$state = state;
 
 // Mount the app
 app.mount('#app');
