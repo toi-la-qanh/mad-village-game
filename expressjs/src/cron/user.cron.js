@@ -4,7 +4,7 @@ const User = require("../models/user.model");
 /**
  * Marks users created 23.5 hours ago as about to close
  */
-const checkForExpiringUsers = async () => {
+const checkForExpiringUsers = async (req, res) => {
   /* 
   Let's say the user is createdAt 10am on Tuesday and will be closed at 10am on Wednesday
   So at 9:30 am on Wednesday, we need to notify to the user that their account is going to be closed
@@ -27,11 +27,11 @@ const checkForExpiringUsers = async () => {
   );
 
   if (result.modifiedCount > 0) {
-    console.log(
-      `Updated ${result.modifiedCount} users to 'about to close' status.`
-    );
+    return res.status(200).json({
+      message: `Updated ${result.modifiedCount} users to 'about to close' status.`,
+    });
   } else {
-    console.log("No users to update.");
+    return res.status(200).json({ message: "No users to update." });
   }
 };
 
