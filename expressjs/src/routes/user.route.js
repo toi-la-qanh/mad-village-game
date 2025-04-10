@@ -2,6 +2,7 @@ const express = require("express");
 const { UserController } = require("../controllers/user.controller.js");
 const auth = require("../middleware/auth.middleware.js");
 const { rateLimit } = require("express-rate-limit");
+const checkForExpiringUsers = require("../cron/user.cron.js");
 
 const router = express.Router();
 
@@ -15,6 +16,7 @@ const limiter = rateLimit({
 });
 
 router.get("/", auth, UserController.getLoggedInUser);
+router.get("/check", checkForExpiringUsers);
 router.post("/signup", limiter, UserController.signup);
 router.delete("/", auth, UserController.deleteAccount);
 

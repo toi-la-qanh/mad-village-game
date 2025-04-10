@@ -17,8 +17,8 @@
       <div
         class="absolute z-10 bg-white border-r-0 border-t-0"
         :class="{
-          'right-0 top-2 p-1 rounded-tr-2xl border border-black': listOfContents,
-          'right-3': !listOfContents,
+          'right-0 p-1 rounded-tr-2xl border border-black': listOfContents,
+          'right-3 top-2': !listOfContents,
         }"
       >
         <button @click="showListOfContents">

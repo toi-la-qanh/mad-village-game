@@ -1,4 +1,4 @@
-const cron = require("node-cron");
+// const cron = require("node-cron");
 const OpenAI = require("openai");
 const redis = require("../database/redis");
 const dotenv = require("dotenv");
@@ -39,6 +39,6 @@ const updateLLMResponse = async () => {
 };
 
 // Run every 1 hour
-cron.schedule("0 * * * *", updateLLMResponse);
+// cron.schedule("0 * * * *", updateLLMResponse);
 
 module.exports = updateLLMResponse;

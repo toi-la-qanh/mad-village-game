@@ -71,12 +71,12 @@ app.use("/api/rooms", roomRoutes);
 app.use("/api/game", gameRoutes);
 app.use("/api/llm", llmRoutes);
 
-// Cron jobs for production
-const checkForExpiringUsers = require("./cron/user.cron.js");
-checkForExpiringUsers();
+// Cron jobs for production -> I've already removed this because free tier deploy doesnt have cron feature
+// const checkForExpiringUsers = require("./cron/user.cron.js");
+// checkForExpiringUsers();
 
-const updateLLMResponse = require("./cron/llm.cron.js");
-updateLLMResponse();
+// const updateLLMResponse = require("./cron/llm.cron.js");
+// updateLLMResponse();
 
 app.set('trust proxy', 1 /* number of proxies between user and server */);
 app.get('/ip', (request, response) => response.send(request.ip));

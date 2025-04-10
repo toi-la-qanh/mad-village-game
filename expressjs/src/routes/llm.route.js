@@ -1,5 +1,6 @@
 const express = require("express");
 const { gameSummary, botChat } = require("../controllers/llm.controller.js");
+const updateLLMResponse = require("../cron/llm.cron.js");
 const auth = require("../middleware/auth.middleware.js");
 const { rateLimit } = require("express-rate-limit");
 
@@ -17,6 +18,7 @@ const limiter = rateLimit({
 });
 
 router.get("/instruction", gameSummary);
+router.get("/update", updateLLMResponse);
 router.post("/chat", auth, limiter, botChat);
 
 module.exports = router;
