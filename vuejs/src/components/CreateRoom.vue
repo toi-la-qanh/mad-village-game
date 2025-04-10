@@ -95,7 +95,6 @@ export default {
         const response = await room.createRoom(roomData);
 
         this.closePopup();
-        localStorage.setItem("roomID", response.roomID);
         roomID.value = response.roomID;
         this.$socket.emit("room:created", response);
         this.$router.push({ name: "room", params: { id: response.roomID } });

@@ -52,6 +52,7 @@
 <script>
 import { faTurnUp, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { roomID } from "../store";
 
 export default {
   props: {
@@ -71,11 +72,10 @@ export default {
   },
   methods: {
     goBack() {
-      const roomID = localStorage.getItem("roomID");
       localStorage.removeItem("gameID");
-      if (roomID) {
+      if (roomID.value) {
         // If roomID is available, navigate to the /rooms page and pass the roomID as a query parameter
-        this.$router.push(`/rooms/${roomID}`);
+        this.$router.push(`/rooms/${roomID.value}`);
       } else {
         // If no roomID is found, just navigate to /rooms
         this.$router.push("/rooms");

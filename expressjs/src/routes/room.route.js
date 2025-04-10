@@ -1,6 +1,5 @@
 const express = require('express');
 const { RoomController } = require('../controllers/room.controller.js');
-const socket = require("../socketHandle/socket.js");
 const auth = require('../middleware/auth.middleware.js');
 const { rateLimit } = require("express-rate-limit");
 

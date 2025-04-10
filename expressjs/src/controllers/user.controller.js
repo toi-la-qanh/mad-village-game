@@ -85,7 +85,7 @@ class UserController {
 
       return res
         .status(200)
-        .json({ message: "Tạo tài khoản thành công!", token: token });
+        .json({ message: "Tạo tài khoản thành công!" });
     },
   ];
 

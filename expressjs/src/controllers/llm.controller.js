@@ -9,7 +9,7 @@ const openai = new OpenAI({
 });
 
 const gameSummary = async (req, res) => {
-  const key = `llm:game-summary`;
+  const key = "llm:game-summary";
 
   const reply = await redis.get(key);
   if (!reply) {

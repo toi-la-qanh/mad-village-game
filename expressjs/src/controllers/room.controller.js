@@ -243,8 +243,9 @@ class RoomController {
 
       // Check if user is already in the room
       const isUserInRoom = room.players.some((player) =>
-        player.equals(user._id)
+        player.equals(user)
       );
+      
       if (isUserInRoom) {
         return res.status(200).json({
           message: "Bạn đã ở trong phòng này rồi!",
@@ -278,7 +279,7 @@ class RoomController {
 
       return res
         .status(200)
-        .json({ message: "Bạn đã ở trong phòng này rồi!", roomID: room._id });
+        .json({ message: "Vào phòng thành công!", roomID: room._id });
     },
   ];
 

@@ -196,9 +196,7 @@ class GameController {
         setTimeout(async () => {
           // Get current votes from Redis
           const gameVoteKey = `game:${game._id}:votes`;
-          if (gameVoteKey) {
-            await redis.del(gameVoteKey);
-          }
+          await redis.del(gameVoteKey);
 
           await this.updateGamePhase(game, "performAction");
 
@@ -466,7 +464,6 @@ class GameController {
     if (game.phases !== "showRoles") {
       return {
         status: 400,
-        message: "Wrong phase!",
       };
     }
 
@@ -477,7 +474,7 @@ class GameController {
       name: role.getName(),
       image: role.getImage(),
       description: role.getDescription(),
-      message: `Vai trò của bạn là ${role.getName()}`,
+      message: `Vai trò của bạn là ${role.getName()} ${role.getTrait() === "bad" ? " ác" : ""}`,
     };
 
     return roleData;
@@ -511,7 +508,6 @@ class GameController {
     if (game.phases !== "performAction") {
       return {
         status: 400,
-        message: "Wrong phase!",
       };
     }
 
@@ -579,7 +575,10 @@ class GameController {
 
     // Get the player's action from Redis
     const actionKey = `game:${game._id}:action:${this.playerID.toString()}`;
-    let action = await redis.get(actionKey);
+    let action = await redis.get(actionKey, (err, reply) => {
+      if (err || !reply) resolve([]);
+      else resolve(JSON.parse(reply));
+    });
 
     if (!action) {
       // Create new action if it doesn't exist
@@ -618,7 +617,8 @@ class GameController {
     action.name = inputAction;
     action.performer.push(socket.user);
     action.target.push(targetID);
-    await redis.set(actionKey, action);
+
+    await redis.set(actionKey, JSON.stringify(action), () => resolve());
 
     // Return success message
     return {
@@ -635,7 +635,6 @@ class GameController {
     if (game.phases !== "performAction") {
       return {
         status: 400,
-        message: "Wrong phase!",
       };
     }
 
@@ -650,7 +649,10 @@ class GameController {
 
     // Find state and target
     const actionKey = `game:${game._id}:action:${targetID.toString()}`;
-    const action = await redis.get(actionKey);
+    const action = await redis.get(actionKey, (err, reply) => {
+      if (err || !reply) resolve([]);
+      else resolve(JSON.parse(reply));
+    });
 
     if (!action) {
       return {
@@ -698,7 +700,7 @@ class GameController {
         message: `Bạn nhìn thấy ${performerNames} qua nhà ${targetName}`,
       };
     }
- 
+
     performerNames = game.players.find(
       (player) => player._id.toString() === action.performer.toString()
     ).name;
@@ -716,7 +718,6 @@ class GameController {
     if (game.phases !== "day") {
       return {
         status: 400,
-        message: "Wrong phase!",
       };
     }
     const players = game.players;
@@ -750,11 +751,15 @@ class GameController {
         trait: player.trait,
       }));
 
-      return this.socket.emit("game:end", {
+      this.socket.emit("game:end", {
         reason: reason,
         winner: winner,
         playerDetails: playerDetails,
       });
+
+      return {
+        status: "success",
+      };
     }
 
     if (deadPlayers.length === 0) {
@@ -768,7 +773,7 @@ class GameController {
     return {
       status: "success",
       message: "Những người chết đêm qua: " + deadPlayerNames,
-      data: deadPlayerNames,
+      playerNames: deadPlayerNames,
     };
   }
 
@@ -779,7 +784,6 @@ class GameController {
     if (game.phases !== "discussion") {
       return {
         status: 400,
-        message: "Wrong phase!",
       };
     }
 
@@ -811,8 +815,7 @@ class GameController {
       };
     }
 
-    this.socket.broadcast
-      .to(game.room.toHexString())
+    this.socket.to(game.room.toHexString())
       .emit("game:fetchDayChat", {
         playerName: player.name,
         message: message,
@@ -820,7 +823,6 @@ class GameController {
 
     return {
       status: "success",
-      message: "",
     };
   }
 
@@ -831,7 +833,6 @@ class GameController {
     if (game.period !== "night") {
       return {
         status: 400,
-        message: "Wrong phase!",
       };
     }
 
@@ -872,7 +873,6 @@ class GameController {
     if (game.phases !== "vote") {
       return {
         status: 400,
-        message: "Wrong phase!",
       };
     }
 
@@ -949,7 +949,6 @@ class GameController {
     if (game.phases !== "handleVotes") {
       return {
         status: 400,
-        message: "Wrong phase!",
       };
     }
 
@@ -1031,11 +1030,13 @@ class GameController {
       const reason = gameEnd.reason;
       const winner = gameEnd.winner;
 
-      return this.socket.emit("game:end", {
+      this.socket.emit("game:end", {
         reason: reason,
         winner: winner,
         playerDetails: playerDetails,
       });
+
+      return { status: "success" };
     }
 
     // Create appropriate message based on player role

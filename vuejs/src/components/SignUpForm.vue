@@ -1,10 +1,5 @@
-<script setup>
-import { authError, showSignUpForm } from "../store";
-</script>
-
 <template>
   <div
-    v-if="showSignUpForm"
     class="fixed h-screen flex z-20 w-full justify-center items-center bg-gray-900/20"
   >
     <div
@@ -51,11 +46,6 @@ import { authError, showSignUpForm } from "../store";
           </p>
           <p v-else class="text-red-500 text-center">{{ error }}</p>
         </div>
-
-        <!-- Success Message -->
-        <div v-if="successMessage" class="mt-4 text-center text-green-500">
-          <p>{{ successMessage }}</p>
-        </div>
       </form>
     </div>
   </div>
@@ -63,39 +53,37 @@ import { authError, showSignUpForm } from "../store";
 
 <script>
 import UserApi from "../api/user.api"; // Import the UserApi class
+import { authError } from "../store";
 
 export default {
   data() {
     return {
       name: "",
       isSubmitting: false,
-      successMessage: "",
-      error: authError.value,
+      error: null,
     };
   },
   methods: {
     async handleSignup() {
       this.isSubmitting = true;
-      this.successMessage = "";
       this.error = null;
 
       try {
         const user = new UserApi();
-        const response = await user.signup({
+        await user.signup({
           name: this.name,
         });
-        if (response != null) {
-          if (!this.$socketState.connected) {
-            this.$socket.connect();
-          }
-          this.isSubmitting = false;
-          showSignUpForm.value = false;
-        }
+        this.isSubmitting = false;
+        window.location.reload();
       } catch (error) {
-        if (error.response?.status === 422) {
-          this.error = error.response?.data?.errors?.map((err) => err.msg);
-        } else {
-          this.error = error.response?.data?.errors;
+        this.isSubmitting = false;
+        if (authError.value) this.error = authError.value;
+        else {
+          if (error.response?.status === 422) {
+            this.error = error.response?.data?.errors?.map((err) => err.msg);
+          } else {
+            this.error = error.response?.data?.errors;
+          }
         }
       }
     },

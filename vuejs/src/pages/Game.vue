@@ -81,7 +81,7 @@
       <p class="text-red-700">Lỗi không tìm thấy dữ liệu game</p>
       <button
         @click="reload()"
-        class="bg-green-400 hover:bg-green-300 border boder-black rounded-full p-2 mt-2"
+        class="text-gray-800 bg-green-400 hover:bg-green-300 border boder-black rounded-full p-2 mt-2"
       >
         Tải lại trang
       </button>
@@ -90,7 +90,7 @@
 </template>
 
 <script>
-import { defineAsyncComponent } from "vue";
+import { defineAsyncComponent, reactive } from "vue";
 import { showBackground } from "../store";
 
 export default {
@@ -125,24 +125,34 @@ export default {
       timeOut: null,
       timeOutMessage: null,
       openSettingsSection: false,
-      event: {
+      event: reactive({
         showRoles: false,
         performAction: false,
         day: false,
         discussion: false,
         nightChat: false,
-        vote: false,
+        vote: false, // Ensure this is reactive
         end: false,
-      },
+      }),
       gameMessage: "",
       characterSpeed: parseFloat(sessionStorage.getItem("speed")) || 1,
       animation: JSON.parse(sessionStorage.getItem("animation")) || true,
-      playerDetails: null,
+      playerDetails: reactive({}),
     };
   },
 
-  async mounted() {
+  mounted() {
     this.setupGameEvents();
+  },
+
+  activated() {
+    this.setupGameEvents(); // for <keep-alive>
+  },
+
+  computed: {
+    currentEvent() {
+      return { ...this.event };
+    }
   },
 
   methods: {
@@ -178,16 +188,21 @@ export default {
         this.error = data;
       });
 
+      this.$socket.on("game:end", (data) => {
+        if (!data) return;
+        this.playerDetails = data;
+      });
+
       this.$socket.onAny((eventName, ...args) => {
         console.log(eventName);
       });
 
       this.fetchGameData();
-      this.getGameEvents(); 
+      this.getGameEvents();
 
       this.$socket.on("game:update", () => {
         this.fetchGameData();
-        this.getGameEvents();  
+        this.getGameEvents();
       });
     },
 
@@ -197,8 +212,14 @@ export default {
         "game:event",
         localStorage.getItem("gameID"),
         (data) => {
-          console.log("yes");
-          this.gameMessage = data.message;
+          if (data.status === 400) return;
+
+          if (data.message) {
+            this.gameMessage = data.message;
+          }
+
+          this.resetEventFlags();
+          
           switch (data.phase) {
             case "showRoles":
               this.showRolesEvent(data);
@@ -281,12 +302,22 @@ export default {
       this.animation = newAnimation;
       this.openSettingsSection = false; // Close settings panel
     },
+
+    resetEventFlags() {
+      Object.keys(this.event).forEach((key) => {
+        this.event[key] = false;
+      });
+    },
   },
 
   beforeUnmount() {
     // Cleanup the socket listener when the component is destroyed
     this.$socket.off("game:error");
     this.$socket.off("game:timeout");
+    this.$socket.off("game:fetchDayChat");
+    this.$socket.off("game:fetchVotes");
+    this.$socket.off("game:voteResult");
+    this.$socket.off("game:message");
   },
 };
 </script>

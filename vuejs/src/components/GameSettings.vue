@@ -59,6 +59,8 @@
           </div>
         </div>
 
+        <button>Thoát game</button>
+
         <!-- Submit button -->
         <button @click="emitChangeSettings" class="w-full hover:bg-gray-400">
           Thay đổi

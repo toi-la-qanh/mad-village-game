@@ -1,5 +1,12 @@
 import UserApi from "../api/user.api";
-import { authError, errorMessages, isLoading, roomID, showSignUpForm, user } from "../store";
+import {
+  authError,
+  errorMessages,
+  isLoading,
+  roomID,
+  showSignUpForm,
+  user,
+} from "../store";
 import { socket } from "../socket";
 
 // Create singleton instance outside function to avoid recreating on each route change
@@ -18,19 +25,22 @@ export default async function authMiddleware(to, from, next) {
     }
 
     const response = await userApi.getUser();
-    
+
     if (response) {
       resetAuthState();
-      
+
       // Set user data
       user.value = {
         name: response.name,
         id: response.id,
       };
 
-      roomID.value = response.room;
+      if (response.room) {
+        roomID.value = response.room;
+        socket.emit("room:join", response.room);
+      }
 
-      if(response.message) {
+      if (response.message) {
         alert(response.message);
       }
 
@@ -68,7 +78,7 @@ function handleAuthError(error) {
   errorMessages.value = error.message || "Authentication failed";
   authError.value = error.response?.data?.errors;
   showSignUpForm.value = true;
-  
+
   if (socket.connected) {
     socket.disconnect();
   }

@@ -140,10 +140,6 @@ export default {
       type: Object,
       required: true,
     },
-    playerBeingWatched: {
-      type: Array,
-      required: false,
-    },
     characterSpeed: {
       type: Number,
       required: true,
@@ -227,6 +223,7 @@ export default {
     this.moveSpeed = this.characterSpeed;
     this.placeCharacters();
     window.addEventListener("resize", this.updateCanvasSize);
+    console.log(this.event);
   },
 
   methods: {
@@ -772,7 +769,7 @@ export default {
     },
 
     fetchAbilityIcons() {
-      socket.emit(
+      this.$socket.emit(
         "game:getAbilityIcons",
         localStorage.getItem("gameID"),
         (data) => {

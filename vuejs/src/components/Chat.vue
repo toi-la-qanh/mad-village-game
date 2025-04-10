@@ -18,10 +18,15 @@
 
       <!-- Fetch the chat messages -->
       <div
-        v-if="chat"
+        v-if="conversation"
         class="max-h-400 pb-10 flex flex-col py-2 pl-2 pr-7 gap-1"
       >
-        <div v-for="(data, index) in chat" :key="index" class="relative">
+        <div
+          v-if="conversation.chat"
+          v-for="(data, index) in conversation.chat"
+          :key="index"
+          class="relative"
+        >
           <div
             class="rounded-lg p-2"
             :class="{
@@ -62,10 +67,10 @@
                 <p>{{ player.name }}</p>
 
                 <!-- Votes count -->
-                <div>
+                <div v-if="conversation.votes">
                   {{
                     (
-                      votes.find((vote) => vote.target === player._id) || {
+                      conversation.votes.find((vote) => vote.target === player._id) || {
                         count: 0,
                       }
                     ).count
@@ -82,9 +87,13 @@
               </div>
             </div>
 
-            <p>Kết quả: {{ voteResult }}</p>
+            <p v-if="conversation.voteResult">Kết quả: {{ conversation.voteResult }}</p>
           </div>
         </div>
+      </div>
+
+      <div v-else>
+        <p class="text-center">Chưa có tin nhắn chờ</p>
       </div>
 
       <!-- Send Message Section -->
@@ -142,18 +151,11 @@ export default {
 
   data() {
     return {
-      chat: [
-        {
-          name: null,
-          message: null,
-        },
-      ],
+      conversation: this.initializeConversation(),
       username: user.value.name,
       newMessage: "",
       error: null,
       isVoted: false,
-      votes: JSON.parse(sessionStorage.getItem("votes")) || [],
-      voteResult: sessionStorage.getItem("voteResult") || "",
     };
   },
 
@@ -161,31 +163,71 @@ export default {
     FontAwesomeIcon,
   },
 
-  async mounted() {
-    this.fetchMessages();
-    if (this.voteEvent) {
-      this.fetchVotes();
-      this.getVoteResult();
-    }
+  mounted() {
+    this.setupSocketListeners();
   },
 
   methods: {
-    close() {
-      this.$emit("close");
+    initializeConversation() {
+      // Try to retrieve existing conversation state from session storage
+      const storedState = sessionStorage.getItem("conversation");
+      if (storedState) {
+        return JSON.parse(storedState);
+      }
+
+      // Default conversation state structure
+      return {
+        chat: [],
+        votes: [],
+        voteResult: "",
+      };
+    },
+
+    saveConversation() {
+      // Save the current conversation state to session storage
+      sessionStorage.setItem("conversation", JSON.stringify(this.conversation));
+    },
+
+    setupSocketListeners() {
+      // Chat messages listener
+      this.$socket.on("game:fetchDayChat", (data) => {
+        this.conversation.chat.push({
+          name: data.playerName,
+          message: data.message,
+        });
+        this.saveConversation();
+      });
+
+      // Votes listener
+      this.$socket.on("game:fetchVotes", (data) => {
+        this.conversation.votes = data;
+        this.saveConversation();
+      });
+
+      // Vote result listener
+      this.$socket.on("game:voteResult", (data) => {
+        if (data.status === "success") {
+          this.conversation.voteResult = data.message;
+          this.saveConversation();
+        }
+      });
+
+      // Game messages listener
+      this.$socket.on("game:message", (message) => {
+        this.conversation.gameMessages.push(message);
+        this.saveConversation();
+      });
     },
 
     sendMessage(event) {
-      // If dayChat is false, don't send the message
+      // Existing send message logic with added state saving
       if (!this.dayChat) {
-        if (event) {
-          event.preventDefault(); // Prevent Enter key action if the event is passed
-        }
-        return; // Prevent message sending
+        if (event) event.preventDefault();
+        return;
       }
 
-      if (!this.newMessage.trim()) return; // Don't send if the input is empty
+      if (!this.newMessage.trim()) return;
 
-      // Emit the message to the server
       this.$socket.emit(
         "game:discussion",
         localStorage.getItem("gameID"),
@@ -194,26 +236,16 @@ export default {
           if (data.status === "error") {
             this.error = data.message;
           } else {
-            this.chat.push({
+            this.conversation.chat.push({
               name: this.username,
               message: this.newMessage,
             });
             this.newMessage = "";
             this.error = null;
+            this.saveConversation();
           }
         }
       );
-    },
-
-    fetchMessages() {
-      // Fetch the chat messages from the server
-      this.$socket.on("game:fetchDayChat", (data) => {
-        console.log(data);
-        this.chat.push({
-          name: data.playerName,
-          message: data.message,
-        });
-      });
     },
 
     toggleVote(index) {
@@ -221,30 +253,9 @@ export default {
       this.$socket.emit("game:voteTarget", this.players[index]._id);
     },
 
-    fetchVotes() {
-      // Fetch the votes from the server
-      this.$socket.on("game:fetchVotes", (data) => {
-        sessionStorage.setItem("votes", JSON.stringify(data));
-        this.votes = data;
-      });
+    close() {
+      this.$emit("close");
     },
-
-    getVoteResult() {
-      this.$socket.on("game:voteResult", (data) => {
-        if (data.status === "success") {
-          sessionStorage.setItem("voteResult", data.message);
-          this.voteResult = data.message;
-        } else {
-          console.log(data.message);
-        }
-      });
-    },
-  },
-
-  beforeUnmount() {
-    socket.off("game:fetchDayChat");
-    socket.off("game:fetchVotes");
-    socket.off("game:voteResult");
   },
 };
 </script>

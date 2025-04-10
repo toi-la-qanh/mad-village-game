@@ -9,9 +9,16 @@
       <!-- Go back -->
       <button
         @click="goBack"
-        class="outline-none text-lime-700 hover:text-lime-600"
+        class="absolute left-3 text-lime-700 hover:text-lime-600"
       >
         < Quay về sảnh
+      </button>
+
+      <button
+        @click="refreshRoom"
+        class="absolute right-3 text-lime-700 hover:text-lime-600"
+      >
+        Tải lại <FontAwesomeIcon :icon="faRotate" />
       </button>
 
       <!-- Error -->
@@ -26,34 +33,43 @@
 
       <div v-else class="space-y-3">
         <!-- Title -->
-        <div class="flex justify-center gap-1">
-          <h3 class="text-2xl text-center">
-            Phòng chờ ({{ room.playerCount }}/{{ room.capacity }})
-          </h3>
-          <button @click="copyRoomLink"><FontAwesomeIcon :icon="faCopy"/></button>
+        <div class="flex flex-row w-full relative mt-4 justify-center gap-2">
+          <h3 class="text-2xl text-center">Phòng chờ</h3>
+          <div class="flex flex-row text-2xl">
+            (
+            <p v-if="room.playerCount">{{ room.playerCount }}</p>
+            /
+            <p v-if="room.capacity">{{ room.capacity }}</p>
+            )
+          </div>
+          <button @click="copyRoomLink">
+            <FontAwesomeIcon :icon="faCopy" />
+          </button>
         </div>
 
-        <!-- Room Owner -->
-        <p>Chủ phòng: {{ room.owner?.name }}</p>
+        <div v-if="room.owner">
+          <!-- Room Owner -->
+          <p v-if="room.owner.name">Chủ phòng: {{ room.owner.name }}</p>
 
-        <!-- Player -->
-        <div>
-          Người chơi:
-          <span v-for="(player, index) in filteredPlayers" :key="index">
-            {{ player.name }}
+          <!-- Player -->
+          <div>
+            Người chơi:
+            <span v-for="(player, index) in filteredPlayers" :key="index">
+              {{ player.name }}
 
-            <button
-              v-if="userID === room.owner?._id && player._id !== userID"
-              @click="kickPlayer(index)"
-              class="relative -top-2"
-            >
-              <FontAwesomeIcon
-                class="text-red-700 hover:text-gray-400"
-                :icon="faXmark"
-              />
-            </button>
-            <span v-if="index !== room.players.length - 2">, </span>
-          </span>
+              <button
+                v-if="userID === room.owner?._id && player._id !== userID"
+                @click="kickPlayer(index)"
+                class="relative -top-2"
+              >
+                <FontAwesomeIcon
+                  class="text-red-700 hover:text-gray-400"
+                  :icon="faXmark"
+                />
+              </button>
+              <span v-if="index !== room.players.length - 2">, </span>
+            </span>
+          </div>
         </div>
 
         <div v-if="errorWhenKickPlayer">
@@ -71,7 +87,10 @@
 
         <!-- User is not in the room -->
         <div v-if="!userInRoom" class="relative">
-          <div v-if="room.password" class="mt-5 text-center flex flex-wrap justify-center gap-3">
+          <div
+            v-if="room.password"
+            class="mt-5 text-center flex flex-wrap justify-center gap-3"
+          >
             <p class="text-2xl">Mật khẩu phòng:</p>
 
             <!-- Password Input -->
@@ -292,13 +311,18 @@ import GameApi from "../api/game.api";
 import { isLoading, roomID, user } from "../store";
 import { defineAsyncComponent } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faEye, faEyeSlash, faXmark } from "@fortawesome/free-solid-svg-icons";
-import {faCopy} from "@fortawesome/free-regular-svg-icons"
+import {
+  faEye,
+  faEyeSlash,
+  faRotate,
+  faXmark,
+} from "@fortawesome/free-solid-svg-icons";
+import { faCopy } from "@fortawesome/free-regular-svg-icons";
 import { faCircleInfo } from "@fortawesome/free-solid-svg-icons";
 
 export default {
   setup() {
-    return { faXmark, faCircleInfo, faEye, faEyeSlash, faCopy };
+    return { faXmark, faCircleInfo, faEye, faEyeSlash, faCopy, faRotate };
   },
 
   components: {
@@ -347,8 +371,8 @@ export default {
   },
 
   async mounted() {
+    this.handleSocketEvents();
     this.room = JSON.parse(sessionStorage.getItem("room"));
-    console.log(this.room);
     if (this.room == null) {
       await this.fetchRoom(this.$route.params.id);
     }
@@ -359,7 +383,6 @@ export default {
       } else {
         this.userInRoom = true;
       }
-      this.handleSocketEvents();
 
       // Get roles from session storage or fetch them
       this.roles = JSON.parse(sessionStorage.getItem("all_roles"));
@@ -368,10 +391,9 @@ export default {
   },
 
   beforeUnmount() {
-    // Clean up the socket listener to prevent memory leaks
     ["room:join", "room:update", "role:update", "game:started"].forEach(
       (event) => {
-        socket.off(event);
+        this.$socket.off(event);
       }
     );
 
@@ -393,7 +415,7 @@ export default {
         this.selectedRoles = data;
       });
 
-      // Take the user to the game page
+      // Move the user to the game page
       this.$socket.on("game:started", (gameID) => {
         localStorage.setItem("gameID", gameID);
         this.$router.push({ name: "game", params: { id: gameID } });
@@ -470,7 +492,6 @@ export default {
           roomID.value = null;
           this.$router.push("/rooms");
         } catch (error) {
-          console.error("Leave room error:", error);
           this.error = error.response?.data?.error || error.message;
         }
       } else {
@@ -510,7 +531,7 @@ export default {
     syncRolesWithServer() {
       this.$socket.emit("role:select", {
         role: this.selectedRoles,
-        roomID: this.room?.roomID,
+        roomID: this.room?._id,
       });
     },
 
@@ -622,6 +643,11 @@ export default {
           this.errorWhenKickPlayer = error.response?.data?.errors;
         }
       }
+    },
+
+    refreshRoom() {
+      this.room = null;
+      this.fetchRoom(this.$route.params.id);
     },
   },
 };
