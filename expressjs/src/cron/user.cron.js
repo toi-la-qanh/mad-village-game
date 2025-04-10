@@ -36,6 +36,6 @@ const checkForExpiringUsers = async () => {
 };
 
 // Run every 10 minutes instead of every minute for better performance
-cron.schedule("*/10 * * * *", checkForExpiringUsers);
+// cron.schedule("*/10 * * * *", checkForExpiringUsers);
 
 module.exports = checkForExpiringUsers;
