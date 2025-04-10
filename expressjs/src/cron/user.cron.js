@@ -30,9 +30,9 @@ const checkForExpiringUsers = async (req, res) => {
     return res.status(200).json({
       message: `Updated ${result.modifiedCount} users to 'about to close' status.`,
     });
-  } else {
-    return res.status(200).json({ message: "No users to update." });
   }
+  
+  return res.status(200).json({ message: "No users to update." });
 };
 
 // Run every 10 minutes instead of every minute for better performance
