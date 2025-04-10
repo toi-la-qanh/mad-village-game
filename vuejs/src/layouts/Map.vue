@@ -1,122 +1,128 @@
 <template>
-  <div class="flex absolute justify-center items-center w-screen h-screen">
-    <!-- Directly accessing the canvas element without ref -->
-    <canvas
-      ref="gameCanvas"
-      :width="canvasWidth"
-      :height="canvasHeight"
-      class="absolute touch-pan-x touch-pan-y"
-      :class="{
-        'brightness-75': game.period === 'night',
-      }"
-    ></canvas>
+  <div
+    class="flex absolute overflow-auto w-screen h-full touch-auto main-component"
+    style="scrollbar-width: none"
+  >
+    <div class="relative" style="min-width: 1300px; min-height: 900px">
+      <!-- Directly accessing the canvas element without ref -->
+      <canvas
+        ref="gameCanvas"
+        :width="canvasWidth"
+        :height="canvasHeight"
+        :class="{
+          'brightness-75': game.period === 'night',
+        }"
+      ></canvas>
 
-    <!-- House Interacting -->
-    <div
-      v-for="(house, index) in housePositions"
-      :key="index"
-      class="absolute"
-      :style="{
-        top: `${house.y}px`,
-        left: `${house.x}px`,
-        width: `${house.width}px`,
-        height: `${house.height}px`,
-      }"
-    >
-      <!-- House Click -->
-      <button
-        @click="onButtonClick(index)"
-        class="relative bottom-0 left-0 w-full h-full cursor-pointer"
-      ></button>
-
-      <!-- Display house details when clicked -->
-      <p
-        v-if="clickedHouseIndex === index"
-        class="flex items-end justify-center text-xs"
-      >
-        {{ playerNames[index] }}
-      </p>
-
-      <!-- House Selected -->
-      <transition
-        name="fade"
-        @before-enter="beforeEnter"
-        @enter="enter"
-        @leave="leave"
-      >
-        <!-- Player can only interact with houses of other players -->
-        <div
-          v-if="
-            clickedHouseIndex === index &&
-            !selectButtonClicked &&
-            playerIDs[index] !== user_id &&
-            event.performAction
-          "
-          class="absolute bottom-0 left-0 w-full h-full flex justify-center items-center"
-        >
-          <!-- Select house button -->
-          <button
-            @click="getTarget(playerIDs[index], index)"
-            class="bg-blue-500 p-1 hover:text-white rounded"
-            :class="{ hidden: targetSelected === true }"
-          >
-            Chọn
-          </button>
-        </div>
-      </transition>
-
-      <!-- Choose action -->
+      <!-- House Interacting -->
       <div
-        class="flex absolute w-20 top-5 left-[-15px] justify-center gap-2"
-        v-for="(icon, index) in abilityIcons"
-        v-if="
-          playerIDs[index] !== user_id &&
-          !selectButtonClicked &&
-          endMoving &&
-          clickedHouseIndex === index &&
-          game.phase === 'performAction'
-        "
+        v-for="(house, index) in housePositions"
         :key="index"
+        class="absolute"
+        :style="{
+          top: `${house.y}px`,
+          left: `${house.x}px`,
+          width: `${house.width}px`,
+          height: `${house.height}px`,
+        }"
       >
-        <div
-          class="transform hover:scale-120 transition-all items-center flex w-8 h-8 p-1 justify-center bg-green-500 rounded-full"
+        <!-- House Click -->
+        <button
+          @click="onButtonClick(index)"
+          class="relative bottom-0 left-0 w-full h-full cursor-pointer"
+        ></button>
+
+        <!-- Display house details when clicked -->
+        <p
+          v-if="clickedHouseIndex === index"
+          class="flex items-end justify-center text-xs"
         >
-          <button class="" @click="handleAbilityIconsClick(index)">
-            <img :src="'data:image/png;base64,' + icon" alt="Ability Icon" />
-          </button>
+          {{ playerNames[index] }}
+        </p>
+
+        <!-- House Selected -->
+        <transition
+          name="fade"
+          @before-enter="beforeEnter"
+          @enter="enter"
+          @leave="leave"
+        >
+          <!-- Player can only interact with houses of other players -->
+          <div
+            v-if="
+              clickedHouseIndex === index &&
+              !selectButtonClicked &&
+              playerIDs[index] !== user_id &&
+              event.performAction
+            "
+            class="absolute bottom-0 left-0 w-full h-full flex justify-center items-center"
+          >
+            <!-- Select house button -->
+            <button
+              @click="getTarget(playerIDs[index], index)"
+              class="bg-blue-500 p-1 hover:text-white rounded"
+              :class="{ hidden: targetSelected === true }"
+            >
+              Chọn
+            </button>
+          </div>
+        </transition>
+
+        <!-- Choose action -->
+        <div
+          class="flex absolute w-20 top-5 left-[-15px] justify-center gap-2"
+          v-for="(icon, index) in abilityIcons"
+          v-if="
+            playerIDs[index] !== user_id &&
+            !selectButtonClicked &&
+            endMoving &&
+            clickedHouseIndex === index &&
+            game.phase === 'performAction'
+          "
+          :key="index"
+        >
+          <div
+            class="transform hover:scale-120 transition-all items-center flex w-8 h-8 p-1 justify-center bg-green-500 rounded-full"
+          >
+            <button class="" @click="handleAbilityIconsClick(index)">
+              <img :src="'data:image/png;base64,' + icon" alt="Ability Icon" />
+            </button>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Character Animation -->
-    <div
-      v-if="(isMoving || isBeingWatched) && animation && game.period !== 'day'"
-      class="absolute"
-      :style="{
-        top: `${characterPosition.y}px`,
-        left: `${characterPosition.x}px`,
-      }"
-    >
-      <p class="text-xs absolute top-[-20px] left-[-10px]">
-        {{ characterMovingName }}
-      </p>
-      <!-- Character image or div -->
-      <img :src="characterImageSrc" alt="Character" />
-    </div>
+      <!-- Character Animation -->
+      <div
+        v-if="
+          (isMoving || isBeingWatched) && animation && game.period !== 'day'
+        "
+        class="absolute"
+        :style="{
+          top: `${characterPosition.y}px`,
+          left: `${characterPosition.x}px`,
+        }"
+      >
+        <p class="text-xs absolute top-[-20px] left-[-10px]">
+          {{ characterMovingName }}
+        </p>
+        <!-- Character image or div -->
+        <img :src="characterImageSrc" alt="Character" />
+      </div>
 
-    <!-- Player is gathering -->
-    <div
-      v-if="isGathering && game.period !== 'night'"
-      v-for="(character, index) in charactersGathering"
-      :key="index"
-      class="absolute"
-      :style="{
-        top: `${character.y}px`,
-        left: `${character.x}px`,
-      }"
-    >
-      <!-- Character image or div -->
-      <img :src="character.imageSrc" alt="Character" />
+      <!-- Player is gathering -->
+      <div
+        v-if="isGathering && game.period !== 'night'"
+        v-for="(character, index) in charactersGathering"
+        :key="index"
+        class="absolute"
+        :style="{
+          top: `${character.y}px`,
+          left: `${character.x}px`,
+        }"
+      >
+        <!-- Character image or div -->
+        <img :src="character.imageSrc" alt="Character" />
+      </div>
     </div>
   </div>
 </template>
@@ -162,8 +168,8 @@ export default {
 
   data() {
     return {
-      canvasWidth: Math.max(window.innerWidth, 468),
-      canvasHeight: window.innerHeight,
+      canvasWidth: 1300,
+      canvasHeight: 1000,
       housePositions: [], // Store positions of the houses
       clickedHouseIndex: null,
       selectButtonClicked: false,
@@ -223,6 +229,10 @@ export default {
     this.moveSpeed = this.characterSpeed;
     this.placeCharacters();
     window.addEventListener("resize", this.updateCanvasSize);
+    // Center the view programmatically after the component is mounted
+    this.$nextTick(() => {
+      this.centerViewport();
+    });
     console.log(this.event);
   },
 
@@ -296,8 +306,8 @@ export default {
       const anglePerPlayer = 360 / this.playerCount;
       const characterRadius = 100; // Distance from the center to place the character
       // const canvas = this.$el.querySelector("canvas"); // Access canvas element
-      const Ox = window.innerWidth / 2;
-      const Oy = window.innerHeight / 2;
+      const Ox = this.canvasWidth / 2;
+      const Oy = this.canvasHeight / 2;
       this.isGathering = true;
 
       this.charactersGathering = []; // Reset characters array
@@ -786,9 +796,30 @@ export default {
     },
 
     updateCanvasSize() {
-      this.canvasWidth = Math.max(window.innerWidth, 468);
-      this.canvasHeight = window.innerHeight;
+      // Set minimum width/height while allowing for larger screens
+      this.canvasWidth = Math.max(1300, window.innerWidth);
+      this.canvasHeight = Math.max(1000, window.innerHeight);
       this.loadMapImage(); // Re-load map after resize
+
+      // Recenter after resize
+      this.$nextTick(() => {
+        this.centerViewport();
+      });
+    },
+
+    centerViewport() {
+      // Get the scrollable container
+      const container = this.$el.closest(".main-component");
+      console.log(container);
+      if (!container) return;
+
+      // Calculate center position - center on the canvas
+      const scrollX = (this.canvasWidth - container.clientWidth) / 2;
+      const scrollY = (this.canvasHeight - container.clientHeight) / 2;
+
+      // Apply scroll position
+      if (scrollX > 0) container.scrollLeft = scrollX;
+      if (scrollY > 0) container.scrollTop = scrollY;
     },
   },
 

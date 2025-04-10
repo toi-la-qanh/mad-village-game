@@ -8,7 +8,7 @@
       <!-- Close Button -->
       <button @click="close" class="absolute left-3 top-2 z-10">
         <FontAwesomeIcon
-          class="text-green-700 text-xl hover:text-gray-400"
+          class="text-green-700 text-2xl hover:text-gray-400"
           :icon="faArrowLeft"
         />
       </button>
@@ -23,7 +23,7 @@
       >
         <button @click="showListOfContents">
           <FontAwesomeIcon
-            class="text-xl text-green-700 hover:text-gray-400"
+            class="text-2xl text-green-700 hover:text-gray-400"
             :icon="faListUl"
           />
         </button>
