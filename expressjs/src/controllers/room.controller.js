@@ -1,6 +1,7 @@
 const { checkSchema, validationResult } = require("express-validator");
 const Room = require("../models/room.model");
 const { ObjectId } = require("mongodb");
+const redis = require("../database/redis");
 const bcrypt = require("bcrypt");
 
 class RoomController {
@@ -69,7 +70,7 @@ class RoomController {
       playerCount: room.players.length,
     }));
 
-    const newLastRoomId = validRooms[validRooms.length - 1]._id;
+    const newLastRoomId = validRooms[validRooms.length - 1]?._id;
     return res.status(200).json({
       rooms: roomDetails,
       newLastRoomId, // Return the id of the last room for the next request
@@ -200,11 +201,14 @@ class RoomController {
 
       await room.save();
 
-      const roomID = room._id;
+      await redis.set(
+        `user:${req.user}`,
+        JSON.stringify({ roomID: room._id, gameID: null })
+      );
 
       return res
         .status(200)
-        .json({ message: "Tạo phòng thành công !", roomID });
+        .json({ message: "Tạo phòng thành công !", roomID: room._id });
     },
   ];
 
@@ -242,10 +246,8 @@ class RoomController {
       }
 
       // Check if user is already in the room
-      const isUserInRoom = room.players.some((player) =>
-        player.equals(user)
-      );
-      
+      const isUserInRoom = room.players.some((player) => player.equals(user));
+
       if (isUserInRoom) {
         return res.status(200).json({
           message: "Bạn đã ở trong phòng này rồi!",
@@ -276,6 +278,10 @@ class RoomController {
       // Add user to room
       room.players.push(user);
       await room.save();
+      await redis.set(
+        `user:${req.user}`,
+        JSON.stringify({ roomID: room._id, gameID: null })
+      );
 
       return res
         .status(200)
@@ -324,11 +330,12 @@ class RoomController {
       room.players.remove(user);
 
       await room.save();
-      const roomID = room._id;
+
+      await redis.del(`user:${user}`);
 
       return res
         .status(200)
-        .json({ message: "Rời phòng thành công!", roomID: roomID });
+        .json({ message: "Rời phòng thành công!", roomID: room._id });
     },
   ];
 
@@ -476,6 +483,8 @@ class RoomController {
 
       // Save the updated room document
       await room.save();
+
+      await redis.del(`user:${user_id}`);
 
       return res.status(200).json({
         message: "Đã xoá một người dùng ra khỏi phòng!",

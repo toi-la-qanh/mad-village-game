@@ -1,11 +1,11 @@
 <template>
-  <BackGround v-if="showBackground"/>
-  <router-view class="z-10 absolute"/>
+  <BackGround v-if="showBackground" />
+  <router-view class="z-10 absolute" />
   <SignUpForm v-if="showSignUpForm" />
-  <ErrorPopup v-if="errorMessages && !showSignUpForm"/>
-  <Loading v-if="isLoading"/>
+  <ErrorPopup v-if="errorMessages && !showSignUpForm" />
+  <Loading v-if="isLoading" />
 </template>
- 
+
 <script>
 import { defineAsyncComponent } from 'vue';
 import { showSignUpForm, showBackground, errorMessages, isLoading } from './store';

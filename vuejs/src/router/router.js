@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 import authMiddleware from "../middlewares/auth.middleware";
 import { socket } from "../socket";
-import { roomID } from "../store";
+import { gameID, roomID } from "../store";
 
 const routes = [
   {
@@ -56,22 +56,22 @@ const router = createRouter({
 router.afterEach(async (to, from) => {
   // Assuming roomID is a reactive ref
   const room = roomID.value;
-  const gameID = localStorage.getItem("gameID");
+  const game = gameID.value;
   
   if (!from.name) {
     // First-time load handling
     
     // Redirect to the last room if available
-    if (room && !gameID && to.name !== "room") {
+    if (room && !game && to.name !== "room") {
       socket.emit("room:join", room);  // Join the room via socket
       router.push({ name: "room", params: { id: room } });  // Use `router` instead of `this.$router`
       return;
     }
 
     // Redirect to the last game if available
-    if (room && gameID && to.name !== "game") {
+    if (room && game && to.name !== "game") {
       socket.emit("room:join", room);  // Join the room via socket
-      router.push({ name: "game", params: { id: gameID } });  // Redirect to game
+      router.push({ name: "game", params: { id: game } });  // Redirect to game
       return;
     }
   }

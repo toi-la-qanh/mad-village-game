@@ -33,6 +33,23 @@ class GameController {
     this.io = io;
     this.socket = socket;
     this.playerID = this.socket.user;
+    this.updateTimeout = null; // Add debounce timeout
+  }
+
+  // Add debounced update method
+  debouncedUpdate(game) {
+    if (this.updateTimeout) {
+      clearTimeout(this.updateTimeout);
+    }
+
+    this.updateTimeout = setTimeout(() => {
+      this.io.to(game.room.toHexString()).emit("game:update", {
+        phase: game.phases,
+        period: game.period,
+        day: game.day,
+      });
+      this.updateTimeout = null;
+    }, 100); // 100ms debounce
   }
 
   /**
@@ -43,7 +60,7 @@ class GameController {
     if (!game) {
       this.handleError("Không tìm thấy ván chơi!");
       this.socket.disconnect();
-      return;
+      return null;
     }
     return game;
   }
@@ -54,7 +71,7 @@ class GameController {
   async updateGamePhase(game, phase) {
     game.phases = phase;
     await game.save();
-    this.socket.emit("game:update", game.phases);
+    this.debouncedUpdate(game);
   }
 
   /**
@@ -113,7 +130,6 @@ class GameController {
 
       // Get the max value to end the loop
       const maxTurn = Math.max(...playerTurns);
-      console.log(maxTurn);
 
       // Move to the next phase
       if (game.currentTurn > maxTurn) {
@@ -128,24 +144,29 @@ class GameController {
         game.period = "day";
         game.day += 1;
         await game.save();
+
+        return { message: "Chuyển qua giai đoạn tiếp theo" };
       }
 
       // Emit timeout to client
       const actionTimeout = 30000;
       this.emitTimeOut(actionTimeout, "Thời gian hành động");
 
-      // Set a timeout to update turn
-      const timeoutId = setTimeout(async () => {
-        // After timeout, update the currentPriorityLevel
-        game.currentTurn += 1; // Move to the next priority level
-        await game.save(); // Save the updated game state
-      }, actionTimeout);
+      // Create a promise that resolves after timeout
+      const timeoutPromise = new Promise((resolve) => {
+        setTimeout(async () => {
+          await this.updateTurn(game);
+          resolve({
+            message: "Hết thời gian hành động, chuyển sang lượt kế tiếp",
+          });
+        }, actionTimeout);
+      });
 
-      // Perform the action
-      const result = await this.performAction(game);
+      // Create a promise for the player's action
+      const actionPromise = this.performAction(game);
 
-      // If action completes before timeout, clear the timeout
-      clearTimeout(timeoutId);
+      // Race between timeout and player action
+      const result = await Promise.race([timeoutPromise, actionPromise]);
 
       return result;
     };
@@ -168,29 +189,37 @@ class GameController {
 
     // Discussion event
     const discussionPhaseEvent = async (game) => {
-      const data = await this.discussionPhase(game);
       this.emitTimeOut(game.discussion_time * 1000, "Thời gian thảo luận");
+      const waitForMessage = () => {
+        return new Promise((resolve) => {
+          this.socket.on("game:discussion", (data) => {
+            resolve(data);
+          });
+        });
+      };
+
+      const message = waitForMessage();
+
       setTimeout(async () => {
         await this.updateGamePhase(game, "vote");
       }, game.discussion_time * 1000);
 
+      const data = await this.discussionPhase(game, message);
       return data;
     };
 
     // Vote event
     const votePhaseEvent = async (game) => {
-      const data = await this.votePhase(game);
-
       this.emitTimeOut(game.vote_time * 1000, "Thời gian bỏ phiếu");
-      this.socket.emit("game:fetchVotes", game.votes);
 
       setTimeout(async () => {
+        console.log("handle votes phase");
         await this.updateGamePhase(game, "handleVotes");
         // Handle the vote event
         const result = await this.afterVoteHandler(game);
 
         // Emit to client
-        this.socket.emit("game:voteResult", result);
+        this.io.to(game.room.toHexString()).emit("game:voteResult", result);
 
         // Update to the next phase
         setTimeout(async () => {
@@ -203,14 +232,16 @@ class GameController {
           // Update the game's period
           game.period = "night";
           await game.save();
-        }, 10000);
+        }, 5000);
       }, game.vote_time * 1000);
 
+      const data = await this.votePhase(game);
       return data;
     };
 
     // Retrieve the game data to the client
     this.socket.on("game:data", async (gameID, callback) => {
+      console.log("game:data", gameID);
       const game = await this.getGameData(gameID);
       const data = {
         room: game.room,
@@ -227,6 +258,7 @@ class GameController {
 
     // Retrieve the game event to the client
     this.socket.on("game:event", async (gameID, callback) => {
+      console.log("game:data", gameID);
       const game = await this.getGameData(gameID);
       console.log(`The game is at ${game.phases} phase`);
       let result;
@@ -253,6 +285,9 @@ class GameController {
           result.phase = "vote"; // Add phase info
           break;
         case "end":
+          const keysToDelete = game.players.map((p) => `user:${p._id}`);
+          await redis.del(...keysToDelete);
+
           await game.deleteOne();
           result = { message: "Game has been ended!", phase: "end" }; // Add phase info
           break;
@@ -263,6 +298,13 @@ class GameController {
 
       callback(result); // Send the result with phase info back to the client
     });
+  }
+
+  async updateTurn(game) {
+    game.currentTurn += 1;
+    await game.save();
+    this.debouncedUpdate(game);
+    console.log("update turns to", game.currentTurn);
   }
 
   /**
@@ -439,7 +481,7 @@ class GameController {
 
       // Create game object with optional time settings
       const gameData = {
-        room: roomID,
+        room: ObjectId.createFromHexString(roomID),
         players: players,
         gameTurns: gameTurns,
       };
@@ -450,6 +492,22 @@ class GameController {
 
       const game = new Game(gameData);
       await game.save();
+
+      // Get player IDs from the game object
+      const playerIds = game.players.map((player) => player._id.toString());
+
+      // Set each player in Redis
+      for (const playerId of playerIds) {
+        const redisKey = `user:${playerId}`;
+
+        await redis.set(
+          redisKey,
+          JSON.stringify({
+            roomID: game.room.toString(),
+            gameID: game._id.toString(),
+          })
+        );
+      }
 
       return res
         .status(200)
@@ -474,7 +532,9 @@ class GameController {
       name: role.getName(),
       image: role.getImage(),
       description: role.getDescription(),
-      message: `Vai trò của bạn là ${role.getName()} ${role.getTrait() === "bad" ? " ác" : ""}`,
+      message: `Vai trò của bạn là ${role.getName()} ${
+        role.getTrait() === "bad" ? " ác" : ""
+      }`,
     };
 
     return roleData;
@@ -492,10 +552,10 @@ class GameController {
     // }
 
     const player = this.getPlayer(game);
-    const role = RoleController.getRoleFromPlayer(player.role, player.trait);
+    const role = RoleController.getRoleFromPlayer(player?.role, player?.trait);
     const data = {
-      availableAction: role.getAvailableAction(),
-      abilityIcons: role.getAbilityIcons(),
+      availableAction: role?.getAvailableAction(),
+      abilityIcons: role?.getAbilityIcons(),
     };
 
     return data;
@@ -513,19 +573,41 @@ class GameController {
 
     const player = this.getPlayer(game);
 
+    // Validate player's ability to perform action
+    if (!player || !player.status.isAlive) {
+      return {
+        status: "error",
+        message: "Bạn không thể thực hiện hành động!",
+      };
+    }
+
+    // Priority check
+    if (player.priority !== game.currentTurn) {
+      this.emitTimeOut(null, "Chờ người khác hành động");
+      this.socket.emit("game:yourTurn", false);
+
+      return {
+        status: "error",
+        message: "Chưa đến lượt của bạn!",
+      };
+    }
+
+    this.socket.emit("game:yourTurn", true);
+
+    // Timeout setup
+    this.emitTimeOut(30000, "Thời gian hành động");
+
     const waitForTarget = () => {
       return new Promise((resolve) => {
         const handler = (data) => {
-          if (player.priority !== game.currentPriorityLevel) {
-            this.emitTimeOut(null, "Chờ người khác hành động");
-            return;
-          }
           this.socket.off("game:targetSelected", handler);
           resolve(data);
         };
         this.socket.on("game:targetSelected", handler);
       });
     };
+
+    this.emitTimeOut(30000, "Thời gian hành động");
 
     // Wait for the target selection or timeout
     const targetID = await waitForTarget();
@@ -575,13 +657,11 @@ class GameController {
 
     // Get the player's action from Redis
     const actionKey = `game:${game._id}:action:${this.playerID.toString()}`;
-    let action = await redis.get(actionKey, (err, reply) => {
-      if (err || !reply) resolve([]);
-      else resolve(JSON.parse(reply));
-    });
+    let action = await redis.get(actionKey);
 
-    if (!action) {
-      // Create new action if it doesn't exist
+    if (action) {
+      action = JSON.parse(action);
+    } else {
       action = {
         status: "pending",
         name: "",
@@ -615,10 +695,10 @@ class GameController {
     // Save successful action
     action.status = "successful";
     action.name = inputAction;
-    action.performer.push(socket.user);
+    action.performer.push(this.playerID);
     action.target.push(targetID);
 
-    await redis.set(actionKey, JSON.stringify(action), () => resolve());
+    await redis.set(actionKey, JSON.stringify(action));
 
     // Return success message
     return {
@@ -632,7 +712,7 @@ class GameController {
    */
   async watchOtherPlayers(game, targetID) {
     // Only wacth other players in perform action phase
-    if (game.phases !== "performAction") {
+    if (game?.phases !== "performAction") {
       return {
         status: 400,
       };
@@ -649,16 +729,12 @@ class GameController {
 
     // Find state and target
     const actionKey = `game:${game._id}:action:${targetID.toString()}`;
-    const action = await redis.get(actionKey, (err, reply) => {
-      if (err || !reply) resolve([]);
-      else resolve(JSON.parse(reply));
-    });
+    const actionData = await redis.get(actionKey);
+
+    const action = actionData ? JSON.parse(actionData) : null;
 
     if (!action) {
-      return {
-        status: "error",
-        message: "Invalid state!",
-      };
+      return { message: "Lỗi hành động" };
     }
 
     const target = game.players.find(
@@ -751,7 +827,7 @@ class GameController {
         trait: player.trait,
       }));
 
-      this.socket.emit("game:end", {
+      this.io.to(game.room.toHexString()).emit("game:end", {
         reason: reason,
         winner: winner,
         playerDetails: playerDetails,
@@ -780,22 +856,12 @@ class GameController {
   /**
    * Method to allow players to chat and discuss in the morning
    */
-  async discussionPhase(game) {
+  async discussionPhase(game, message) {
     if (game.phases !== "discussion") {
       return {
         status: 400,
       };
     }
-
-    const waitForMessage = () => {
-      return new Promise((resolve) => {
-        this.socket.on("game:discussion", (data) => {
-          resolve(data);
-        });
-      });
-    };
-
-    const message = await waitForMessage();
 
     // Validate data
     if (!message) {
@@ -808,18 +874,18 @@ class GameController {
     // Check if player exists and is alive
     const player = this.getPlayer(game);
 
-    if (!player.status.isAlive) {
+    if (!player || !player.status.isAlive) {
       return {
         status: "error",
         message: "Bạn không thể nói chuyện!",
       };
     }
 
-    this.socket.to(game.room.toHexString())
-      .emit("game:fetchDayChat", {
-        playerName: player.name,
-        message: message,
-      });
+    // Broadcast the message to all players in the room
+    this.io.to(game.room.toHexString()).emit("game:fetchDayChat", {
+      playerName: player.name,
+      message: message,
+    });
 
     return {
       status: "success",
@@ -916,25 +982,47 @@ class GameController {
 
     // Get current votes from Redis
     const gameVoteKey = `game:${game._id}:votes`;
-    const currentVotes = await redis.get(gameVoteKey, (err, reply) => {
-      if (err || !reply) resolve([]);
-      else resolve(JSON.parse(reply));
-    });
+    let currentVotes = [];
+    const votesData = await redis.get(gameVoteKey);
+    if (votesData) {
+      currentVotes = JSON.parse(votesData);
+    } else {
+      return { message: "Lỗi vote rồi" };
+    }
 
-    // Update vote counts
-    const existingVote = currentVotes.find(
+    // Check if user already voted
+    const userVoteIndex = currentVotes.findIndex(
+      (vote) => vote.voter && vote.voter.toString() === this.playerID.toString()
+    );
+
+    // Remove previous vote if exists
+    if (userVoteIndex !== -1) {
+      currentVotes.splice(userVoteIndex, 1);
+    }
+
+    // Find if target already has votes
+    const existingVoteIndex = currentVotes.findIndex(
       (vote) => vote.target.toString() === targetID.toString()
     );
 
-    if (existingVote) {
-      existingVote.count += 1;
+    if (existingVoteIndex !== -1) {
+      // Update existing vote count
+      currentVotes[existingVoteIndex].count += 1;
+      currentVotes[existingVoteIndex].voters =
+        currentVotes[existingVoteIndex].voters || [];
+      currentVotes[existingVoteIndex].voters.push(this.playerID);
     } else {
-      currentVotes.push({ target: targetID, count: 1 });
+      // Create new vote entry
+      currentVotes.push({
+        target: targetID,
+        count: 1,
+        voters: [this.playerID],
+      });
     }
 
-    this.socket.emit("fetchVotes", currentVotes);
+    this.io.to(game.room.toHexString()).emit("fetchVotes", currentVotes);
     // Save updated votes back to Redis
-    await redis.set(gameVoteKey, JSON.stringify(currentVotes), () => resolve());
+    await redis.set(gameVoteKey, JSON.stringify(currentVotes));
 
     return {
       status: "success",
@@ -956,18 +1044,13 @@ class GameController {
     const gameVoteKey = `game:${game._id}:votes`;
 
     // Retrieve the vote data
-    const voteData = await redis.get(gameVoteKey, (err, reply) => {
-      if (err) {
-        reject("Error fetching vote data from Redis");
-      } else if (!reply) {
-        resolve([]); // No votes found, return an empty array
-      } else resolve(JSON.parse(reply));
-    });
-
+    const votes = await redis.get(gameVoteKey);
     // Early return if no votes
-    if (!voteData.length) {
+    if (!votes) {
       return { status: "success", message: "Không ai bỏ phiếu!" };
     }
+
+    const voteData = JSON.parse(votes);
 
     const maxCount = Math.max(...voteData.map((vote) => vote.count));
     const alivePlayers = game.players.filter(
@@ -985,10 +1068,6 @@ class GameController {
     if (tiedVotes.length > 1) {
       return {
         status: "tie",
-        tiedTargets: tiedVotes.map((vote) => ({
-          target: vote.target,
-          count: vote.count,
-        })),
         message: `Hoà với số phiếu ${maxCount} nên không ai bị treo cổ!`,
       };
     }
@@ -1030,7 +1109,7 @@ class GameController {
       const reason = gameEnd.reason;
       const winner = gameEnd.winner;
 
-      this.socket.emit("game:end", {
+      this.io.to(game.room.toHexString()).emit("game:end", {
         reason: reason,
         winner: winner,
         playerDetails: playerDetails,

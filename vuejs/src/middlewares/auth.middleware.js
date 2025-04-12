@@ -4,6 +4,7 @@ import {
   errorMessages,
   isLoading,
   roomID,
+  gameID,
   showSignUpForm,
   user,
 } from "../store";
@@ -38,6 +39,10 @@ export default async function authMiddleware(to, from, next) {
       if (response.room) {
         roomID.value = response.room;
         socket.emit("room:join", response.room);
+      }
+
+      if (response.game) {
+        gameID.value = response.game;
       }
 
       if (response.message) {

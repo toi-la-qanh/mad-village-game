@@ -53,7 +53,7 @@
               clickedHouseIndex === index &&
               !selectButtonClicked &&
               playerIDs[index] !== user_id &&
-              event.performAction
+              yourTurn
             "
             class="absolute bottom-0 left-0 w-full h-full flex justify-center items-center"
           >
@@ -77,7 +77,7 @@
             !selectButtonClicked &&
             endMoving &&
             clickedHouseIndex === index &&
-            game.phase === 'performAction'
+            yourTurn
           "
           :key="index"
         >
@@ -93,9 +93,7 @@
 
       <!-- Character Animation -->
       <div
-        v-if="
-          (isMoving || isBeingWatched) && animation && game.period !== 'day'
-        "
+        v-if="isMoving && animation && game.period !== 'day'"
         class="absolute"
         :style="{
           top: `${characterPosition.y}px`,
@@ -128,7 +126,7 @@
 </template>
 
 <script>
-import { user } from "../store";
+import { user, gameID } from "../store";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faXmark } from "@fortawesome/free-solid-svg-icons";
 
@@ -151,6 +149,10 @@ export default {
       required: true,
     },
     animation: {
+      type: Boolean,
+      required: true,
+    },
+    yourTurn: {
       type: Boolean,
       required: true,
     },
@@ -178,7 +180,6 @@ export default {
       user_id: user.value.id,
       isMoving: false,
       isGathering: false,
-      isBeingWatched: false,
       characterPosition: { x: 0, y: 0, width: 0, height: 0 },
       targetPosition: { x: 0, y: 0, width: 0, height: 0 },
       moveSpeed: 2,
@@ -233,7 +234,6 @@ export default {
     this.$nextTick(() => {
       this.centerViewport();
     });
-    console.log(this.event);
   },
 
   methods: {
@@ -416,20 +416,17 @@ export default {
         this.selectButtonClicked = true;
         if (targetID) {
           this.$socket.emit("game:targetSelected", targetID);
+          this.targetSelected = true;
 
-          this.$socket.emit(
-            "game:watch",
-            localStorage.getItem("gameID"),
-            targetID,
-            (data) => {
-              if (data.status !== "error") {
-                this.playerBeingWatched = data.performers;
-              }
+          this.$socket.emit("game:watch", this.game._id, targetID, (data) => {
+            if (data.status !== "error") {
+              this.playerBeingWatched = data.performers;
             }
-          );
+          });
         }
         this.clickedHouseIndex = null;
       }
+
       const targetHouse = this.housePositions[index];
       this.targetPosition = targetHouse;
       if (this.animation) {
@@ -439,7 +436,7 @@ export default {
         if (this.playerBeingWatched.length > 0) {
           for (let i = 0; i < this.playerBeingWatched.length; i++) {
             // Wait for the previous character to finish moving before calling the next one
-            await this.delay(i * 5000); // Delay each character by 500ms (you can adjust this time)
+            await this.delay(i * 5000); // Delay each character by 500ms
             this.characterMovingName = this.characterss[i];
             this.watchCharacterMoving(targetHouse);
           }
@@ -771,7 +768,6 @@ export default {
       this.characterImageSrc = imageSrc; // This should trigger a re-render
       // Log for debugging
       this.characterImageSrcs[index] = imageSrc;
-      console.log(this.characterImageSrcs);
     },
 
     delay(ms) {
@@ -779,20 +775,16 @@ export default {
     },
 
     fetchAbilityIcons() {
-      this.$socket.emit(
-        "game:getAbilityIcons",
-        localStorage.getItem("gameID"),
-        (data) => {
-          this.abilityIcons = data.abilityIcons;
-          this.availableActions = data.availableAction;
-        }
-      );
+      this.$socket.emit("game:getAbilityIcons", this.game._id, (data) => {
+        this.abilityIcons = data.abilityIcons;
+        this.availableActions = data.availableAction;
+      });
     },
 
     handleAbilityIconsClick(index) {
       this.selectedAction = this.availableActions[index];
       if (this.selectedAction)
-        socket.emit("game:actionSelected", this.selectedAction);
+        this.$socket.emit("game:actionSelected", this.selectedAction);
     },
 
     updateCanvasSize() {
@@ -810,7 +802,6 @@ export default {
     centerViewport() {
       // Get the scrollable container
       const container = this.$el.closest(".main-component");
-      console.log(container);
       if (!container) return;
 
       // Calculate center position - center on the canvas

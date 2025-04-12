@@ -8,5 +8,6 @@ export const user = ref({
 });
 export const showBackground = ref(true);
 export const roomID = ref(null);
+export const gameID = ref(null);
 export const errorMessages = ref(null);
 export const isLoading = ref(false);

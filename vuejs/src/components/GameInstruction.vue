@@ -1,104 +1,125 @@
 <template>
-  <div
-    class="top-0 w-screen h-full bg-inherit flex justify-center items-center z-20 fixed"
-  >
-    <div
-      class="w-full max-w-[700px] md:border md:border-black px-3 pb-3 h-5/6 gap-3 flex flex-col bg-white rounded-2xl text-black relative"
-    >
-      <!-- Close Button -->
-      <button @click="close" class="absolute left-3 top-2 z-10">
-        <FontAwesomeIcon
-          class="text-green-700 text-2xl hover:text-gray-400"
-          :icon="faArrowLeft"
-        />
-      </button>
-
-      <!-- Show List of Contents Button -->
-      <div
-        class="absolute z-10 bg-white border-r-0 border-t-0"
-        :class="{
-          'right-0 p-1 rounded-tr-2xl border border-black': listOfContents,
-          'right-3 top-2': !listOfContents,
-        }"
-      >
-        <button @click="showListOfContents">
-          <FontAwesomeIcon
-            class="text-2xl text-green-700 hover:text-gray-400"
-            :icon="faListUl"
-          />
+  <div class="fixed inset-0 flex justify-center items-center z-20">
+    <div class="w-full max-w-[800px] h-5/6 bg-white rounded-2xl shadow-2xl relative overflow-hidden">
+      <!-- Header -->
+      <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center z-10 mb-1">
+        <button 
+          @click="close" 
+          class="p-2 text-green-600 hover:text-gray-600 transition-colors duration-200"
+        >
+          <FontAwesomeIcon :icon="faArrowLeft" class="text-xl" />
         </button>
-
-        <ol v-if="listOfContents" class="list-content">
-          <li>
-            <a href="#guide" class="hover:text-gray-400">Hướng dẫn cách chơi</a>
-          </li>
-          <li>
-            <a href="#roles" class="hover:text-gray-400">Các vai trò</a>
-            <ul>
-              <li v-for="(role, index) in roles" :key="index">
-                <a :href="'#role-' + (index + 1)" class="hover:text-gray-400"
-                  >{{ role.name }} {{ role.trait }}</a
-                >
-              </li>
-            </ul>
-          </li>
-        </ol>
+        <h3 class="text-xl font-semibold text-gray-800">Hướng dẫn chơi</h3>
+        <button 
+          @click="showListOfContents" 
+          class="p-2 text-green-600 hover:text-gray-600 transition-colors duration-200"
+        >
+          <FontAwesomeIcon :icon="faListUl" class="text-xl" />
+        </button>
       </div>
 
-      <div class="overflow-y-auto" style="scrollbar-width: none">
+      <!-- Content -->
+      <div class="h-full overflow-y-auto px-6 py-4">
         <!-- Instructions -->
-        <div class="relative">
-          <h3 class="text-center text-2xl sticky top-0 p-2 bg-white">
-            Hướng dẫn chơi
-          </h3>
-          <div v-html="text" id="guide"></div>
+        <div class="prose prose-green max-w-none mb-8">
+          <div v-html="text" id="guide" class="space-y-4"></div>
         </div>
 
-        <!-- Roles details -->
-        <div class="relative">
-          <h3 class="text-center text-2xl sticky top-0 p-2 bg-white" id="roles">
-            Các vai trò
-          </h3>
-          <div class="flex flex-col gap-5">
+        <!-- Roles Section -->
+        <div class="space-y-8 mb-20">
+          <h3 class="text-xl font-semibold text-gray-800" id="roles">Các vai trò</h3>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div
               v-for="(role, index) in roles"
               :key="index"
-              class="flex flex-wrap gap-5"
+              class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow duration-200"
             >
-              <!-- Role Info Column -->
-              <div class="flex flex-col flex-1 min-w-40">
-                <h4 :id="'role-' + (index + 1)" class="font-bold">
-                  {{ role.name }} {{ role.trait }}
-                </h4>
-                <img
-                  class="w-30 h-30 object-contain border border-black bg-green-500"
-                  :class="{ 'bg-red-500': role.trait === 'bad' }"
-                  :src="'data:image/png;base64,' + role.image"
-                  alt="Role Image"
-                />
-              </div>
+              <div class="flex flex-col md:flex-row gap-4">
+                <!-- Role Image -->
+                <div class="flex-shrink-0">
+                  <img
+                    :id="'role-' + (index + 1)"
+                    class="w-32 h-32 object-contain rounded-lg border-2"
+                    :class="role.trait === 'bad' ? 'border-red-500 bg-red-50' : 'border-green-500 bg-green-50'"
+                    :src="'data:image/png;base64,' + role.image"
+                    alt="Role Image"
+                  />
+                </div>
 
-              <!-- Ability Icons Column -->
-              <div class="flex flex-col flex-1 min-w-40">
-                <ul class="list-decimal list-inside space-y-2">
-                  <li>Mô tả: {{ role.description }}</li>
-                  <li>Số lần sử dụng kỹ năng: {{ role.counts }}</li>
-                    <div class="flex space-x-2 flex-wrap items-center">
-                      <li>Hình ảnh kỹ năng:</li>
-                      <img
-                        v-for="(icon, index) in role.abilityIcons"
-                        :key="index"
-                        class="w-10 h-10 border border-black bg-green-500"
-                        :class="{ 'bg-red-500': role.trait === 'bad' }"
-                        :src="'data:image/png;base64,' + icon"
-                        alt="Role Image"
-                      />
-                    </div>
+                <!-- Role Info -->
+                <div class="flex-1 space-y-3">
+                  <h4 class="text-lg font-semibold text-gray-800">
+                    {{ role.name }}
+                    <span 
+                      class="ml-2 px-2 py-1 text-xs font-medium rounded-full"
+                      :class="role.trait === 'bad' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'"
+                    >
+                      {{ role.trait }}
+                    </span>
+                  </h4>
                   
-                </ul>
+                  <p class="text-gray-600">{{ role.description }}</p>
+                  
+                  <div class="space-y-2">
+                    <p class="text-sm text-gray-500">
+                      Số lần sử dụng kỹ năng: {{ role.counts }}
+                    </p>
+                    
+                    <div class="flex flex-wrap gap-2">
+                      <span class="text-sm text-gray-500">Kỹ năng:</span>
+                      <div class="flex flex-wrap gap-2">
+                        <img
+                          v-for="(icon, iconIndex) in role.abilityIcons"
+                          :key="iconIndex"
+                          class="w-8 h-8 object-contain rounded border"
+                          :class="role.trait === 'bad' ? 'border-red-300 bg-red-50' : 'border-green-300 bg-green-50'"
+                          :src="'data:image/png;base64,' + icon"
+                          alt="Ability Icon"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Table of Contents Sidebar -->
+      <div 
+        v-if="listOfContents"
+        class="absolute right-0 top-0 h-full w-64 bg-white border-l border-gray-200 shadow-lg transform transition-transform duration-300 ease-in-out"
+      >
+        <div class="p-4">
+          <h4 class="text-lg font-semibold text-gray-800 mb-4">Mục lục</h4>
+          <nav class="space-y-2">
+            <a 
+              href="#guide" 
+              class="block px-3 py-2 text-gray-600 hover:text-green-600 hover:bg-gray-50 rounded-lg transition-colors duration-200"
+            >
+              Hướng dẫn cách chơi
+            </a>
+            <div class="space-y-1 pl-4">
+              <a 
+                href="#roles" 
+                class="block px-3 py-2 text-gray-600 hover:text-green-600 hover:bg-gray-50 rounded-lg transition-colors duration-200"
+              >
+                Các vai trò
+              </a>
+              <div class="space-y-1 pl-4">
+                <a 
+                  v-for="(role, index) in roles" 
+                  :key="index"
+                  :href="'#role-' + (index + 1)"
+                  class="block px-3 py-2 text-sm text-gray-600 hover:text-green-600 hover:bg-gray-50 rounded-lg transition-colors duration-200"
+                >
+                  {{ role.name }} {{ role.trait }}
+                </a>
+              </div>
+            </div>
+          </nav>
         </div>
       </div>
     </div>
@@ -203,16 +224,52 @@ export default {
 </script>
 
 <style scoped>
-/* Text border effect using text-shadow (cross-browser) */
-.text-with-border {
-  text-shadow: 1px 1px 0px black,
-    /* Shadow to the right and down */ -1px -1px 0px black,
-    /* Shadow to the left and up */ 1px -1px 0px black,
-    /* Shadow to the right and up */ -1px 1px 0px black; /* Shadow to the left and down */
+/* Hide scrollbar for Chrome, Safari and Opera */
+::-webkit-scrollbar {
+  display: none;
 }
 
-/* Add margin to each <li> inside the <ol> */
-.list-content li {
-  margin-left: 10px; /* You can adjust this value as needed */
+/* Hide scrollbar for IE, Edge and Firefox */
+* {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom prose styles */
+.prose {
+  color: #374151; /* text-gray-700 equivalent */
+}
+
+.prose h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937; /* text-gray-800 equivalent */
+  margin-bottom: 1rem;
+}
+
+.prose h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937; /* text-gray-800 equivalent */
+  margin-bottom: 0.75rem;
+}
+
+.prose p {
+  margin-bottom: 1rem;
+}
+
+.prose ul {
+  list-style-type: disc;
+  list-style-position: inside;
+  margin-bottom: 1rem;
+}
+
+.prose li {
+  margin-bottom: 0.5rem;
 }
 </style>

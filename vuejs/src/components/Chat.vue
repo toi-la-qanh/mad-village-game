@@ -3,8 +3,7 @@
     class="fixed top-0 w-full h-full z-20 bg-inherit flex justify-center items-center"
   >
     <div
-      class="lg:w-2/3 lg:rounded-lg w-full h-full bg-gray-900/50 text-white relative overflow-y-auto"
-      style="scrollbar-width: none"
+      class="lg:w-2/3 lg:rounded-lg w-full h-full bg-gray-900/50 text-white relative"
     >
       <!-- Close Chat Section -->
       <button @click="close" class="md:absolute fixed right-2 top-1 z-10">
@@ -14,80 +13,90 @@
         />
       </button>
 
-      <h1 class="text-center text-2xl">Ngày {{ day }}</h1>
-
       <!-- Fetch the chat messages -->
       <div
         v-if="conversation"
-        class="max-h-400 pb-10 flex flex-col py-2 pl-2 pr-7 gap-1"
+        class="max-h-400 pb-10 flex flex-col py-2 pl-2 pr-7 gap-1 overflow-y-auto"
+        style="scrollbar-width: none"
       >
         <div
-          v-if="conversation.chat"
-          v-for="(data, index) in conversation.chat"
+          v-for="(conversation, index) in conversation"
           :key="index"
-          class="relative"
+          class="mb-4"
         >
-          <div
-            class="rounded-lg p-2"
-            :class="{
-              'text-right': data.name === username,
-              'text-left': data.name !== username,
-            }"
-          >
-            <h3 class="font-bold">{{ data.name }}</h3>
-            <p>{{ data.message }}</p>
+          <div class="sticky top-0 rounded-lg p-2 mb-2">
+            <h3 class="text-white">Ngày {{ conversation.day }}</h3>
           </div>
-        </div>
 
-        <!-- Log the messages in the game -->
-        <div v-if="gameMessage">
-          <p class="text-yellow-300">{{ gameMessage }}</p>
-        </div>
+          <div
+            v-if="conversation.chat"
+            v-for="(data, index) in conversation.chat"
+            :key="index"
+            class="relative"
+          >
+            <div
+              class="rounded-lg p-2"
+              :class="{
+                'text-right': data.name === username,
+                'text-left': data.name !== username,
+              }"
+            >
+              <h3 class="font-bold">{{ data.name }}</h3>
+              <p>{{ data.message }}</p>
+            </div>
+          </div>
 
-        <!-- Vote Section -->
-        <div v-if="voteEvent">
-          <div class="">
+          <!-- Log the messages in the game -->
+          <div v-if="conversation.gameMessage">
+            <p class="text-yellow-300">{{ conversation.gameMessage }}</p>
+          </div>
+
+          <!-- Vote Section -->
+          <div class="mb-2">
             <h3 class="font-bold">Bot</h3>
-            <p>Thông tin bỏ phiếu ngày {{ day }}</p>
+            <p>Thông tin bỏ phiếu ngày {{ conversation.day }}</p>
           </div>
 
           <!-- Vote Details -->
-          <div
-            class="top-0 sticky bg-white rounded-lg max-w-1/3 min-w-96 flex flex-col p-1 text-black"
-          >
-            <div class="flex flex-row justify-between">
-              <p>Tên</p>
-              <p>Số phiếu</p>
-              <p></p>
+          <div class="sticky top-0 bg-white rounded-lg max-w-1/3 min-w-96 flex flex-col p-2 text-black">
+            <!-- Header Row -->
+            <div class="flex justify-between items-center border-b pb-2 mb-2">
+              <div class="w-1/3 font-bold">Tên</div>
+              <div class="w-1/3 font-bold text-center">Số phiếu</div>
+              <div class="w-1/3 font-bold text-right">Bỏ phiếu</div>
             </div>
 
-            <div class="flex flex-row justify-between">
-              <div v-for="(player, index) in players" :key="index">
-                <!-- Player's name -->
-                <p>{{ player.name }}</p>
-
-                <!-- Votes count -->
-                <div v-if="conversation.votes">
-                  {{
-                    (
-                      conversation.votes.find((vote) => vote.target === player._id) || {
-                        count: 0,
-                      }
-                    ).count
-                  }}
-                </div>
-
-                <!-- Vote Select -->
+            <!-- Player Rows -->
+            <div v-for="(player, index) in players" :key="index" class="flex justify-between items-center py-1">
+              <!-- Player Name -->
+              <div class="w-1/3">{{ player.name }}</div>
+              
+              <!-- Votes Count -->
+              <div class="w-1/3 text-center">
+                {{
+                  (conversation.votes.find((vote) => vote.target === player._id) || {
+                    count: 0,
+                  }).count
+                }}
+              </div>
+              
+              <!-- Vote Input -->
+              <div class="w-1/3 text-right">
                 <input
                   type="radio"
-                  v-model="isVoted"
+                  :value="player._id"
+                  v-model="selectedPlayerId"
                   @click="toggleVote(index)"
-                  :checked="isVoted"
+                  :disabled="!voteEvent"
+                  class="mr-2"
                 />
               </div>
             </div>
 
-            <p v-if="conversation.voteResult">Kết quả: {{ conversation.voteResult }}</p>
+            <!-- Vote Result -->
+            <div v-if="conversation.voteResult" class="mt-2 pt-2 border-t text-center font-bold">
+              Kết quả: {{ conversation.voteResult }}
+            </div>
           </div>
         </div>
       </div>
@@ -98,9 +107,10 @@
 
       <!-- Send Message Section -->
       <div
-        class="md:absolute bottom-0 fixed w-full h-auto bg-white p-2 flex justify-between gap-2"
+        class="md:absolute fixed bottom-0 w-full h-auto bg-white p-2 flex justify-between gap-2"
         :class="{ 'bg-gray-600': !dayChat }"
       >
+        <div v-if="error">{{ error }}</div>
         <input
           type="text"
           v-model="newMessage"
@@ -132,12 +142,13 @@ import { user } from "../store";
 
 export default {
   props: {
-    voteEvent: { type: Boolean, required: true },
     day: { type: Number, required: true },
     dayChat: { type: Boolean, required: true },
     nightChat: { type: Boolean, required: true },
     gameMessage: { type: String, required: true },
     players: { type: Object, required: true },
+    voteEvent: { type: Boolean, required: true },
+    gameID: { type: String, required: true },
   },
 
   emits: ["close"],
@@ -151,11 +162,11 @@ export default {
 
   data() {
     return {
-      conversation: this.initializeConversation(),
+      conversation: [],
       username: user.value.name,
       newMessage: "",
       error: null,
-      isVoted: false,
+      selectedPlayerId: null,
     };
   },
 
@@ -164,63 +175,12 @@ export default {
   },
 
   mounted() {
-    this.setupSocketListeners();
+    const storedState = sessionStorage.getItem("conversation");
+    this.conversation = storedState ? JSON.parse(storedState) : [];
   },
 
   methods: {
-    initializeConversation() {
-      // Try to retrieve existing conversation state from session storage
-      const storedState = sessionStorage.getItem("conversation");
-      if (storedState) {
-        return JSON.parse(storedState);
-      }
-
-      // Default conversation state structure
-      return {
-        chat: [],
-        votes: [],
-        voteResult: "",
-      };
-    },
-
-    saveConversation() {
-      // Save the current conversation state to session storage
-      sessionStorage.setItem("conversation", JSON.stringify(this.conversation));
-    },
-
-    setupSocketListeners() {
-      // Chat messages listener
-      this.$socket.on("game:fetchDayChat", (data) => {
-        this.conversation.chat.push({
-          name: data.playerName,
-          message: data.message,
-        });
-        this.saveConversation();
-      });
-
-      // Votes listener
-      this.$socket.on("game:fetchVotes", (data) => {
-        this.conversation.votes = data;
-        this.saveConversation();
-      });
-
-      // Vote result listener
-      this.$socket.on("game:voteResult", (data) => {
-        if (data.status === "success") {
-          this.conversation.voteResult = data.message;
-          this.saveConversation();
-        }
-      });
-
-      // Game messages listener
-      this.$socket.on("game:message", (message) => {
-        this.conversation.gameMessages.push(message);
-        this.saveConversation();
-      });
-    },
-
     sendMessage(event) {
-      // Existing send message logic with added state saving
       if (!this.dayChat) {
         if (event) event.preventDefault();
         return;
@@ -228,29 +188,62 @@ export default {
 
       if (!this.newMessage.trim()) return;
 
+      // Validate game ID
+      if (!this.gameID) {
+        this.error = "Không tìm thấy mã game!";
+        return;
+      }
+
       this.$socket.emit(
         "game:discussion",
-        localStorage.getItem("gameID"),
+        this.gameID,
         this.newMessage,
         (data) => {
           if (data.status === "error") {
             this.error = data.message;
           } else {
-            this.conversation.chat.push({
+            // Find or create day's conversation
+            let dayConversation = this.conversation.find(
+              (day) => day.day === this.day
+            );
+            if (!dayConversation) {
+              dayConversation = {
+                day: this.day,
+                chat: [],
+                gameMessage: "",
+                voteResult: "",
+                votes: [],
+              };
+              this.conversation.push(dayConversation);
+            }
+
+            // Add new message to day's chat
+            dayConversation.chat.push({
               name: this.username,
               message: this.newMessage,
             });
+
             this.newMessage = "";
             this.error = null;
-            this.saveConversation();
+            sessionStorage.setItem(
+              "conversation",
+              JSON.stringify(this.conversation)
+            );
           }
         }
       );
     },
 
     toggleVote(index) {
-      this.isVoted = !this.isVoted;
-      this.$socket.emit("game:voteTarget", this.players[index]._id);
+      // Validate game ID
+      if (!this.gameID) {
+        this.error = "Không tìm thấy mã game!";
+        return;
+      }
+
+      const playerId = this.players[index]._id;
+      this.selectedPlayerId = playerId;
+      this.$socket.emit("game:voteTarget", playerId);
     },
 
     close() {

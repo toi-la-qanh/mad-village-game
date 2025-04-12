@@ -28,7 +28,7 @@
 
     <!-- Time out  -->
     <div
-      class="absolute text-yellow-400 z-10 w-full text-center text-2xl flex flex-wrap justify-center gap-2"
+      class="absolute text-black z-10 w-full text-center text-2xl flex flex-wrap justify-center gap-2"
     >
       <div v-if="timeOutMessage">{{ timeOutMessage }}</div>
       <div v-if="timeOut">{{ timeOut }}</div>
@@ -41,6 +41,7 @@
       :event="event"
       :characterSpeed="characterSpeed"
       :animation="animation"
+      :yourTurn="yourTurn"
     />
 
     <!-- Role information -->
@@ -56,6 +57,7 @@
     <!-- Chat Section -->
     <div v-if="openChatSection">
       <Chat
+        :gameID="gameID"
         :day="game.day"
         :dayChat="game.period === 'day'"
         :nightChat="event.nightChat"
@@ -90,8 +92,8 @@
 </template>
 
 <script>
-import { defineAsyncComponent, reactive } from "vue";
-import { showBackground } from "../store";
+import { defineAsyncComponent, reactive, ref } from "vue";
+import { showBackground, gameID } from "../store";
 
 export default {
   components: {
@@ -115,7 +117,8 @@ export default {
 
   data() {
     return {
-      game: null, // Store game data
+      game: ref(null), // Store game data
+      gameID: ref(null), // Store game ID
       loading: false, // Store loading state
       error: null, // Store error state
       role: null,
@@ -125,6 +128,7 @@ export default {
       timeOut: null,
       timeOutMessage: null,
       openSettingsSection: false,
+      countdownInterval: null, // Add this to store the interval ID
       event: reactive({
         showRoles: false,
         performAction: false,
@@ -138,21 +142,28 @@ export default {
       characterSpeed: parseFloat(sessionStorage.getItem("speed")) || 1,
       animation: JSON.parse(sessionStorage.getItem("animation")) || true,
       playerDetails: reactive({}),
+      yourTurn: ref(false),
     };
   },
 
   mounted() {
+    // Store gameID in localStorage if it doesn't exist
+    if (!localStorage.getItem("gameID")) {
+      localStorage.setItem("gameID", gameID.value);
+    }
+    
+    // Get gameID from localStorage
+    this.gameID = localStorage.getItem("gameID");
+    
+    this.fetchGameData();
+    this.getGameEvents();
     this.setupGameEvents();
-  },
-
-  activated() {
-    this.setupGameEvents(); // for <keep-alive>
   },
 
   computed: {
     currentEvent() {
       return { ...this.event };
-    }
+    },
   },
 
   methods: {
@@ -161,23 +172,25 @@ export default {
     },
 
     fetchGameData() {
-      this.$socket.emit("game:data", localStorage.getItem("gameID"), (data) => {
+      this.$socket.emit("game:data", this.gameID, (data) => {
         if (!data) {
           showBackground.value = true;
         }
         showBackground.value = false;
-        this.$socket.emit("room:join", data.room);
         this.game = data;
       });
     },
 
     setupGameEvents() {
       // Get the timeout and messages
-      this.$socket.on("game:timeout", (data) => {
+      this.$socket.on("game:timeOut", (data) => {
         if (data) {
-          this.timeOut = data.timeout;
+          // Convert milliseconds to seconds
+          this.timeOut = Math.floor(data.timeout / 1000);
           this.timeOutMessage = data.message;
-          this.startCountdown();
+          if (this.timeOut) {
+            this.startCountdown();
+          }
         } else {
           this.timeOut = null;
           this.timeOutMessage = null;
@@ -193,66 +206,140 @@ export default {
         this.playerDetails = data;
       });
 
-      this.$socket.onAny((eventName, ...args) => {
-        console.log(eventName);
+      let conversation =
+        JSON.parse(sessionStorage.getItem("conversation")) || [];
+
+      this.$socket.on("game:fetchDayChat", (data) => {
+        // Get current day
+        const currentDay = this.game?.day;
+
+        // Find or create day's conversation
+        let dayConversation = conversation.find((c) => c.day === currentDay);
+        if (!dayConversation) {
+          dayConversation = {
+            day: currentDay,
+            chat: [],
+            gameMessage: "",
+            voteResult: "",
+            votes: [],
+          };
+          conversation.push(dayConversation);
+        }
+
+        // Add new message to day's chat
+        dayConversation.chat.push({
+          name: data.playerName,
+          message: data.message,
+        });
+
+        sessionStorage.setItem("conversation", JSON.stringify(conversation));
       });
 
-      this.fetchGameData();
-      this.getGameEvents();
+      // Votes listener
+      this.$socket.on("game:fetchVotes", (data) => {
+        const currentDay = this.game.day;
+        let dayConversation = conversation.find((c) => c.day === currentDay);
+        if (!dayConversation) {
+          dayConversation = {
+            day: currentDay,
+            chat: [],
+            gameMessage: "",
+            voteResult: "",
+            votes: [],
+          };
+          conversation.push(dayConversation);
+        }
+        dayConversation.votes = data;
+        sessionStorage.setItem("conversation", JSON.stringify(conversation));
+      });
 
-      this.$socket.on("game:update", () => {
-        this.fetchGameData();
-        this.getGameEvents();
+      // Vote result listener
+      this.$socket.on("game:voteResult", (data) => {
+        if (data.status === "success") {
+          const currentDay = this.game.day;
+          let dayConversation = conversation.find((c) => c.day === currentDay);
+          if (!dayConversation) {
+            dayConversation = {
+              day: currentDay,
+              chat: [],
+              gameMessage: "",
+              voteResult: "",
+              votes: [],
+            };
+            conversation.push(dayConversation);
+          }
+          dayConversation.voteResult = data.message;
+          sessionStorage.setItem("conversation", JSON.stringify(conversation));
+        }
+      });
+
+      this.$socket.on("game:yourTurn", (isYourTurn) => {
+        this.yourTurn = isYourTurn;
+      });
+
+      this.$socket.on("game:update", (data) => {
+        // Only fetch game data if the phase has changed
+        if (data.phase !== this.game?.phases) {
+          this.fetchGameData();
+          this.getGameEvents();
+        }
+
+        // Update local state
+        if (this.game) {
+          this.game.phases = data.phase;
+          this.game.period = data.period;
+          this.game.day = data.day;
+        }
       });
     },
 
     getGameEvents() {
       // Retrieve the current event of the game
-      this.$socket.emit(
-        "game:event",
-        localStorage.getItem("gameID"),
-        (data) => {
-          if (data.status === 400) return;
+      this.$socket.emit("game:event", this.gameID, (data) => {
+        if (data.status === 400) return;
 
-          if (data.message) {
-            this.gameMessage = data.message;
-          }
-
-          this.resetEventFlags();
-          
-          switch (data.phase) {
-            case "showRoles":
-              this.showRolesEvent(data);
-              break;
-            case "performAction":
-              this.performActionEvent(data);
-              break;
-            case "day":
-              this.dayEvent(data);
-              break;
-            case "discussion":
-              this.discussionEvent(data);
-              break;
-            case "vote":
-              this.voteEvent(data);
-              break;
-            case "end":
-              this.endEvent(data);
-              break;
-            default:
-              break;
-          }
+        if (data.message) {
+          this.gameMessage = data.message;
         }
-      );
+
+        switch (data.phase) {
+          case "showRoles":
+            this.showRolesEvent(data);
+            break;
+          case "performAction":
+            this.performActionEvent(data);
+            break;
+          case "day":
+            this.dayEvent(data);
+            break;
+          case "discussion":
+            this.discussionEvent(data);
+            break;
+          case "vote":
+            this.voteEvent(data);
+            break;
+          case "end":
+            this.endEvent(data);
+            break;
+          default:
+            break;
+        }
+      });
     },
 
     // Count down the timeouts
     startCountdown() {
-      const countdownInterval = setInterval(() => {
+      // Clear any existing interval
+      if (this.countdownInterval) {
+        clearInterval(this.countdownInterval);
+      }
+
+      this.countdownInterval = setInterval(() => {
         if (this.timeOut > 0) {
           this.timeOut--;
         } else {
-          clearInterval(countdownInterval);
+          clearInterval(this.countdownInterval);
+          this.countdownInterval = null;
           this.timeOutMessage = null;
           this.timeOut = null;
           this.role = null;
@@ -272,8 +359,7 @@ export default {
 
     performActionEvent(data) {
       this.event.performAction = true;
-      // Handle error cases consistently
-      this.error = data.status === "error" ? data.message : null;
+      this.$socket.emit("game:watch", false);
     },
 
     dayEvent(data) {
@@ -308,16 +394,22 @@ export default {
         this.event[key] = false;
       });
     },
+
+    removeSocketListeners() {
+      // Cleanup the socket listener when the component is destroyed
+      this.$socket.off("game:error");
+      this.$socket.off("game:timeout");
+      this.$socket.off("game:fetchDayChat");
+      this.$socket.off("game:fetchVotes");
+      this.$socket.off("game:voteResult");
+      this.$socket.off("game:message");
+    },
   },
 
   beforeUnmount() {
-    // Cleanup the socket listener when the component is destroyed
-    this.$socket.off("game:error");
-    this.$socket.off("game:timeout");
-    this.$socket.off("game:fetchDayChat");
-    this.$socket.off("game:fetchVotes");
-    this.$socket.off("game:voteResult");
-    this.$socket.off("game:message");
+    this.removeSocketListeners();
+    // Clear gameID from localStorage when component unmounts
+    localStorage.removeItem("gameID");
   },
 };
 </script>

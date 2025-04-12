@@ -85,56 +85,52 @@
           <p v-else class="text-center">{{ errorWhenKickPlayer }}</p>
         </div>
 
-        <!-- User is not in the room -->
-        <div v-if="!userInRoom" class="relative">
-          <div
-            v-if="room.password"
-            class="mt-5 text-center flex flex-wrap justify-center gap-3"
-          >
-            <p class="text-2xl">Mật khẩu phòng:</p>
-
-            <!-- Password Input -->
-            <div class="flex items-center">
-              <input
-                :type="isPasswordVisible ? 'text' : 'password'"
-                placeholder="Nhập mật khẩu"
-                v-model="inputPassword"
-                class="outline-none w-30"
-              />
-
-              <!-- Show/Hide Password Button -->
-              <button @click="togglePasswordVisibility">
-                <FontAwesomeIcon
-                  :icon="isPasswordVisible ? faEyeSlash : faEye"
+        <!-- Join Room Section -->
+        <div v-if="!userInRoom" class="bg-white rounded-xl shadow-lg p-6">
+          <div v-if="room.password" class="space-y-4">
+            <h3 class="text-xl font-semibold text-gray-800">Mật khẩu phòng</h3>
+            <div class="flex items-center gap-4">
+              <div class="relative flex-1">
+                <input
+                  :type="isPasswordVisible ? 'text' : 'password'"
+                  placeholder="Nhập mật khẩu"
+                  v-model="inputPassword"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all duration-200"
                 />
+                <button
+                  @click="togglePasswordVisibility"
+                  class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  <FontAwesomeIcon
+                    :icon="isPasswordVisible ? faEyeSlash : faEye"
+                  />
+                </button>
+              </div>
+              <button
+                @click="joinRoom"
+                class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200 font-medium"
+              >
+                Vào phòng
               </button>
             </div>
+            <p v-if="errorWhenJoiningRoom" class="text-red-500 text-sm">
+              {{ errorWhenJoiningRoom }}
+            </p>
           </div>
-
-          <!-- Button to join the room -->
-          <button
-            type="submit"
-            class="mt-5 text-gray-600 bg-green-300 w-full hover:bg-green-500 rounded-md py-2 font-semibold transition-colors duration-200"
-            @click="joinRoom"
-          >
-            Vào phòng
-          </button>
-
-          <!-- Error messages -->
-          <p class="text-red-500 text-center" v-if="errorWhenJoiningRoom">
-            {{ errorWhenJoiningRoom }}
-          </p>
-
-          <!-- Helper details -->
-          <p class="mt-10 text-center">
-            Thông tin phòng sẽ hiện ra khi bạn đã vào phòng
-          </p>
+          <div v-else class="text-center">
+            <button
+              @click="joinRoom"
+              class="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200 font-medium"
+            >
+              Vào phòng
+            </button>
+          </div>
         </div>
 
         <!-- User is in the room -->
         <div v-else class="space-y-3">
           <!-- Room Settings -->
-          <div>
+          <div v-if="userID === room.owner?._id">
             <h3 class="text-2xl text-center">Cài đặt phòng</h3>
             <h4 class="text-center text-gray-500">
               Bạn có thể cập nhật lại cài đặt phòng ở đây

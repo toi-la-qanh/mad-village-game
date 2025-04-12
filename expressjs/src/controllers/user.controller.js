@@ -2,6 +2,7 @@ const { checkSchema, validationResult } = require("express-validator");
 const User = require("../models/user.model");
 const Room = require("../models/room.model");
 const createSecretToken = require("../auth/token");
+const redis = require("../database/redis");
 
 // Load environment variables
 const dotenv = require("dotenv");
@@ -22,9 +23,20 @@ class UserController {
     const { _id: id, name, isAboutToClose } = user;
     const responseData = { id, name };
 
-    const room = await Room.findOne({ players: user._id });
-    if (room) {
-      responseData.room = room._id;
+    const userData = await redis.get(`user:${req.user}`);
+    let userDataParsed;
+    if (userData) {
+      userDataParsed = JSON.parse(userData);
+    } else {
+      userDataParsed = { room: null, game: null };
+    }
+
+    if (userDataParsed.roomID) {
+      responseData.room = userDataParsed.roomID;
+    }
+
+    if (userDataParsed.gameID) {
+      responseData.game = userDataParsed.gameID;
     }
 
     // Check if the user's account is about to close
@@ -74,18 +86,17 @@ class UserController {
 
       await user.save();
 
-      const token = createSecretToken(user._id);
+      const token = createSecretToken(user._id, user.name);
+
       res.cookie("token", token, {
         path: "/", // Cookie is accessible from all paths
         expires: new Date(Date.now() + 86400000), // Cookie expires in 1 day
         secure: process.env.NODE_ENV === "production", // Cookie will only be sent over HTTPS
         httpOnly: true, // Cookie cannot be accessed via client-side scripts
-        sameSite: "None", // Set to Lax when run on local
+        sameSite: process.env.sameSite, // Set to Lax when run on local
       });
 
-      return res
-        .status(200)
-        .json({ message: "Tạo tài khoản thành công!" });
+      return res.status(200).json({ message: "Tạo tài khoản thành công!" });
     },
   ];
 
@@ -99,8 +110,10 @@ class UserController {
     if (!deletedUser) {
       return res.status(404).json({ error: "User not found" });
     }
-    
-    return res.status(200).json({ message: "Your account has been deleted successfully!" });
+
+    return res
+      .status(200)
+      .json({ message: "Your account has been deleted successfully!" });
   };
 }
 
