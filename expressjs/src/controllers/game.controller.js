@@ -56,6 +56,9 @@ class GameController {
    * Retrieve the game data from the database
    */
   async getGameData(id) {
+    if (!id) {
+      console.log("No id provided");
+    }
     const game = await Game.findById(id);
     if (!game) {
       this.handleError("Không tìm thấy ván chơi!");
@@ -125,6 +128,13 @@ class GameController {
 
     // Perform action event
     const performActionEvent = async (game) => {
+      this.socket.off("game:start");
+      // Watch other players event
+      this.socket.on("game:watch", async (targetID, callback) => {
+        const data = await this.watchOtherPlayers(game, targetID);
+        callback(data);
+      });
+
       // Get priority from player
       const playerTurns = game.players.map((p) => p.priority);
 
@@ -171,15 +181,9 @@ class GameController {
       return result;
     };
 
-    // Watch other players event
-    this.socket.on("game:watch", async (gameID, targetID, callback) => {
-      const game = await this.getGameData(gameID);
-      const data = await this.watchOtherPlayers(game, targetID);
-      callback(data);
-    });
-
     // Day event
     const dayPhaseEvent = async (game) => {
+      this.socket.off("game:watch");
       const data = await this.dayPhase(game);
       setTimeout(async () => {
         await this.updateGamePhase(game, "discussion");
@@ -210,6 +214,7 @@ class GameController {
 
     // Vote event
     const votePhaseEvent = async (game) => {
+      this.socket.off("game:discussion");
       this.emitTimeOut(game.vote_time * 1000, "Thời gian bỏ phiếu");
 
       setTimeout(async () => {
@@ -241,9 +246,9 @@ class GameController {
 
     // Retrieve the game data to the client
     this.socket.on("game:data", async (gameID, callback) => {
-      console.log("game:data", gameID);
       const game = await this.getGameData(gameID);
       const data = {
+        _id: game._id,
         room: game.room,
         period: game.period,
         players: game.players.map((player) => ({
@@ -258,7 +263,6 @@ class GameController {
 
     // Retrieve the game event to the client
     this.socket.on("game:event", async (gameID, callback) => {
-      console.log("game:data", gameID);
       const game = await this.getGameData(gameID);
       console.log(`The game is at ${game.phases} phase`);
       let result;
@@ -712,7 +716,7 @@ class GameController {
    */
   async watchOtherPlayers(game, targetID) {
     // Only wacth other players in perform action phase
-    if (game?.phases !== "performAction") {
+    if (game.phases !== "performAction") {
       return {
         status: 400,
       };
@@ -1039,6 +1043,8 @@ class GameController {
         status: 400,
       };
     }
+
+    this.socket.off("game:voteTarget");
 
     // Get current votes from Redis
     const gameVoteKey = `game:${game._id}:votes`;

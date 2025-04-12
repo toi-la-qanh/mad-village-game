@@ -15,23 +15,22 @@
 
       <!-- Fetch the chat messages -->
       <div
-        v-if="conversation"
         class="max-h-400 pb-10 flex flex-col py-2 pl-2 pr-7 gap-1 overflow-y-auto"
         style="scrollbar-width: none"
       >
         <div
-          v-for="(conversation, index) in conversation"
+          v-for="(convo, index) in conversation"
           :key="index"
           class="mb-4"
         >
           <div class="sticky top-0 rounded-lg p-2 mb-2">
-            <h3 class="text-white">Ngày {{ conversation.day }}</h3>
+            <h3 class="text-white">Ngày {{ convo.day }}</h3>
           </div>
 
           <div
-            v-if="conversation.chat"
-            v-for="(data, index) in conversation.chat"
-            :key="index"
+            v-if="convo.chat && convo.chat.length > 0"
+            v-for="(data, chatIndex) in convo.chat"
+            :key="chatIndex"
             class="relative"
           >
             <div
@@ -47,14 +46,14 @@
           </div>
 
           <!-- Log the messages in the game -->
-          <div v-if="conversation.gameMessage">
-            <p class="text-yellow-300">{{ conversation.gameMessage }}</p>
+          <div v-if="convo.gameMessage">
+            <p class="text-yellow-300">{{ convo.gameMessage }}</p>
           </div>
 
           <!-- Vote Section -->
           <div class="mb-2">
             <h3 class="font-bold">Bot</h3>
-            <p>Thông tin bỏ phiếu ngày {{ conversation.day }}</p>
+            <p>Thông tin bỏ phiếu ngày {{ convo.day }}</p>
           </div>
 
           <!-- Vote Details -->
@@ -67,14 +66,14 @@
             </div>
 
             <!-- Player Rows -->
-            <div v-for="(player, index) in players" :key="index" class="flex justify-between items-center py-1">
+            <div v-for="(player, playerIndex) in players" :key="playerIndex" class="flex justify-between items-center py-1">
               <!-- Player Name -->
               <div class="w-1/3">{{ player.name }}</div>
               
               <!-- Votes Count -->
               <div class="w-1/3 text-center">
                 {{
-                  (conversation.votes.find((vote) => vote.target === player._id) || {
+                  (convo.votes && convo.votes.find((vote) => vote.target === player._id) || {
                     count: 0,
                   }).count
                 }}
@@ -86,7 +85,7 @@
                   type="radio"
                   :value="player._id"
                   v-model="selectedPlayerId"
-                  @click="toggleVote(index)"
+                  @click="toggleVote(playerIndex)"
                   :disabled="!voteEvent"
                   class="mr-2"
                 />
@@ -94,20 +93,20 @@
             </div>
 
             <!-- Vote Result -->
-            <div v-if="conversation.voteResult" class="mt-2 pt-2 border-t text-center font-bold">
-              Kết quả: {{ conversation.voteResult }}
+            <div v-if="convo.voteResult" class="mt-2 pt-2 border-t text-center font-bold">
+              Kết quả: {{ convo.voteResult }}
             </div>
           </div>
         </div>
       </div>
 
-      <div v-else>
+      <div v-if="conversation.length === 0">
         <p class="text-center">Chưa có tin nhắn chờ</p>
       </div>
 
       <!-- Send Message Section -->
       <div
-        class="md:absolute fixed bottom-0 w-full h-auto bg-white p-2 flex justify-between gap-2"
+        class="md:absolute fixed bottom-0 w-full md:h-auto h-13 bg-white p-2 flex justify-between gap-2"
         :class="{ 'bg-gray-600': !dayChat }"
       >
         <div v-if="error">{{ error }}</div>
@@ -175,8 +174,21 @@ export default {
   },
 
   mounted() {
+    // Initialize conversation with empty array if not in session storage
     const storedState = sessionStorage.getItem("conversation");
-    this.conversation = storedState ? JSON.parse(storedState) : [];
+    if (storedState) {
+      this.conversation = JSON.parse(storedState);
+    } else {
+      // Initialize with a conversation entry for the current day
+      this.conversation = [{
+        day: this.day,
+        chat: [],
+        gameMessage: "",
+        voteResult: "",
+        votes: []
+      }];
+      sessionStorage.setItem("conversation", JSON.stringify(this.conversation));
+    }
   },
 
   methods: {
@@ -199,13 +211,14 @@ export default {
         this.gameID,
         this.newMessage,
         (data) => {
-          if (data.status === "error") {
+          if (data && data.status === "error") {
             this.error = data.message;
           } else {
             // Find or create day's conversation
             let dayConversation = this.conversation.find(
-              (day) => day.day === this.day
+              (convo) => convo.day === this.day
             );
+            
             if (!dayConversation) {
               dayConversation = {
                 day: this.day,
@@ -217,12 +230,18 @@ export default {
               this.conversation.push(dayConversation);
             }
 
-            // Add new message to day's chat
+            // Ensure chat array exists
+            if (!dayConversation.chat) {
+              dayConversation.chat = [];
+            }
+
+            // Add message immediately to the UI without waiting for socket response
             dayConversation.chat.push({
               name: this.username,
               message: this.newMessage,
             });
 
+            // Update storage and reset input field
             this.newMessage = "";
             this.error = null;
             sessionStorage.setItem(

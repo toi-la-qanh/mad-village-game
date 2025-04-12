@@ -71,23 +71,40 @@
         <!-- Choose action -->
         <div
           class="flex absolute w-20 top-5 left-[-15px] justify-center gap-2"
-          v-for="(icon, index) in abilityIcons"
           v-if="
             playerIDs[index] !== user_id &&
-            !selectButtonClicked &&
+            selectButtonClicked &&
             endMoving &&
             clickedHouseIndex === index &&
-            yourTurn
+            yourTurn &&
+            !actionSelected
           "
           :key="index"
         >
           <div
+            v-for="(icon, iconIndex) in abilityIcons"
+            :key="iconIndex"
             class="transform hover:scale-120 transition-all items-center flex w-8 h-8 p-1 justify-center bg-green-500 rounded-full"
           >
-            <button class="" @click="handleAbilityIconsClick(index)">
+            <button @click="handleAbilityIconsClick(iconIndex)">
               <img :src="'data:image/png;base64,' + icon" alt="Ability Icon" />
             </button>
           </div>
+        </div>
+        
+        <!-- Display selected action -->
+        <div
+          class="absolute top-5 left-[-15px] bg-yellow-500 rounded-full p-2 text-xs"
+          v-if="
+            playerIDs[index] !== user_id &&
+            selectButtonClicked &&
+            endMoving &&
+            clickedHouseIndex === index &&
+            yourTurn &&
+            actionSelected
+          "
+        >
+          {{ selectedAction }}
         </div>
       </div>
 
@@ -213,16 +230,18 @@ export default {
       targetSelected: false,
       abilityIcons: [],
       availableActions: [],
-      selectedActions: null,
+      selectedAction: null,
+      actionSelected: false,
       endMoving: false,
       characterMovingName: "",
       currentDay: 0,
       currentPeriod: "day",
-      playerBeingWatched: null,
+      playerBeingWatched: [], // Initialize as empty array, not null
     };
   },
 
   async mounted() {
+
     // Initial map load
     this.loadMapImage();
     this.fetchAbilityIcons();
@@ -399,6 +418,9 @@ export default {
         this.isGathering = false;
         this.isBeingWatched = false;
         this.targetSelected = false;
+        this.selectButtonClicked = false;
+        this.actionSelected = false;
+        this.selectedAction = null;
         this.endMoving = false;
 
         // Update the current day and period to the new game state
@@ -433,11 +455,11 @@ export default {
         this.characterMoving(targetHouse);
 
         // Loop through each character and call watchCharacterMoving with a delay
-        if (this.playerBeingWatched.length > 0) {
+        if (this.playerBeingWatched && this.playerBeingWatched.length > 0) {
           for (let i = 0; i < this.playerBeingWatched.length; i++) {
             // Wait for the previous character to finish moving before calling the next one
             await this.delay(i * 5000); // Delay each character by 500ms
-            this.characterMovingName = this.characterss[i];
+            this.characterMovingName = this.playerBeingWatched[i];
             this.watchCharacterMoving(targetHouse);
           }
         }
@@ -766,8 +788,6 @@ export default {
 
       // Update the image src
       this.characterImageSrc = imageSrc; // This should trigger a re-render
-      // Log for debugging
-      this.characterImageSrcs[index] = imageSrc;
     },
 
     delay(ms) {
@@ -783,8 +803,11 @@ export default {
 
     handleAbilityIconsClick(index) {
       this.selectedAction = this.availableActions[index];
-      if (this.selectedAction)
+      this.actionSelected = true;
+      
+      if (this.selectedAction) {
         this.$socket.emit("game:actionSelected", this.selectedAction);
+      }
     },
 
     updateCanvasSize() {

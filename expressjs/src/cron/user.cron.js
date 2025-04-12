@@ -27,10 +27,13 @@ const checkForExpiringUsers = async (req, res) => {
   );
 
   if (result.modifiedCount > 0) {
+    console.log(`Updated ${result.modifiedCount} users to 'about to close' status.`);
     return res.status(200).json({
       message: `Updated ${result.modifiedCount} users to 'about to close' status.`,
     });
   }
+  
+  console.log("No users to update.");
   
   return res.status(200).json({ message: "No users to update." });
 };

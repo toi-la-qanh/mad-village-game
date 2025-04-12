@@ -31,7 +31,7 @@
         <p v-else class="text-center">{{ error }}</p>
       </div>
 
-      <div v-else class="space-y-3">
+      <div v-if="room" class="space-y-3">
         <!-- Title -->
         <div class="flex flex-row w-full relative mt-4 justify-center gap-2">
           <h3 class="text-2xl text-center">Phòng chờ</h3>

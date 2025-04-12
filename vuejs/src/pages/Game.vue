@@ -93,7 +93,7 @@
 
 <script>
 import { defineAsyncComponent, reactive, ref } from "vue";
-import { showBackground, gameID } from "../store";
+import { showBackground } from "../store";
 
 export default {
   components: {
@@ -138,7 +138,7 @@ export default {
         vote: false, // Ensure this is reactive
         end: false,
       }),
-      gameMessage: "",
+      gameMessages: [],
       characterSpeed: parseFloat(sessionStorage.getItem("speed")) || 1,
       animation: JSON.parse(sessionStorage.getItem("animation")) || true,
       playerDetails: reactive({}),
@@ -147,14 +147,13 @@ export default {
   },
 
   mounted() {
-    // Store gameID in localStorage if it doesn't exist
-    if (!localStorage.getItem("gameID")) {
-      localStorage.setItem("gameID", gameID.value);
+    // Get gameID from route params
+    const routeGameId = this.$route.params.id;
+
+    if (routeGameId) {
+      this.gameID = routeGameId;
     }
-    
-    // Get gameID from localStorage
-    this.gameID = localStorage.getItem("gameID");
-    
+
     this.fetchGameData();
     this.getGameEvents();
     this.setupGameEvents();
@@ -219,7 +218,7 @@ export default {
           dayConversation = {
             day: currentDay,
             chat: [],
-            gameMessage: "",
+            gameMessages: [],
             voteResult: "",
             votes: [],
           };
@@ -243,7 +242,7 @@ export default {
           dayConversation = {
             day: currentDay,
             chat: [],
-            gameMessage: "",
+            gameMessages: [],
             voteResult: "",
             votes: [],
           };
@@ -262,7 +261,7 @@ export default {
             dayConversation = {
               day: currentDay,
               chat: [],
-              gameMessage: "",
+              gameMessages: [],
               voteResult: "",
               votes: [],
             };
@@ -299,7 +298,20 @@ export default {
         if (data.status === 400) return;
 
         if (data.message) {
-          this.gameMessage = data.message;
+          const currentDay = this.game.day;
+          let dayConversation = conversation.find((c) => c.day === currentDay);
+          if (!dayConversation) {
+            dayConversation = {
+              day: currentDay,
+              chat: [],
+              gameMessages: [],
+              voteResult: "",
+              votes: [],
+            };
+            conversation.push(dayConversation);
+          }
+          dayConversation.gameMessages.push(data.message);
+          sessionStorage.setItem("conversation", JSON.stringify(conversation));
         }
 
         switch (data.phase) {
@@ -359,7 +371,6 @@ export default {
 
     performActionEvent(data) {
       this.event.performAction = true;
-      this.$socket.emit("game:watch", false);
     },
 
     dayEvent(data) {
@@ -408,8 +419,6 @@ export default {
 
   beforeUnmount() {
     this.removeSocketListeners();
-    // Clear gameID from localStorage when component unmounts
-    localStorage.removeItem("gameID");
   },
 };
 </script>
