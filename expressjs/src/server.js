@@ -71,7 +71,7 @@ app.use("/api/rooms", roomRoutes);
 app.use("/api/game", gameRoutes);
 app.use("/api/llm", llmRoutes);
 
-// Cron jobs for production -> I've already removed this because free tier deploy doesnt have cron feature
+// Cron jobs for production -> I've already removed this because free tier deploy doesnt have cron feature, instead I'm using https://console.cron-job.org to call api and update myself
 // const checkForExpiringUsers = require("./cron/user.cron.js");
 // checkForExpiringUsers();
 

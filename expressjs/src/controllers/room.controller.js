@@ -201,9 +201,12 @@ class RoomController {
 
       await room.save();
 
+      // Store room in redis for later use
       await redis.set(
         `user:${req.user}`,
-        JSON.stringify({ roomID: room._id, gameID: null })
+        JSON.stringify({ roomID: room._id, gameID: null }),
+        "EX",
+        86400
       );
 
       return res
@@ -278,9 +281,13 @@ class RoomController {
       // Add user to room
       room.players.push(user);
       await room.save();
+
+      // Store room in redis for later use
       await redis.set(
         `user:${req.user}`,
-        JSON.stringify({ roomID: room._id, gameID: null })
+        JSON.stringify({ roomID: room._id, gameID: null }),
+        'EX',
+        86400
       );
 
       return res

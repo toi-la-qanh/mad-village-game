@@ -61,7 +61,6 @@
             <button
               @click="getTarget(playerIDs[index], index)"
               class="bg-blue-500 p-1 hover:text-white rounded"
-              :class="{ hidden: targetSelected === true }"
             >
               Chọn
             </button>
@@ -91,7 +90,7 @@
             </button>
           </div>
         </div>
-        
+
         <!-- Display selected action -->
         <div
           class="absolute top-5 left-[-15px] bg-yellow-500 rounded-full p-2 text-xs"
@@ -241,7 +240,6 @@ export default {
   },
 
   async mounted() {
-
     // Initial map load
     this.loadMapImage();
     this.fetchAbilityIcons();
@@ -434,19 +432,16 @@ export default {
     },
 
     async getTarget(targetID, index) {
-      if (this.event.performAction) {
-        this.selectButtonClicked = true;
-        if (targetID) {
-          this.$socket.emit("game:targetSelected", targetID);
-          this.targetSelected = true;
+      this.selectButtonClicked = true;
+      if (targetID) {
+        this.$socket.emit("game:targetSelected", targetID);
+        this.targetSelected = true;
 
-          this.$socket.emit("game:watch", this.game._id, targetID, (data) => {
-            if (data.status !== "error") {
-              this.playerBeingWatched = data.performers;
-            }
-          });
-        }
-        this.clickedHouseIndex = null;
+        this.$socket.emit("game:watch", targetID, (data) => {
+          if (data.status !== "error") {
+            this.playerBeingWatched = data.performers;
+          }
+        });
       }
 
       const targetHouse = this.housePositions[index];
@@ -804,7 +799,9 @@ export default {
     handleAbilityIconsClick(index) {
       this.selectedAction = this.availableActions[index];
       this.actionSelected = true;
-      
+
+      this.clickedHouseIndex = null;
+
       if (this.selectedAction) {
         this.$socket.emit("game:actionSelected", this.selectedAction);
       }

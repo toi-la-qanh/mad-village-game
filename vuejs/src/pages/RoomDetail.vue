@@ -413,7 +413,6 @@ export default {
 
       // Move the user to the game page
       this.$socket.on("game:started", (gameID) => {
-        localStorage.setItem("gameID", gameID);
         this.$router.push({ name: "game", params: { id: gameID } });
       });
     },
@@ -544,7 +543,6 @@ export default {
         });
         isLoading.value = false;
         if (response != null) {
-          localStorage.setItem("gameID", response.gameID);
           this.$router.push({ name: "game", params: { id: response.gameID } });
           this.$socket.emit("game:start", response.gameID);
         }

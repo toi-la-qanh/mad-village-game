@@ -3,7 +3,7 @@
     class="fixed top-0 w-full h-full z-20 bg-inherit flex justify-center items-center"
   >
     <div
-      class="lg:w-2/3 lg:rounded-lg w-full h-full bg-gray-900/50 text-white relative"
+      class="lg:w-2/3 lg:rounded-lg w-full h-full bg-gray-900/50 text-white relative max-h-screen"
     >
       <!-- Close Chat Section -->
       <button @click="close" class="md:absolute fixed right-2 top-1 z-10">
@@ -13,20 +13,94 @@
         />
       </button>
 
+      <div v-if="conversation.length === 0">
+        <p class="text-center">Chưa có tin nhắn chờ</p>
+      </div>
+
       <!-- Fetch the chat messages -->
       <div
-        class="max-h-400 pb-10 flex flex-col py-2 pl-2 pr-7 gap-1 overflow-y-auto"
+        class="max-h-screen w-full flex flex-col pl-4 gap-1 overflow-y-auto pb-12"
         style="scrollbar-width: none"
       >
-        <div
-          v-for="(convo, index) in conversation"
-          :key="index"
-          class="mb-4"
-        >
-          <div class="sticky top-0 rounded-lg p-2 mb-2">
-            <h3 class="text-white">Ngày {{ convo.day }}</h3>
+        <div v-for="(convo, index) in conversation" :key="index" class="mb-4">
+          <div class="sticky top-0 rounded-lg text-center mb-2">
+            <h3 class="text-white font-bold">Ngày {{ convo.day }}</h3>
+          </div>
+          <!-- Game Messages -->
+          <div
+            v-if="convo.gameMessages && convo.gameMessages.length > 0"
+            v-for="(message, msgIndex) in convo.gameMessages"
+            :key="'msg' + msgIndex"
+            class="text-yellow-300 mb-2"
+          >
+            {{ message }}
           </div>
 
+          <!-- Vote Section -->
+          <div v-if="convo.day !== 0">
+            <div class="mb-2">
+              <h3 class="font-bold">Bot</h3>
+              <p>Thông tin bỏ phiếu ngày {{ convo.day }}</p>
+            </div>
+
+            <!-- Vote Details -->
+            <div
+              class="sticky top-0 bg-white rounded-lg max-w-1/3 min-w-96 flex flex-col p-2 text-black"
+            >
+              <!-- Header Row -->
+              <div class="flex justify-between items-center border-b pb-2 mb-2">
+                <div class="w-1/3 font-bold">Tên</div>
+                <div class="w-1/3 font-bold text-center">Số phiếu</div>
+                <div class="w-1/3 font-bold text-right">Bỏ phiếu</div>
+              </div>
+
+              <!-- Player Rows -->
+              <div
+                v-for="(player, playerIndex) in players"
+                :key="playerIndex"
+                class="flex justify-between items-center py-1"
+              >
+                <!-- Player Name -->
+                <div class="w-1/3">{{ player.name }}</div>
+
+                <!-- Votes Count -->
+                <div class="w-1/3 text-center">
+                  {{
+                    (
+                      (convo.votes &&
+                        convo.votes.find(
+                          (vote) => vote.target === player._id
+                        )) || {
+                        count: 0,
+                      }
+                    ).count
+                  }}
+                </div>
+
+                <!-- Vote Input -->
+                <div class="w-1/3 text-right">
+                  <input
+                    type="radio"
+                    :value="player._id"
+                    v-model="selectedPlayerId"
+                    @click="toggleVote(playerIndex)"
+                    :disabled="!voteEvent"
+                    class="mr-2"
+                  />
+                </div>
+              </div>
+
+              <!-- Vote Result -->
+              <div
+                v-if="convo.voteResult"
+                class="mt-2 pt-2 border-t text-center font-bold"
+              >
+                Kết quả: {{ convo.voteResult }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Fetch the chat messages -->
           <div
             v-if="convo.chat && convo.chat.length > 0"
             v-for="(data, chatIndex) in convo.chat"
@@ -44,72 +118,15 @@
               <p>{{ data.message }}</p>
             </div>
           </div>
-
-          <!-- Log the messages in the game -->
-          <div v-if="convo.gameMessage">
-            <p class="text-yellow-300">{{ convo.gameMessage }}</p>
-          </div>
-
-          <!-- Vote Section -->
-          <div class="mb-2">
-            <h3 class="font-bold">Bot</h3>
-            <p>Thông tin bỏ phiếu ngày {{ convo.day }}</p>
-          </div>
-
-          <!-- Vote Details -->
-          <div class="sticky top-0 bg-white rounded-lg max-w-1/3 min-w-96 flex flex-col p-2 text-black">
-            <!-- Header Row -->
-            <div class="flex justify-between items-center border-b pb-2 mb-2">
-              <div class="w-1/3 font-bold">Tên</div>
-              <div class="w-1/3 font-bold text-center">Số phiếu</div>
-              <div class="w-1/3 font-bold text-right">Bỏ phiếu</div>
-            </div>
-
-            <!-- Player Rows -->
-            <div v-for="(player, playerIndex) in players" :key="playerIndex" class="flex justify-between items-center py-1">
-              <!-- Player Name -->
-              <div class="w-1/3">{{ player.name }}</div>
-              
-              <!-- Votes Count -->
-              <div class="w-1/3 text-center">
-                {{
-                  (convo.votes && convo.votes.find((vote) => vote.target === player._id) || {
-                    count: 0,
-                  }).count
-                }}
-              </div>
-              
-              <!-- Vote Input -->
-              <div class="w-1/3 text-right">
-                <input
-                  type="radio"
-                  :value="player._id"
-                  v-model="selectedPlayerId"
-                  @click="toggleVote(playerIndex)"
-                  :disabled="!voteEvent"
-                  class="mr-2"
-                />
-              </div>
-            </div>
-
-            <!-- Vote Result -->
-            <div v-if="convo.voteResult" class="mt-2 pt-2 border-t text-center font-bold">
-              Kết quả: {{ convo.voteResult }}
-            </div>
-          </div>
         </div>
       </div>
 
-      <div v-if="conversation.length === 0">
-        <p class="text-center">Chưa có tin nhắn chờ</p>
-      </div>
-
+      <div v-if="error" class="text-red-500">{{ error }}</div>
       <!-- Send Message Section -->
       <div
         class="md:absolute fixed bottom-0 w-full md:h-auto h-13 bg-white p-2 flex justify-between gap-2"
         :class="{ 'bg-gray-600': !dayChat }"
       >
-        <div v-if="error">{{ error }}</div>
         <input
           type="text"
           v-model="newMessage"
@@ -125,7 +142,7 @@
           :class="{ 'cursor-not-allowed': !dayChat }"
         >
           <FontAwesomeIcon
-            class="text-black hover:text-gray-700"
+            class="text-xl text-black hover:text-gray-400"
             :icon="faTurnUp"
           />
         </button>
@@ -144,10 +161,10 @@ export default {
     day: { type: Number, required: true },
     dayChat: { type: Boolean, required: true },
     nightChat: { type: Boolean, required: true },
-    gameMessage: { type: String, required: true },
     players: { type: Object, required: true },
     voteEvent: { type: Boolean, required: true },
     gameID: { type: String, required: true },
+    conversation: { type: Array, required: true },
   },
 
   emits: ["close"],
@@ -161,11 +178,12 @@ export default {
 
   data() {
     return {
-      conversation: [],
       username: user.value.name,
       newMessage: "",
       error: null,
       selectedPlayerId: null,
+      isMessageSending: false, // Cooldown flag for messages
+      isVoteSending: false, // Cooldown flag for votes
     };
   },
 
@@ -173,96 +191,115 @@ export default {
     FontAwesomeIcon,
   },
 
-  mounted() {
-    // Initialize conversation with empty array if not in session storage
-    const storedState = sessionStorage.getItem("conversation");
-    if (storedState) {
-      this.conversation = JSON.parse(storedState);
-    } else {
-      // Initialize with a conversation entry for the current day
-      this.conversation = [{
-        day: this.day,
-        chat: [],
-        gameMessage: "",
-        voteResult: "",
-        votes: []
-      }];
-      sessionStorage.setItem("conversation", JSON.stringify(this.conversation));
-    }
-  },
-
   methods: {
     sendMessage(event) {
+      if (event) event.preventDefault();
+
+      // Check if message sending is on cooldown
+      if (this.isMessageSending) {
+        this.error = "Vui lòng đợi trước khi gửi tin nhắn tiếp theo!";
+        return;
+      }
+
       if (!this.dayChat) {
-        if (event) event.preventDefault();
+        this.error = "Không thể gửi tin nhắn trong giai đoạn này!";
         return;
       }
 
-      if (!this.newMessage.trim()) return;
-
-      // Validate game ID
-      if (!this.gameID) {
-        this.error = "Không tìm thấy mã game!";
+      if (!this.newMessage.trim()) {
+        this.error = "Tin nhắn không được để trống!";
         return;
       }
 
-      this.$socket.emit(
-        "game:discussion",
-        this.gameID,
-        this.newMessage,
-        (data) => {
-          if (data && data.status === "error") {
-            this.error = data.message;
-          } else {
-            // Find or create day's conversation
-            let dayConversation = this.conversation.find(
-              (convo) => convo.day === this.day
-            );
-            
-            if (!dayConversation) {
-              dayConversation = {
-                day: this.day,
-                chat: [],
-                gameMessage: "",
-                voteResult: "",
-                votes: [],
-              };
-              this.conversation.push(dayConversation);
-            }
+      // Clear previous errors
+      this.error = null;
 
-            // Ensure chat array exists
-            if (!dayConversation.chat) {
-              dayConversation.chat = [];
-            }
+      // Set cooldown flag
+      this.isMessageSending = true;
 
-            // Add message immediately to the UI without waiting for socket response
-            dayConversation.chat.push({
-              name: this.username,
-              message: this.newMessage,
-            });
+      // Send message
+      this.$socket.emit("game:discussion", this.newMessage, (data) => {
+        if (data && data.status) {
+          if (data.status === 400) return;
+          this.error = data.message;
+        } else {
+          // Clear input after successful send
+          this.newMessage = "";
 
-            // Update storage and reset input field
-            this.newMessage = "";
-            this.error = null;
-            sessionStorage.setItem(
-              "conversation",
-              JSON.stringify(this.conversation)
-            );
+          // Find or create day's conversation - for immediate feedback
+          let dayConversation = this.conversation.find(
+            (convo) => convo.day === this.day
+          );
+
+          if (!dayConversation) {
+            dayConversation = {
+              day: this.day,
+              chat: [{ name: "", message: "" }],
+              gameMessages: [],
+              voteResult: "",
+              votes: [],
+            };
+            this.conversation.push(dayConversation);
           }
+
+          // Add message immediately (optimistic UI update)
+          dayConversation.chat.push({
+            name: this.username,
+            message: this.newMessage.trim(),
+          });
+
+          // Update storage
+          sessionStorage.setItem(
+            "conversation",
+            JSON.stringify(this.conversation)
+          );
         }
-      );
+      });
+
+      // Reset cooldown after 1 seconds
+      setTimeout(() => {
+        this.isMessageSending = false;
+      }, 1000);
     },
 
     toggleVote(index) {
+      // Check if vote sending is on cooldown
+      if (this.isVoteSending) {
+        this.error = "Vui lòng đợi trước khi bỏ phiếu tiếp theo!";
+        return;
+      }
+
       // Validate game ID
       if (!this.gameID) {
         this.error = "Không tìm thấy mã game!";
+        return;
+      }
+
+      // Validate vote
+      if (!this.voteEvent) {
+        this.error = "Chưa đến giai đoạn bỏ phiếu!";
         return;
       }
 
       const playerId = this.players[index]._id;
       this.selectedPlayerId = playerId;
-      this.$socket.emit("game:voteTarget", playerId);
+
+      // Set cooldown flag
+      this.isVoteSending = true;
+
+      this.$socket.emit("game:voteTarget", playerId, (data) => {
+        if (data && data.status) {
+          if (data.status === 400) return;
+          this.error = data.message;
+        } else {
+          this.error = null;
+        }
+      });
+
+      // Reset cooldown after 3 seconds
+      setTimeout(() => {
+        this.isVoteSending = false;
+      }, 3000);
     },
 
     close() {

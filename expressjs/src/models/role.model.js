@@ -52,6 +52,9 @@ class Role {
     return this.#traits.includes(trait);
   }
 
+  /**
+   * Method to check if the player is able to do action
+   */
   canPerformAction(action, player, target) {
     // Check if player is alive
     if (!player.status.isAlive) {
@@ -85,6 +88,9 @@ class Role {
     return true;
   }
 
+  /**
+   * Method to allow the player to use action
+   */
   async useAction(action, performer) {
     // Check if player can perform this action
     if (!this.canPerformAction(action, performer)) {

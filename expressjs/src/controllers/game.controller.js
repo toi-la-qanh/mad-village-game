@@ -36,7 +36,9 @@ class GameController {
     this.updateTimeout = null; // Add debounce timeout
   }
 
-  // Add debounced update method
+  /**
+   * Add debounced update method
+   */
   debouncedUpdate(game) {
     if (this.updateTimeout) {
       clearTimeout(this.updateTimeout);
@@ -94,9 +96,12 @@ class GameController {
     // When the game has started, emit gameID to the client to navigate to the game page
     this.socket.on("game:start", async (gameID) => {
       const game = await this.getGameData(gameID);
-      this.io
+      this.socket
         .to(game.room.toHexString())
         .emit("game:started", game._id.toHexString());
+
+      // Remove the listener right after it's fired
+      this.socket.removeAllListeners("game:start");
     });
 
     this.socket.on("game:getAbilityIcons", async (gameID, callback) => {
@@ -128,7 +133,6 @@ class GameController {
 
     // Perform action event
     const performActionEvent = async (game) => {
-      this.socket.off("game:start");
       // Watch other players event
       this.socket.on("game:watch", async (targetID, callback) => {
         const data = await this.watchOtherPlayers(game, targetID);
@@ -143,6 +147,7 @@ class GameController {
 
       // Move to the next phase
       if (game.currentTurn > maxTurn) {
+        this.socket.removeAllListeners("game:watch");
         await this.updateGamePhase(game, "day");
 
         // Delete action key from redis
@@ -183,7 +188,6 @@ class GameController {
 
     // Day event
     const dayPhaseEvent = async (game) => {
-      this.socket.off("game:watch");
       const data = await this.dayPhase(game);
       setTimeout(async () => {
         await this.updateGamePhase(game, "discussion");
@@ -194,31 +198,33 @@ class GameController {
     // Discussion event
     const discussionPhaseEvent = async (game) => {
       this.emitTimeOut(game.discussion_time * 1000, "Thời gian thảo luận");
-      const waitForMessage = () => {
-        return new Promise((resolve) => {
-          this.socket.on("game:discussion", (data) => {
-            resolve(data);
-          });
-        });
-      };
 
-      const message = waitForMessage();
+      this.socket.on("game:discussion", async (message, callback) => {
+        const data = await this.discussionPhase(game, message);
+        callback(data);
+      });
 
       setTimeout(async () => {
         await this.updateGamePhase(game, "vote");
       }, game.discussion_time * 1000);
 
-      const data = await this.discussionPhase(game, message);
-      return data;
+      return { status: "success" };
     };
 
     // Vote event
     const votePhaseEvent = async (game) => {
-      this.socket.off("game:discussion");
+      this.socket.removeAllListeners("game:discussion");
+
       this.emitTimeOut(game.vote_time * 1000, "Thời gian bỏ phiếu");
+      // Set up the socket handler for vote target
+      this.socket.on("game:voteTarget", async (targetID, callback) => {
+        const data = await this.votePhase(game, targetID);
+        callback(data);
+      });
 
       setTimeout(async () => {
         console.log("handle votes phase");
+        this.socket.removeAllListeners("game:voteTarget");
         await this.updateGamePhase(game, "handleVotes");
         // Handle the vote event
         const result = await this.afterVoteHandler(game);
@@ -240,8 +246,7 @@ class GameController {
         }, 5000);
       }, game.vote_time * 1000);
 
-      const data = await this.votePhase(game);
-      return data;
+      return { status: "success" };
     };
 
     // Retrieve the game data to the client
@@ -293,17 +298,24 @@ class GameController {
           await redis.del(...keysToDelete);
 
           await game.deleteOne();
+
+          this.socket.removeAllListeners("game:data");
+          this.socket.removeAllListeners("game:event");
+          this.socket.removeAllListeners("game:getAbilityIcons");
+
           result = { message: "Game has been ended!", phase: "end" }; // Add phase info
           break;
         default:
           result = { event: "gameData", game, phase: game.phases || "unknown" }; // Include phase
-          break;
       }
 
       callback(result); // Send the result with phase info back to the client
     });
   }
 
+  /**
+   * Update the game's turn
+   */
   async updateTurn(game) {
     game.currentTurn += 1;
     await game.save();
@@ -509,7 +521,9 @@ class GameController {
           JSON.stringify({
             roomID: game.room.toString(),
             gameID: game._id.toString(),
-          })
+          }),
+          "EX",
+          86400
         );
       }
 
@@ -585,7 +599,7 @@ class GameController {
       };
     }
 
-    // Priority check
+    // Turn check
     if (player.priority !== game.currentTurn) {
       this.emitTimeOut(null, "Chờ người khác hành động");
       this.socket.emit("game:yourTurn", false);
@@ -611,8 +625,6 @@ class GameController {
       });
     };
 
-    this.emitTimeOut(30000, "Thời gian hành động");
-
     // Wait for the target selection or timeout
     const targetID = await waitForTarget();
 
@@ -626,7 +638,7 @@ class GameController {
 
     // Find the target player
     const target = game.players.find(
-      (target) => target.player_id.toString() === targetID.toString()
+      (target) => target._id.toString() === targetID.toString()
     );
 
     if (!target) {
@@ -635,8 +647,6 @@ class GameController {
         message: "Không tìm thấy mục tiêu trong ván chơi !",
       };
     }
-
-    const targetName = target.name;
 
     // Wait for the action selection or timeout
     const waitForAction = () => {
@@ -651,7 +661,9 @@ class GameController {
 
     const inputAction = await waitForAction();
 
-    // If no action was selected or timed out
+    const targetName = target.name;
+
+    // If timed out and no action was selected
     if (!inputAction) {
       return {
         status: "success",
@@ -672,6 +684,7 @@ class GameController {
         performer: [],
         target: [],
       };
+      await redis.set(actionKey, JSON.stringify(action), "EX", 86400);
     }
 
     if (action.status !== "pending") {
@@ -681,13 +694,16 @@ class GameController {
       };
     }
 
-    if (!RoleController.submitAction(player, inputAction, target)) {
+    if (!(await RoleController.submitAction(player, inputAction, target))) {
       // Save the state of the action
       action.status = "failed";
       action.name = inputAction;
-      action.performer.push(socket.user);
+      action.performer.push(this.playerID);
       action.target.push(targetID);
-      await redis.set(actionKey, action);
+
+      // Store the state of the action in Redis
+      await redis.set(actionKey, JSON.stringify(action), "EX", 86400);
+
       return {
         status: "error",
         message: "Không thể hành động lên người chơi này !",
@@ -700,14 +716,14 @@ class GameController {
     action.status = "successful";
     action.name = inputAction;
     action.performer.push(this.playerID);
-    action.target.push(targetID);
+    action.target.push(targetID); 
 
-    await redis.set(actionKey, JSON.stringify(action));
+    await redis.set(actionKey, JSON.stringify(action), "EX", 86400);
 
     // Return success message
     return {
       status: "success",
-      message: `Bạn đã ${action} ${targetName}`,
+      message: `Bạn đã ${action.name} ${targetName}`,
     };
   }
 
@@ -723,11 +739,11 @@ class GameController {
     }
 
     const player = this.getPlayer(game);
+
     // Only stalker can watch other players
     if (player.role !== "Stalker") {
       return {
         status: "error",
-        message: "Wrong role!",
       };
     }
 
@@ -752,7 +768,7 @@ class GameController {
       };
     }
 
-    // If the target is not being watched, then the player choose not to do anything
+    // If the target is not being watched, then the player choose not to watch the target
     if (!target.status.isBeing.includes("watched")) {
       return {
         status: "error",
@@ -763,9 +779,10 @@ class GameController {
     let performerNames;
     const targetName = target.name;
 
-    // Player is mad, so we need to emit random performer name
+    // Player is mad, so we need to emit some random performer names
     if (player.trait === "mad") {
       const playersName = game.players.map((player) => player.name);
+
       // Create a copy of the array and shuffle it
       const shuffledNames = [...playersName];
       shuffle(shuffledNames);
@@ -781,6 +798,7 @@ class GameController {
       };
     }
 
+    // Emit the real performer name
     performerNames = game.players.find(
       (player) => player._id.toString() === action.performer.toString()
     ).name;
@@ -800,9 +818,11 @@ class GameController {
         status: 400,
       };
     }
+
+    // Get all players
     const players = game.players;
 
-    //Get dead players
+    //Get the dead players
     const deadPlayers = players.filter((player) => !player.status.isAlive);
 
     // Get the count of alive players
@@ -816,30 +836,27 @@ class GameController {
       return count;
     }, {});
 
-    // Check if the game meets ending conditions
-    const gameEnd = RuleController.gameOver(alivePlayers, traitCount);
-    if (!gameEnd.errors && gameEnd.isOver) {
-      const reason = gameEnd.reason;
-      const winner = gameEnd.winner;
-
-      game.phases = "end";
-      await game.save();
-
-      const playerDetails = players.map((player) => ({
-        name: player.name,
-        role: player.role,
-        trait: player.trait,
-      }));
-
-      this.io.to(game.room.toHexString()).emit("game:end", {
-        reason: reason,
-        winner: winner,
-        playerDetails: playerDetails,
-      });
-
+    // Check end game conditions
+    const isGameOver = await this.gameEnd(game, alivePlayers, traitCount);
+    if (isGameOver) {
       return {
         status: "success",
+        message: "Game over!",
       };
+    }
+
+    let poisonMessage = "";
+
+    const poisonedPlayers = players.filter(
+      (player) => player.status.isAlive && 
+               player.status.isBeing && 
+               player.status.isBeing.includes("poisoned") &&
+               player.status.poisonDaysRemaining > 0
+    );
+
+    if(poisonedPlayers.length > 0) {
+      poisonMessage = `Người chơi bị đầu độc: ${poisonedPlayers.map((player) => 
+        `${player.name} (còn ${player.status.poisonDaysRemaining} ngày)`).join(", ")}`;
     }
 
     if (deadPlayers.length === 0) {
@@ -849,11 +866,21 @@ class GameController {
       };
     }
 
-    const deadPlayerNames = deadPlayers.map((player) => player.name);
+    // Include name and trait of dead players in the response
+    const deadPlayerDetails = deadPlayers.map((player) => ({
+      name: player.name,
+      role: player.role,
+      trait: player.trait,
+    }));
+
+    const message = `Những người chết đêm ${game.day}: ${deadPlayerDetails
+      .map((p) => `${p.name} với vai trò ${p.role}`)
+      .join(", ")}`;
+
     return {
       status: "success",
-      message: "Những người chết đêm qua: " + deadPlayerNames,
-      playerNames: deadPlayerNames,
+      message: message + (poisonMessage ? ". " + poisonMessage : ""),
+      details: deadPlayerDetails,
     };
   }
 
@@ -899,66 +926,57 @@ class GameController {
   /**
    * Method to allow players to chat and discuss at night
    */
-  async nightChat(game, message) {
-    if (game.period !== "night") {
-      return {
-        status: 400,
-      };
-    }
+  // async nightChat(game, message) {
+  //   if (game.period !== "night") {
+  //     return {
+  //       status: 400,
+  //     };
+  //   }
 
-    // Validate data
-    if (!message) {
-      return {
-        status: "error",
-        message: "Tin nhắn không được để trống!",
-      };
-    }
+  //   // Validate data
+  //   if (!message) {
+  //     return {
+  //       status: "error",
+  //       message: "Tin nhắn không được để trống!",
+  //     };
+  //   }
 
-    // Check if player exists and is alive
-    const player = this.getPlayer(game);
+  //   // Check if player exists and is alive
+  //   const player = this.getPlayer(game);
 
-    if (!player.status.isAlive) {
-      return {
-        status: "error",
-        message: "Bạn không thể nói chuyện!",
-      };
-    }
+  //   if (!player.status.isAlive) {
+  //     return {
+  //       status: "error",
+  //       message: "Bạn không thể nói chuyện!",
+  //     };
+  //   }
 
-    this.socket.broadcast.to(player1, player2).emit("game:fetchNightChat", {
-      playerName: player.name,
-      message: message,
-    });
+  //   this.socket.broadcast.to(player1, player2).emit("game:fetchNightChat", {
+  //     playerName: player.name,
+  //     message: message,
+  //   });
 
-    return {
-      status: "success",
-      message: "Tin nhắn đã được gửi!",
-    };
-  }
+  //   return {
+  //     status: "success",
+  //     message: "Tin nhắn đã được gửi!",
+  //   };
+  // }
 
   /**
    * Method to vote for the suspect and hang him on
    */
-  async votePhase(game) {
+  async votePhase(game, targetID) {
     // Check if current phase is "vote"
     if (game.phases !== "vote") {
-      return {
-        status: 400,
-      };
+      return { status: 400 };
     }
 
-    const waitForTargetID = () => {
-      return new Promise((resolve) => {
-        this.socket.on("game:voteTarget", (data) => {
-          resolve(data);
-        });
-      });
-    };
-
-    // Wait for the target selection or timeout
-    const targetID = await waitForTargetID();
-
+    // Handle no vote case
     if (!targetID) {
-      return { status: "success", message: "Bạn đã không bỏ phiếu ai !" };
+      return {
+        status: "success",
+        message: "Bạn đã không bỏ phiếu ai !",
+      };
     }
 
     // Get target data
@@ -974,8 +992,6 @@ class GameController {
       };
     }
 
-    const targetName = target.name;
-
     // Check if target is alive
     if (!target.status.isAlive) {
       return {
@@ -987,21 +1003,34 @@ class GameController {
     // Get current votes from Redis
     const gameVoteKey = `game:${game._id}:votes`;
     let currentVotes = [];
+
     const votesData = await redis.get(gameVoteKey);
     if (votesData) {
       currentVotes = JSON.parse(votesData);
     } else {
-      return { message: "Lỗi vote rồi" };
+      currentVotes = [{
+        target: "",
+        count: 0,
+        voters: [],
+      }];
     }
 
-    // Check if user already voted
-    const userVoteIndex = currentVotes.findIndex(
-      (vote) => vote.voter && vote.voter.toString() === this.playerID.toString()
+    // Check if user already voted (using voters array consistently)
+    const userPreviousVote = currentVotes.find(
+      (vote) => vote.voters && vote.voters.includes(this.playerID.toString())
     );
 
     // Remove previous vote if exists
-    if (userVoteIndex !== -1) {
-      currentVotes.splice(userVoteIndex, 1);
+    if (userPreviousVote) {
+      userPreviousVote.count -= 1;
+      userPreviousVote.voters = userPreviousVote.voters.filter(
+        (id) => id !== this.playerID.toString()
+      );
+
+      // Remove vote entry if count becomes 0
+      if (userPreviousVote.count <= 0) {
+        currentVotes = currentVotes.filter((vote) => vote.count > 0);
+      }
     }
 
     // Find if target already has votes
@@ -1025,8 +1054,10 @@ class GameController {
     }
 
     this.io.to(game.room.toHexString()).emit("fetchVotes", currentVotes);
+
     // Save updated votes back to Redis
-    await redis.set(gameVoteKey, JSON.stringify(currentVotes));
+    await redis.set(gameVoteKey, JSON.stringify(currentVotes), "EX", 86400);
+    const targetName = target.name;
 
     return {
       status: "success",
@@ -1043,8 +1074,6 @@ class GameController {
         status: 400,
       };
     }
-
-    this.socket.off("game:voteTarget");
 
     // Get current votes from Redis
     const gameVoteKey = `game:${game._id}:votes`;
@@ -1101,27 +1130,12 @@ class GameController {
     await game.save();
 
     // Check end game conditions
-    const gameEnd = RuleController.gameOver(alivePlayers - 1, traitCount);
-    if (!gameEnd.errors && gameEnd.isOver) {
-      game.phases = "end";
-      await game.save();
-
-      const players = game.players;
-      const playerDetails = players.map((player) => ({
-        name: player.name,
-        role: player.role,
-        trait: player.trait,
-      }));
-      const reason = gameEnd.reason;
-      const winner = gameEnd.winner;
-
-      this.io.to(game.room.toHexString()).emit("game:end", {
-        reason: reason,
-        winner: winner,
-        playerDetails: playerDetails,
-      });
-
-      return { status: "success" };
+    const isGameOver = await this.gameEnd(game, alivePlayers - 1, traitCount);
+    if (isGameOver) {
+      return {
+        status: "success",
+        message: "Game over!",
+      };
     }
 
     // Create appropriate message based on player role
@@ -1135,6 +1149,36 @@ class GameController {
       status: "success",
       message: message,
     };
+  }
+
+  /**
+   * Method to handle game end
+   */
+  async gameEnd(game, alivePlayers, traitCount) {
+    const endConditions = RuleController.gameOver(alivePlayers, traitCount);
+    if (!endConditions.errors && endConditions.isOver) {
+      const reason = endConditions.reason;
+      const winner = endConditions.winner;
+
+      game.phases = "end";
+      await game.save();
+
+      const playerDetails = game.players.map((player) => ({
+        name: player.name,
+        role: player.role,
+        trait: player.trait,
+      }));
+
+      this.io.to(game.room.toString()).emit("game:end", {
+        reason: reason,
+        winner: winner,
+        playerDetails: playerDetails,
+      });
+
+      return true;
+    }
+
+    return false;
   }
 }
 

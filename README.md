@@ -1,5 +1,5 @@
-# MAD VILLAGE (on progress)
-![Node.js](https://img.shields.io/badge/Node.js-v20.x-green.svg) ![Vue.js](https://img.shields.io/badge/Vue.js-3.x-brightgreen.svg) ![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-v4.x-blue.svg)
+# MAD VILLAGE
+![Node.js](https://img.shields.io/badge/Node.js-v20.x-green.svg) ![Vue.js](https://img.shields.io/badge/Vue.js-3.x-brightgreen.svg) ![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-v4.x-blue.svg) ![socket.io](https://img.shields.io/badge/socket.io-4.x-lightgrey.svg)
 
 ![Mad Village Game](./vuejs/src/assets/background.png)
 
@@ -8,9 +8,9 @@ This game is based on the classic "Werewolf" game, but with some key differences
 
 The **werewolves**, representing the *bad* traits, have the ability to perform more actions than the villagers. The gameplay is divided into several phases, each with specific actions:
 
-- The Night Phase: During this phase, players choose their targets to perform their actions.
-- The Day Phase: The results of the actions taken during the night are reported to all players.
-- The Discussion Phase: Players are allowed to chat with each other, discussing the events of the night and trying to figure out who the werewolves are.
+- The Night Phase: During this phase, players choose the targets and perform actions.
+- The Day Phase: Reported the results of the actions taken in the night phase.
+- The Discussion Phase: Players are allowed to chat with each other, discuss the events of the night and try to figure out who the werewolves are.
 - The Vote Phase: Players then vote on who they believe should be hanged. The player with the most votes is eliminated from the game.
 
 The game will *end* when one of the following conditions is met:
@@ -20,9 +20,27 @@ The game will *end* when one of the following conditions is met:
 
 ## Install
 
-Will update when I completed this project..
+*Note: The testing is on progress*
 
-## Creadits
+### Backend
+```
+cd expressjs
+npm install
+nodemon
+```
+
+Add your env configuration: [Backend config](./expressjs/README.md)
+
+### Frontend
+```
+cd vuejs
+npm install
+npm run dev
+```
+
+Add your env configuration: [Frontend config](./vuejs/README.md)
+
+## Credits
 
 ### Assets
 - Characters: [shubibubi](https://shubibubi.itch.io)

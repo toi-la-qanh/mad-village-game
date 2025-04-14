@@ -86,7 +86,8 @@ class RoleController {
     const rolesDetail = roles.map((role) => ({
       name: role.getName(),
       description: role.getDescription(),
-      counts: role.getCount() === Infinity ? 'Vô số lần' : role.getCount() + " lần",
+      counts:
+        role.getCount() === Infinity ? "Vô số lần" : role.getCount() + " lần",
       image: role.getImage(),
       abilityIcons: role.getAbilityIcons(),
       trait: role.getTrait(),
@@ -167,22 +168,6 @@ class RoleController {
     return RandomRole.getName();
   }
 
-  async chooseAction(action, target, trait) {
-    if (trait === "mad") {
-      return "no action";
-    }
-    switch (action) {
-      case "save":
-        save(target);
-        break;
-      case "poison":
-        poison(target);
-        break;
-      default:
-        console.log(`Unknown action: ${action}`);
-    }
-  }
-
   /**
    * Get the details in role class of a player
    */
@@ -201,8 +186,10 @@ class RoleController {
     }
   }
 
-  // Method to submit an action
-  static submitAction(player, actionType, target) {
+  /**
+   * Method to submit an action
+   */
+  static async submitAction(player, actionType, target) {
     const role = this.getRoleFromPlayer(player.role, player.trait);
 
     if (!role.canPerformAction(actionType, player, target)) {
@@ -211,7 +198,7 @@ class RoleController {
     }
 
     // Deduct action count
-    if (!role.useAction(actionType, player)) {
+    if (!(await role.useAction(actionType, player))) {
       return false;
     }
 

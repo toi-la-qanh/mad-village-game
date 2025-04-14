@@ -61,13 +61,22 @@
         :day="game.day"
         :dayChat="game.period === 'day'"
         :nightChat="event.nightChat"
-        :gameMessage="gameMessage"
         :players="game.players"
         :voteEvent="event.vote"
+        :conversation="conversation"
         @close="
           openChatSection = false;
           showGameButtons = true;
         "
+      />
+    </div>
+
+    <!-- Day Report Popup -->
+    <div v-if="showDayReport">
+      <GameDayReport
+        :day="game.day"
+        :dayMessage="dayReportMessage"
+        :details="lastNightReport"
       />
     </div>
 
@@ -113,6 +122,9 @@ export default {
       import("../components/GameInstruction.vue")
     ),
     GameEnd: defineAsyncComponent(() => import("../components/GameEnd.vue")),
+    GameDayReport: defineAsyncComponent(() =>
+      import("../components/GameDayReport.vue")
+    ),
   },
 
   data() {
@@ -143,6 +155,18 @@ export default {
       animation: JSON.parse(sessionStorage.getItem("animation")) || true,
       playerDetails: reactive({}),
       yourTurn: ref(false),
+      conversation: reactive([
+        {
+          day: 0,
+          chat: [],
+          gameMessage: "",
+          voteResult: "",
+          votes: [],
+        },
+      ]),
+      showDayReport: false,
+      dayReportMessage: "",
+      lastNightReport: [],
     };
   },
 
@@ -152,6 +176,12 @@ export default {
 
     if (routeGameId) {
       this.gameID = routeGameId;
+    }
+
+    // Initialize conversation from session storage if available
+    const storedConversation = sessionStorage.getItem("conversation");
+    if (storedConversation) {
+      this.conversation = JSON.parse(storedConversation);
     }
 
     this.fetchGameData();
@@ -205,15 +235,16 @@ export default {
         this.playerDetails = data;
       });
 
-      let conversation =
-        JSON.parse(sessionStorage.getItem("conversation")) || [];
-
+      // Listen for new chat messages
       this.$socket.on("game:fetchDayChat", (data) => {
         // Get current day
         const currentDay = this.game?.day;
+        if (!currentDay) return;
 
         // Find or create day's conversation
-        let dayConversation = conversation.find((c) => c.day === currentDay);
+        let dayConversation = this.conversation.find(
+          (c) => c.day === currentDay
+        );
         if (!dayConversation) {
           dayConversation = {
             day: currentDay,
@@ -222,7 +253,7 @@ export default {
             voteResult: "",
             votes: [],
           };
-          conversation.push(dayConversation);
+          this.conversation.push(dayConversation);
         }
 
         // Add new message to day's chat
@@ -231,13 +262,21 @@ export default {
           message: data.message,
         });
 
-        sessionStorage.setItem("conversation", JSON.stringify(conversation));
+        // Update session storage
+        sessionStorage.setItem(
+          "conversation",
+          JSON.stringify(this.conversation)
+        );
       });
 
       // Votes listener
       this.$socket.on("game:fetchVotes", (data) => {
+        if (!this.game) return;
+
         const currentDay = this.game.day;
-        let dayConversation = conversation.find((c) => c.day === currentDay);
+        let dayConversation = this.conversation.find(
+          (c) => c.day === currentDay
+        );
         if (!dayConversation) {
           dayConversation = {
             day: currentDay,
@@ -246,17 +285,23 @@ export default {
             voteResult: "",
             votes: [],
           };
-          conversation.push(dayConversation);
+          this.conversation.push(dayConversation);
         }
         dayConversation.votes = data;
-        sessionStorage.setItem("conversation", JSON.stringify(conversation));
+        sessionStorage.setItem(
+          "conversation",
+          JSON.stringify(this.conversation)
+        );
       });
 
       // Vote result listener
       this.$socket.on("game:voteResult", (data) => {
-        if (data.status === "success") {
+        if (!this.game) return;
+        if (data.status === "success" || data.status === "tie") {
           const currentDay = this.game.day;
-          let dayConversation = conversation.find((c) => c.day === currentDay);
+          let dayConversation = this.conversation.find(
+            (c) => c.day === currentDay
+          );
           if (!dayConversation) {
             dayConversation = {
               day: currentDay,
@@ -265,10 +310,13 @@ export default {
               voteResult: "",
               votes: [],
             };
-            conversation.push(dayConversation);
+            this.conversation.push(dayConversation);
           }
           dayConversation.voteResult = data.message;
-          sessionStorage.setItem("conversation", JSON.stringify(conversation));
+          sessionStorage.setItem(
+            "conversation",
+            JSON.stringify(this.conversation)
+          );
         }
       });
 
@@ -279,6 +327,7 @@ export default {
       this.$socket.on("game:update", (data) => {
         // Only fetch game data if the phase has changed
         if (data.phase !== this.game?.phases) {
+          this.resetEventFlags();
           this.fetchGameData();
           this.getGameEvents();
         }
@@ -298,8 +347,12 @@ export default {
         if (data.status === 400) return;
 
         if (data.message) {
+          if (!this.game) return;
+
           const currentDay = this.game.day;
-          let dayConversation = conversation.find((c) => c.day === currentDay);
+          let dayConversation = this.conversation.find(
+            (c) => c.day === currentDay
+          );
           if (!dayConversation) {
             dayConversation = {
               day: currentDay,
@@ -308,10 +361,18 @@ export default {
               voteResult: "",
               votes: [],
             };
-            conversation.push(dayConversation);
+            this.conversation.push(dayConversation);
           }
+
+          if (!dayConversation.gameMessages) {
+            dayConversation.gameMessages = [];
+          }
+
           dayConversation.gameMessages.push(data.message);
-          sessionStorage.setItem("conversation", JSON.stringify(conversation));
+          sessionStorage.setItem(
+            "conversation",
+            JSON.stringify(this.conversation)
+          );
         }
 
         switch (data.phase) {
@@ -374,7 +435,25 @@ export default {
     },
 
     dayEvent(data) {
-      // Implement logic for day phase in the game
+      // Reset previous day events
+      this.event.day = true;
+
+      // Process the day event data
+      if (data && data.message) {
+        this.dayReportMessage = data.message;
+      } else {
+        this.dayReportMessage = "Một ngày mới đã bắt đầu trong làng.";
+      }
+
+      if (data && data.details) {
+        this.lastNightReport = data.details;
+      }
+
+      this.showDayReport = true;
+      setTimeout(() => {
+        this.showDayReport = false;
+      }, 5000);
+
       console.log("Day phase:", data);
     },
 
@@ -408,12 +487,12 @@ export default {
 
     removeSocketListeners() {
       // Cleanup the socket listener when the component is destroyed
-      this.$socket.off("game:error");
-      this.$socket.off("game:timeout");
-      this.$socket.off("game:fetchDayChat");
-      this.$socket.off("game:fetchVotes");
-      this.$socket.off("game:voteResult");
-      this.$socket.off("game:message");
+      this.$socket.removeAllListeners("game:error");
+      this.$socket.removeAllListeners("game:timeout");
+      this.$socket.removeAllListeners("game:fetchDayChat");
+      this.$socket.removeAllListeners("game:fetchVotes");
+      this.$socket.removeAllListeners("game:voteResult");
+      this.$socket.removeAllListeners("game:message");
     },
   },
 
