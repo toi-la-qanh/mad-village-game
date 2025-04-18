@@ -18,7 +18,7 @@
         @click="refreshRoom"
         class="absolute right-3 text-lime-700 hover:text-lime-600"
       >
-        Tải lại <FontAwesomeIcon :icon="faRotate" />
+        Tải lại <FontAwesomeIcon class="animate-spin" :icon="faRotate" />
       </button>
 
       <!-- Error -->

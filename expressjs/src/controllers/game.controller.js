@@ -572,8 +572,8 @@ class GameController {
     const player = this.getPlayer(game);
     const role = RoleController.getRoleFromPlayer(player?.role, player?.trait);
     const data = {
-      availableAction: role?.getAvailableAction(),
-      abilityIcons: role?.getAbilityIcons(),
+      availableActions: role.getAvailableAction(),
+      abilityIcons: role.getAbilityIcons(),
     };
 
     return data;

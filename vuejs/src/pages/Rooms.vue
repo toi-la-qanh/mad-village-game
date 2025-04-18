@@ -50,7 +50,7 @@
         <div
           class="flex gap-2 items-center text-lime-700 hover:text-lime-600 focus:text-lime-600"
         >
-          <FontAwesomeIcon :icon="faRotate" />
+          <FontAwesomeIcon class="animate-spin" :icon="faRotate" />
           <button @click="refreshRooms()">Tải lại</button>
         </div>
       </div>

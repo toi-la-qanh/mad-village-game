@@ -1,33 +1,34 @@
 <template>
   <div
-    class="w-full h-full fixed top-0 left-0 z-30 flex items-center justify-center"
+    class="w-full h-full fixed top-0 left-0 z-30 flex items-center justify-center overflow-auto scrollbar-hide"
   >
-    <div class="p-4 w-full h-auto max-w-96 bg-gray-900/50 relative text-white">
+    <div class="p-3 sm:p-4 w-full h-auto max-w-xs sm:max-w-sm md:max-w-md mx-4 bg-gray-900/50 relative text-white rounded-lg">
       <!-- Close button -->
       <button class="absolute right-2 top-1" @click="close">
         <FontAwesomeIcon class="hover:text-gray-300 text-lg" :icon="faXmark" />
       </button>
 
       <!-- Settings Section -->
-      <div class="relative flex flex-col gap-3">
+      <div class="relative flex flex-col gap-2 sm:gap-3 mt-6">
         <!-- Title -->
-        <h2 class="text-center text-xl">Cài đặt</h2>
+        <h2 class="text-center text-lg sm:text-xl">Cài đặt</h2>
 
         <!-- Columns -->
-        <div class="flex flex-row justify-between items-stretch">
-          <!-- Left column with labels -->
-          <div class="flex flex-col flex-1">
-            <h3 class="w-auto h-auto">Tốc độ di chuyển của nhân vật:</h3>
-            <h3>Hiệu ứng hoạt ảnh:</h3>
+        <div class="flex flex-col sm:flex-row justify-between sm:items-stretch gap-3 sm:gap-4">
+          <!-- Left column with labels on small screens, top row on larger screens -->
+          <div class="flex flex-col flex-1 space-y-3 sm:space-y-4">
+            <h3 class="text-sm sm:text-base">Tốc độ di chuyển của nhân vật:</h3>
+            <h3 class="text-sm sm:text-base">Hiệu ứng hoạt ảnh:</h3>
+            <h3 class="text-sm sm:text-base">Nhạc nền:</h3>
           </div>
 
-          <!-- Right column with controls -->
-          <div class="flex flex-col justify-between items-center flex-1">
+          <!-- Right column with controls on small screens, bottom row on larger screens -->
+          <div class="flex flex-col flex-1 space-y-3 sm:space-y-4">
             <!-- Character Speed -->
-            <div class="flex justify-center items-center">
+            <div class="flex justify-start items-center">
               <!-- Minus button -->
               <button
-                class="text-lg px-1 hover:text-gray-300"
+                class="text-base sm:text-lg px-1 hover:text-gray-300"
                 @click="decrementSpeed"
                 :disabled="speed <= 0.5"
               >
@@ -37,14 +38,14 @@
               <!-- Speed input -->
               <input
                 type="number"
-                class="text-white outline-none bg-inherit w-10 text-center"
+                class="text-white outline-none bg-inherit w-8 sm:w-10 text-center"
                 :value="speed"
                 readonly
               />
 
               <!-- Plus button -->
               <button
-                class="text-lg px-1 hover:text-gray-300"
+                class="text-base sm:text-lg px-1 hover:text-gray-300"
                 @click="incrementSpeed"
                 :disabled="speed >= 2"
               >
@@ -53,16 +54,37 @@
             </div>
             
             <!-- Toggle button for Animation -->
-            <button @click="toggleAnimation" class="w-full hover:bg-gray-400">
+            <button @click="toggleAnimation" class="w-full hover:bg-gray-400 p-1 rounded text-sm sm:text-base">
               {{ animation ? "Bật" : "Tắt" }}
+            </button>
+            
+            <!-- Toggle button for Audio -->
+            <button @click="toggleAudio" class="w-full hover:bg-gray-400 p-1 rounded text-sm sm:text-base">
+              {{ audio ? "Bật" : "Tắt" }}
             </button>
           </div>
         </div>
+        
+        <!-- Volume Slider (full width) -->
+        <div class="flex justify-between items-center w-full gap-2 mt-2">
+          <h3 class="whitespace-nowrap text-sm sm:text-base">Âm lượng:</h3>
+          <input 
+            type="range" 
+            min="0" 
+            max="100" 
+            :value="volume" 
+            @input="updateVolume" 
+            class="flex-grow accent-white"
+          />
+          <span class="min-w-[36px] sm:min-w-[40px] text-center bg-gray-700 px-1 rounded text-xs sm:text-sm whitespace-nowrap">
+            {{ Math.round(volume) }}%
+          </span>
+        </div>
 
-        <button>Thoát game</button>
+        <button @click="quitGame" class="w-full hover:bg-gray-400 p-1.5 sm:p-2 mt-3 sm:mt-4 rounded text-sm sm:text-base">Thoát game</button>
 
         <!-- Submit button -->
-        <button @click="emitChangeSettings" class="w-full hover:bg-gray-400">
+        <button @click="emitChangeSettings" class="w-full hover:bg-gray-400 p-1.5 sm:p-2 rounded text-sm sm:text-base">
           Thay đổi
         </button>
       </div>
@@ -73,6 +95,7 @@
 <script>
 import { faXmark, faPlus, faMinus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { audioEnabled, audioVolume } from "../store";
 
 export default {
   components: {
@@ -89,6 +112,8 @@ export default {
     return {
       speed: 1, // Initial speed is set to 1
       animation: true, // Default animation is enabled
+      audio: audioEnabled.value, // Audio setting
+      volume: audioVolume.value * 100, // Volume in 0-100 range
     };
   },
   // Load settings from localStorage when the component is mounted
@@ -123,11 +148,32 @@ export default {
       this.animation = !this.animation; // Toggle the animation
     },
 
+    // Toggle the audio state
+    toggleAudio() {
+      this.audio = !this.audio;
+    },
+
+    // Update volume
+    updateVolume(e) {
+      this.volume = parseFloat(e.target.value);
+    },
+    
+    // Quit game and redirect to home
+    quitGame() {
+      if (window.confirm("Bạn có chắc chắn muốn thoát game?")) {
+        this.$router.push('/');
+      }
+    },
+
     // Emit the updated settings to the parent component (Game.vue)
     emitChangeSettings() {
       // Save settings to sessionStorage when the change button is clicked
       sessionStorage.setItem("speed", this.speed); // Save speed
       sessionStorage.setItem("animation", this.animation); // Save animation
+      
+      // Update audio settings in store
+      audioEnabled.value = this.audio;
+      audioVolume.value = this.volume / 100;
 
       // Emit new settings to Game.vue
       this.$emit("changeSettings", {
@@ -142,3 +188,14 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+</style>

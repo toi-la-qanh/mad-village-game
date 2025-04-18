@@ -1,8 +1,7 @@
 // const cron = require("node-cron");
 const OpenAI = require("openai");
 const redis = require("../database/redis");
-const dotenv = require("dotenv");
-dotenv.config();
+require("dotenv").config();
 
 const openai = new OpenAI({
   baseURL: "https://openrouter.ai/api/v1",

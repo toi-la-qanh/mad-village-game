@@ -4,6 +4,7 @@
   <SignUpForm v-if="showSignUpForm" />
   <ErrorPopup v-if="errorMessages && !showSignUpForm" />
   <Loading v-if="isLoading" />
+  <AudioPlayer :src="'/src/assets/sound-track.mp3'" />
 </template>
 
 <script>
@@ -17,6 +18,7 @@ export default {
     SignUpForm: defineAsyncComponent(() => import('./components/SignUpForm.vue')),
     ErrorPopup: defineAsyncComponent(() => import('./components/ErrorPopup.vue')),
     Loading: defineAsyncComponent(() => import('./components/Loading.vue')),
+    AudioPlayer: defineAsyncComponent(() => import('./components/AudioPlayer.vue')),
   },
   setup() {
     return {

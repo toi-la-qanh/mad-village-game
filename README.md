@@ -47,6 +47,7 @@ Add your env configuration: [Frontend config](./vuejs/README.md)
 - Map and Houses: [cypor](https://cypor.itch.io)
 - Bow: [stealthix](https://stealthix.itch.io)
 - Medkit: [josupixel](https://josupixel.itch.io)
+- Sound track: [Mech Mind Games](https://mech-mind-games.itch.io)
 
 ### Game
 - Development: [Me](https://github.com/toi-la-qanh) btw :)

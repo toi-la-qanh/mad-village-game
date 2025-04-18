@@ -119,6 +119,7 @@
         <p class="text-xs absolute top-[-20px] left-[-10px]">
           {{ characterMovingName }}
         </p>
+
         <!-- Character image or div -->
         <img :src="characterImageSrc" alt="Character" />
       </div>
@@ -242,11 +243,18 @@ export default {
   async mounted() {
     // Initial map load
     this.loadMapImage();
-    this.fetchAbilityIcons();
+    const skill = JSON.parse(sessionStorage.getItem("abilityIcons"));
+    if (skill) {
+      this.abilityIcons = skill.abilityIcons;
+      this.availableActions = skill.availableActions;
+    } else {
+      this.fetchAbilityIcons();
+    }
     this.resetGameState();
     this.moveSpeed = this.characterSpeed;
     this.placeCharacters();
     window.addEventListener("resize", this.updateCanvasSize);
+    
     // Center the view programmatically after the component is mounted
     this.$nextTick(() => {
       this.centerViewport();
@@ -792,7 +800,8 @@ export default {
     fetchAbilityIcons() {
       this.$socket.emit("game:getAbilityIcons", this.game._id, (data) => {
         this.abilityIcons = data.abilityIcons;
-        this.availableActions = data.availableAction;
+        this.availableActions = data.availableActions;
+        sessionStorage.setItem("abilityIcons", JSON.stringify(data));
       });
     },
 

@@ -17,8 +17,7 @@ server.listen(PORT, '0.0.0.0', () => {
 // });
 
 // Load environment variables
-const dotenv = require("dotenv");
-dotenv.config();
+require("dotenv").config();
 
 // Connect to the database
 const dbConnection = require("./database/db.js");
@@ -78,7 +77,7 @@ app.use("/api/llm", llmRoutes);
 // const updateLLMResponse = require("./cron/llm.cron.js");
 // updateLLMResponse();
 
-app.set('trust proxy', 1 /* number of proxies between user and server */);
+app.set('trust proxy', 3 /* number of proxies between user and server */);
 app.get('/ip', (request, response) => response.send(request.ip));
 
 module.exports = app;

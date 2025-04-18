@@ -1,0 +1,91 @@
+{
+  "_id": "661f5b2e9e3a2a6f8d0eghk1",
+  "room": "661f5b2e9e3a2a6f8d0edef1",
+  "phases": "showRoles",
+  "day": 0,
+  "period": "day",
+  "discussion_time": 120,
+  "vote_time": 30,
+  "currentTurn": 1,
+  "players": [
+    {
+      "_id": "661f5b2e9e3a2a6f8d0eabc1",
+      "name": "test1",
+      "priority": 1,
+      "role": "Phù thuỷ",
+      "trait": "tốt",
+      "count": 2,
+      "status": {
+        "isAlive": true,
+        "isBeing": [],
+        "poisonDaysRemaining": 0
+      }
+    },
+    {
+      "_id": "661f5b2e9e3a2a6f8d0eabc2",
+      "name": "test1",
+      "priority": 1,
+      "role": "Phù thuỷ",
+      "trait": "tốt",
+      "count": 2,
+      "status": {
+        "isAlive": true,
+        "isBeing": [],
+        "poisonDaysRemaining": 0
+      }
+    },
+    {
+      "_id": "661f5b2e9e3a2a6f8d0eabc3",
+      "name": "test1",
+      "priority": 1,
+      "role": "Phù thuỷ",
+      "trait": "tốt",
+      "count": 2,
+      "status": {
+        "isAlive": true,
+        "isBeing": [],
+        "poisonDaysRemaining": 0
+      }
+    },
+    {
+      "_id": "661f5b2e9e3a2a6f8d0eabc4",
+      "name": "test1",
+      "priority": 1,
+      "role": "Phù thuỷ",
+      "trait": "tốt",
+      "count": 2,
+      "status": {
+        "isAlive": true,
+        "isBeing": [],
+        "poisonDaysRemaining": 0
+      }
+    },
+    {
+      "_id": "661f5b2e9e3a2a6f8d0eabc5",
+      "name": "test1",
+      "priority": 1,
+      "role": "Phù thuỷ",
+      "trait": "tốt",
+      "count": 2,
+      "status": {
+        "isAlive": true,
+        "isBeing": [],
+        "poisonDaysRemaining": 0
+      }
+    },
+    {
+      "_id": "661f5b2e9e3a2a6f8d0eabc6",
+      "name": "test1",
+      "priority": 1,
+      "role": "Phù thuỷ",
+      "trait": "tốt",
+      "count": 2,
+      "status": {
+        "isAlive": true,
+        "isBeing": [],
+        "poisonDaysRemaining": 0
+      }
+    }
+  ],
+  "createdAt": "2025-04-17T14:35:00Z"
+}
