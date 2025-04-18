@@ -86,20 +86,21 @@
         </div>
 
         <!-- Join Room Section -->
-        <div v-if="!userInRoom" class="bg-white rounded-xl shadow-lg p-6">
+        <div v-if="!userInRoom" class="bg-white rounded-xl shadow-md p-4 border border-gray-200 mt-6">
           <div v-if="room.password" class="space-y-4">
-            <h3 class="text-xl font-semibold text-gray-800">Mật khẩu phòng</h3>
-            <div class="flex items-center gap-4">
-              <div class="relative flex-1">
+            <h3 class="text-xl font-semibold text-gray-800 text-center">Phòng có mật khẩu</h3>
+            <div class="flex flex-col md:flex-row items-center gap-3">
+              <div class="relative flex-1 w-full">
                 <input
                   :type="isPasswordVisible ? 'text' : 'password'"
                   placeholder="Nhập mật khẩu"
                   v-model="inputPassword"
-                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all duration-200"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-400 focus:border-transparent outline-none transition-all duration-200"
                 />
                 <button
                   @click="togglePasswordVisibility"
                   class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  aria-label="Toggle password visibility"
                 >
                   <FontAwesomeIcon
                     :icon="isPasswordVisible ? faEyeSlash : faEye"
@@ -108,19 +109,21 @@
               </div>
               <button
                 @click="joinRoom"
-                class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200 font-medium"
+                class="px-6 py-2 font-bold bg-green-300 text-gray-600 rounded-lg hover:bg-green-500 transition-colors duration-200 w-full md:w-auto whitespace-nowrap"
               >
                 Vào phòng
               </button>
             </div>
-            <p v-if="errorWhenJoiningRoom" class="text-red-500 text-sm">
+            <p v-if="errorWhenJoiningRoom" class="text-red-500 text-sm text-center mt-2 bg-red-50 p-2 rounded-lg">
               {{ errorWhenJoiningRoom }}
             </p>
           </div>
-          <div v-else class="text-center">
+          <div v-else class="text-center py-4">
+            <h3 class="text-xl font-semibold text-gray-800 mb-4">Phòng không có mật khẩu</h3>
+            <p class="text-gray-600 mb-4">Bạn có thể vào phòng ngay bây giờ</p>
             <button
               @click="joinRoom"
-              class="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200 font-medium"
+              class="px-6 py-3 bg-green-300 text-gray-600 rounded-lg hover:bg-green-500 transition-colors duration-200 font-bold"
             >
               Vào phòng
             </button>

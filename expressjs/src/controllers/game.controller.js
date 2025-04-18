@@ -224,6 +224,7 @@ class GameController {
 
       setTimeout(async () => {
         console.log("handle votes phase");
+        this.emitTimeOut(null, "Xử lý phiếu bầu");
         this.socket.removeAllListeners("game:voteTarget");
         await this.updateGamePhase(game, "handleVotes");
         // Handle the vote event
@@ -562,15 +563,8 @@ class GameController {
    * Retrieve the ability icons for the client
    */
   getAbilityIcons(game) {
-    // if (game.phases !== "showRoles") {
-    //   return {
-    //     status: 400,
-    //     message: "Wrong phase!",
-    //   };
-    // }
-
     const player = this.getPlayer(game);
-    const role = RoleController.getRoleFromPlayer(player?.role, player?.trait);
+    const role = RoleController.getRoleFromPlayer(player.role, player.trait);
     const data = {
       availableActions: role.getAvailableAction(),
       abilityIcons: role.getAbilityIcons(),
@@ -590,14 +584,6 @@ class GameController {
     }
 
     const player = this.getPlayer(game);
-
-    // Validate player's ability to perform action
-    if (!player || !player.status.isAlive) {
-      return {
-        status: "error",
-        message: "Bạn không thể thực hiện hành động!",
-      };
-    }
 
     // Turn check
     if (player.priority !== game.currentTurn) {
@@ -694,7 +680,9 @@ class GameController {
       };
     }
 
-    if (!(await RoleController.submitAction(player, inputAction, target))) {
+    if (
+      !(await RoleController.submitAction(player, inputAction, target, game))
+    ) {
       // Save the state of the action
       action.status = "failed";
       action.name = inputAction;
@@ -710,13 +698,13 @@ class GameController {
       };
     }
 
-    await RoleController.resolveActions(player, inputAction, target);
+    await RoleController.resolveActions(player, inputAction, target, game);
 
     // Save successful action
     action.status = "successful";
     action.name = inputAction;
     action.performer.push(this.playerID);
-    action.target.push(targetID); 
+    action.target.push(targetID);
 
     await redis.set(actionKey, JSON.stringify(action), "EX", 86400);
 
@@ -836,27 +824,32 @@ class GameController {
       return count;
     }, {});
 
-    // Check end game conditions
-    const isGameOver = await this.gameEnd(game, alivePlayers, traitCount);
-    if (isGameOver) {
-      return {
-        status: "success",
-        message: "Game over!",
-      };
-    }
-
     let poisonMessage = "";
 
     const poisonedPlayers = players.filter(
-      (player) => player.status.isAlive && 
-               player.status.isBeing && 
-               player.status.isBeing.includes("poisoned") &&
-               player.status.poisonDaysRemaining > 0
+      (player) =>
+        player.status.isAlive &&
+        player.status.isBeing &&
+        player.status.isBeing.includes("poisoned") &&
+        player.status.poisonDaysRemaining > 0
     );
 
-    if(poisonedPlayers.length > 0) {
-      poisonMessage = `Người chơi bị đầu độc: ${poisonedPlayers.map((player) => 
-        `${player.name} (còn ${player.status.poisonDaysRemaining} ngày)`).join(", ")}`;
+    // Reduce poisonDaysRemaining and handle death if poisonedDaysRemaining <= 0
+    poisonedPlayers.forEach((player) => {
+      player.status.poisonDaysRemaining -= 1; // Decrease the poison days
+
+      if (player.status.poisonDaysRemaining < 1) {
+        player.status.isAlive = false; // If poison days are 0 or less, the player dies
+      }
+    });
+
+    if (poisonedPlayers.length > 0) {
+      poisonMessage = `Người chơi bị đầu độc: ${poisonedPlayers
+        .map(
+          (player) =>
+            `${player.name} (còn ${player.status.poisonDaysRemaining} ngày)`
+        )
+        .join(", ")}`;
     }
 
     if (deadPlayers.length === 0) {
@@ -866,12 +859,31 @@ class GameController {
       };
     }
 
+    // Now, poisoned players who died should be added to the deadPlayers array
+    const poisonedDeadPlayers = poisonedPlayers.filter(
+      (player) => !player.status.isAlive
+    );
+
+    // Add poisoned dead players to the deadPlayers list
+    deadPlayers.push(...poisonedDeadPlayers);
+
     // Include name and trait of dead players in the response
     const deadPlayerDetails = deadPlayers.map((player) => ({
       name: player.name,
       role: player.role,
       trait: player.trait,
     }));
+
+    await game.save();
+
+    // Check end game conditions
+    const isGameOver = await this.gameEnd(game, alivePlayers, traitCount);
+    if (isGameOver) {
+      return {
+        status: "success",
+        message: "Game over!",
+      };
+    }
 
     const message = `Những người chết đêm ${game.day}: ${deadPlayerDetails
       .map((p) => `${p.name} với vai trò ${p.role}`)
@@ -1008,11 +1020,13 @@ class GameController {
     if (votesData) {
       currentVotes = JSON.parse(votesData);
     } else {
-      currentVotes = [{
-        target: "",
-        count: 0,
-        voters: [],
-      }];
+      currentVotes = [
+        {
+          target: "",
+          count: 0,
+          voters: [],
+        },
+      ];
     }
 
     // Check if user already voted (using voters array consistently)

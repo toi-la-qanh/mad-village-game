@@ -84,7 +84,7 @@
                     :value="player._id"
                     v-model="selectedPlayerId"
                     @click="toggleVote(playerIndex)"
-                    :disabled="!voteEvent"
+                    :disabled="!voteEvent || player.name === username"
                     class="mr-2"
                   />
                 </div>

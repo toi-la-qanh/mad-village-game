@@ -181,6 +181,8 @@ class RoleController {
         return new Stalker(trait);
       case "Witch":
         return new Witch(trait);
+      case "Doctor":
+        return new Doctor(trait);
       default:
         return null;
     }
@@ -189,16 +191,11 @@ class RoleController {
   /**
    * Method to submit an action
    */
-  static async submitAction(player, actionType, target) {
+  static async submitAction(player, actionType, target, game) {
     const role = this.getRoleFromPlayer(player.role, player.trait);
 
-    if (!role.canPerformAction(actionType, player, target)) {
-      console.log(`${player.name} cannot perform the action: ${actionType}`);
-      return false;
-    }
-
     // Deduct action count
-    if (!(await role.useAction(actionType, player))) {
+    if (!(await role.useAction(actionType, player, target, game))) {
       return false;
     }
 
@@ -208,24 +205,24 @@ class RoleController {
   /**
    * Method to resolve actions at the end of the phase
    */
-  static async resolveActions(performer, actionType, target) {
+  static async resolveActions(performer, actionType, target, game) {
     // Resolve action based on type
     switch (actionType) {
       case "block":
         target.status.isBeing.push("blocked");
-        await target.save();
+        await game.save();
         console.log(`${performer.name} blocks player ${target.name}`);
         break;
 
       case "protect":
         target.status.isBeing.push("protected");
-        await target.save();
+        await game.save();
         console.log(`${performer.name} protects player ${target.name}`);
         break;
 
       case "save":
         target.status.isAlive = true;
-        await target.save();
+        await game.save();
         console.log(`${performer.name} saves player ${target.name}`);
         break;
 
@@ -237,25 +234,26 @@ class RoleController {
           break;
         }
         target.status.isAlive = false;
-        await target.save();
+        await game.save();
         console.log(`${performer.name} killed player ${target.name}`);
         break;
 
       case "stalk":
         target.status.isBeing.push("watched");
-        await target.save();
+        await game.save();
         console.log(`${performer.name} stalks player ${target.name}`);
         break;
 
       case "poison":
         target.status.isBeing.push("poisoned");
-        await target.save();
+        target.status.poisonDaysRemaining = 2;
+        await game.save();
         console.log(`${performer.name} poisons player ${target.name}`);
         break;
 
       case "paralyze":
         target.status.isBeing.push("paralyzed");
-        await target.save();
+        await game.save();
         console.log(`${performer.name} paralyzes player ${target.name}`);
         break;
 
@@ -264,7 +262,7 @@ class RoleController {
         target.status.isBeing = target.status.isBeing.filter(
           (status) => !toxinsToRemove.includes(status)
         );
-        await target.save();
+        await game.save();
         console.log(`${performer.name} detoxes player ${target.name}`);
         break;
 
@@ -273,7 +271,7 @@ class RoleController {
         target.status.isBeing = target.status.isBeing.filter(
           (status) => status !== "poisoned"
         );
-        await target.save();
+        await game.save();
         console.log(`${performer.name} cures player ${target.name}`);
         break;
 

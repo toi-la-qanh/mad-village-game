@@ -237,6 +237,7 @@ export default {
       currentDay: 0,
       currentPeriod: "day",
       playerBeingWatched: [], // Initialize as empty array, not null
+      isYourTurn: this.yourTurn,
     };
   },
 
@@ -245,6 +246,7 @@ export default {
     this.loadMapImage();
     const skill = JSON.parse(sessionStorage.getItem("abilityIcons"));
     if (skill) {
+      console.log(skill);
       this.abilityIcons = skill.abilityIcons;
       this.availableActions = skill.availableActions;
     } else {
@@ -428,6 +430,8 @@ export default {
         this.actionSelected = false;
         this.selectedAction = null;
         this.endMoving = false;
+        this.clickedHouseIndex = null;
+        this.isYourTurn = false;
 
         // Update the current day and period to the new game state
         this.currentDay = this.game.day;
@@ -436,7 +440,7 @@ export default {
     },
 
     onButtonClick(index) {
-      this.clickedHouseIndex = this.clickedHouseIndex === index ? null : index;
+      this.clickedHouseIndex = index;
     },
 
     async getTarget(targetID, index) {
@@ -801,6 +805,7 @@ export default {
       this.$socket.emit("game:getAbilityIcons", this.game._id, (data) => {
         this.abilityIcons = data.abilityIcons;
         this.availableActions = data.availableActions;
+        console.log(data);
         sessionStorage.setItem("abilityIcons", JSON.stringify(data));
       });
     },

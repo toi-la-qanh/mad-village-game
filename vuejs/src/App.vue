@@ -4,7 +4,7 @@
   <SignUpForm v-if="showSignUpForm" />
   <ErrorPopup v-if="errorMessages && !showSignUpForm" />
   <Loading v-if="isLoading" />
-  <AudioPlayer :src="'/src/assets/sound-track.mp3'" />
+  <AudioPlayer :src="'/audio/sound-track.mp3'" />
 </template>
 
 <script>

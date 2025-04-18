@@ -4,9 +4,9 @@ class Bully extends Role {
   #trait;
   #abilityIconsPath = {
     lock: "./src/models/roles/assets/lock-solid.png",
-    knife: "./src/models/roles/assets/knife.png"
+    knife: "./src/models/roles/assets/knife.png",
   };
-  
+
   constructor(trait = "") {
     const name = "Bully";
     const imagePath = "./src/models/roles/assets/bully.png";
@@ -14,15 +14,15 @@ class Bully extends Role {
     this.#trait = trait;
     this.configureTrait(trait);
   }
-  
+
   configureTrait(trait) {
     const icons = [];
-    
+
     // Default configuration
     let abilities = { canBlock: true, canKill: false };
     let description = "Chặn hành động người chơi được chỉ định.";
     const availableAction = ["block"];
-    
+
     // Trait-specific configurations
     if (trait === "mad") {
       abilities = { canBlock: false, canKill: false };
@@ -31,15 +31,13 @@ class Bully extends Role {
       description = "Chặn hành động và giết người chơi được chỉ định.";
       availableAction.push("kill");
     }
-    
+
     // Add icons based on abilities
-    if (abilities.canBlock || trait === "mad") {
-      icons.push(super.convertImageToBase64(this.#abilityIconsPath.lock));
-    }
+    icons.push(super.convertImageToBase64(this.#abilityIconsPath.lock));
     if (abilities.canKill) {
       icons.push(super.convertImageToBase64(this.#abilityIconsPath.knife));
     }
-    
+
     // Apply configuration
     this.setAbilities(abilities);
     super.setDescription(description);
@@ -48,12 +46,12 @@ class Bully extends Role {
     this.setActionPriorities(1);
     super.setAbilitiesIcons(icons);
   }
-  
+
   setTrait(trait) {
     this.#trait = trait;
     this.configureTrait(trait);
   }
-  
+
   getTrait() {
     return this.#trait;
   }

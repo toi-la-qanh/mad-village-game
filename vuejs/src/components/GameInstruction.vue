@@ -90,9 +90,9 @@
       <!-- Table of Contents Sidebar -->
       <div 
         v-if="listOfContents"
-        class="absolute right-0 top-0 h-full w-64 bg-white border-l border-gray-200 shadow-lg transform transition-transform duration-300 ease-in-out"
+        class="absolute right-0 top-0 h-full w-64 bg-white border-l border-gray-200 shadow-lg transform transition-transform duration-300 ease-in-out overflow-auto"
       >
-        <div class="p-4">
+        <div class="px-4 py-6">
           <h4 class="text-lg font-semibold text-gray-800 mb-4">Mục lục</h4>
           <nav class="space-y-2">
             <a 

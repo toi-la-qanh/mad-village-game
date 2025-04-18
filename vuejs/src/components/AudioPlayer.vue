@@ -17,7 +17,7 @@ export default {
   props: {
     src: {
       type: String,
-      default: '/src/assets/sound-track.mp3'
+      default: '/audio/sound-track.mp3'
     }
   },
   setup(props) {

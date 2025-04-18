@@ -2,50 +2,50 @@
   <div
     class="w-full h-full fixed top-0 left-0 z-30 flex items-center justify-center overflow-auto scrollbar-hide"
   >
-    <div class="p-3 sm:p-4 w-full h-auto max-w-xs sm:max-w-sm md:max-w-md mx-4 bg-gray-900/50 relative text-white rounded-lg">
+    <div class="md:p-5 p-3 h-full md:max-h-min w-full md:max-w-md bg-gray-900/50 relative text-white rounded-lg">
       <!-- Close button -->
-      <button class="absolute right-2 top-1" @click="close">
-        <FontAwesomeIcon class="hover:text-gray-300 text-lg" :icon="faXmark" />
+      <button class="absolute md:right-2 md:top-2 right-2 top-5" @click="close">
+        <FontAwesomeIcon class="hover:text-gray-700 text-white text-2xl" :icon="faXmark" />
       </button>
 
       <!-- Settings Section -->
-      <div class="relative flex flex-col gap-2 sm:gap-3 mt-6">
+      <div class="relative flex flex-col gap-2 sm:gap-3 mt-8 sm:mt-6">
         <!-- Title -->
-        <h2 class="text-center text-lg sm:text-xl">Cài đặt</h2>
+        <h2 class="text-center text-xl sm:text-2xl font-bold mb-3">Cài đặt</h2>
 
-        <!-- Columns -->
-        <div class="flex flex-col sm:flex-row justify-between sm:items-stretch gap-3 sm:gap-4">
-          <!-- Left column with labels on small screens, top row on larger screens -->
-          <div class="flex flex-col flex-1 space-y-3 sm:space-y-4">
-            <h3 class="text-sm sm:text-base">Tốc độ di chuyển của nhân vật:</h3>
-            <h3 class="text-sm sm:text-base">Hiệu ứng hoạt ảnh:</h3>
-            <h3 class="text-sm sm:text-base">Nhạc nền:</h3>
+        <!-- Columns - stack on mobile, side by side on larger screens -->
+        <div class="flex flex-row justify-between items-start gap-4">
+          <!-- Left column with labels -->
+          <div class="flex flex-col flex-1 space-y-6 sm:space-y-4 w-full">
+            <h3 class="text-base sm:text-base h-12 sm:h-10 flex items-center">Tốc độ di chuyển:</h3>
+            <h3 class="text-base sm:text-base h-12 sm:h-10 flex items-center">Hiệu ứng hoạt ảnh:</h3>
+            <h3 class="text-base sm:text-base h-12 sm:h-10 flex items-center">Nhạc nền:</h3>
           </div>
 
-          <!-- Right column with controls on small screens, bottom row on larger screens -->
-          <div class="flex flex-col flex-1 space-y-3 sm:space-y-4">
+          <!-- Right column with controls -->
+          <div class="flex flex-col flex-1 space-y-6 sm:space-y-4 w-full">
             <!-- Character Speed -->
-            <div class="flex justify-start items-center">
+            <div class="flex items-center justify-center h-12 sm:h-10">
               <!-- Minus button -->
               <button
-                class="text-base sm:text-lg px-1 hover:text-gray-300"
+                class="text-lg sm:text-base px-3 sm:px-1 hover:text-gray-300 h-full touch-manipulation"
                 @click="decrementSpeed"
                 :disabled="speed <= 0.5"
               >
                 <FontAwesomeIcon :icon="faMinus" />
               </button>
 
-              <!-- Speed input -->
               <input
                 type="number"
-                class="text-white outline-none bg-inherit w-8 sm:w-10 text-center"
+                inputmode="decimal"
+                class="text-white outline-none bg-inherit w-14 sm:w-10 text-center appearance-none h-full text-lg sm:text-base"
                 :value="speed"
                 readonly
               />
 
               <!-- Plus button -->
               <button
-                class="text-base sm:text-lg px-1 hover:text-gray-300"
+                class="text-lg sm:text-base px-3 sm:px-1 hover:text-gray-300 h-full touch-manipulation"
                 @click="incrementSpeed"
                 :disabled="speed >= 2"
               >
@@ -54,37 +54,51 @@
             </div>
             
             <!-- Toggle button for Animation -->
-            <button @click="toggleAnimation" class="w-full hover:bg-gray-400 p-1 rounded text-sm sm:text-base">
+            <button 
+              @click="toggleAnimation" 
+              class="w-full hover:bg-gray-400 px-4 py-2 sm:p-1 rounded text-base sm:text-base h-12 sm:h-10 flex items-center justify-center touch-manipulation"
+            >
               {{ animation ? "Bật" : "Tắt" }}
             </button>
             
             <!-- Toggle button for Audio -->
-            <button @click="toggleAudio" class="w-full hover:bg-gray-400 p-1 rounded text-sm sm:text-base">
+            <button 
+              @click="toggleAudio" 
+              class="w-full hover:bg-gray-400 px-4 py-2 sm:p-1 rounded text-base sm:text-base h-12 sm:h-10 flex items-center justify-center touch-manipulation"
+            >
               {{ audio ? "Bật" : "Tắt" }}
             </button>
           </div>
         </div>
         
         <!-- Volume Slider (full width) -->
-        <div class="flex justify-between items-center w-full gap-2 mt-2">
-          <h3 class="whitespace-nowrap text-sm sm:text-base">Âm lượng:</h3>
+        <div class="flex justify-between items-center w-full gap-2 mt-4">
+          <h3 class="whitespace-nowrap text-base">Âm lượng:</h3>
           <input 
             type="range" 
             min="0" 
             max="100" 
             :value="volume" 
             @input="updateVolume" 
-            class="flex-grow accent-white"
+            class="flex-grow accent-white h-8"
           />
-          <span class="min-w-[36px] sm:min-w-[40px] text-center bg-gray-700 px-1 rounded text-xs sm:text-sm whitespace-nowrap">
+          <span class="min-w-[40px] text-center bg-gray-700 px-2 py-1 rounded text-base whitespace-nowrap">
             {{ Math.round(volume) }}%
           </span>
         </div>
 
-        <button @click="quitGame" class="w-full hover:bg-gray-400 p-1.5 sm:p-2 mt-3 sm:mt-4 rounded text-sm sm:text-base">Thoát game</button>
+        <button 
+          @click="quitGame" 
+          class="w-full hover:bg-gray-400 p-3 sm:p-2 mt-3 rounded text-base font-medium touch-manipulation"
+        >
+          Thoát game
+        </button>
 
         <!-- Submit button -->
-        <button @click="emitChangeSettings" class="w-full hover:bg-gray-400 p-1.5 sm:p-2 rounded text-sm sm:text-base">
+        <button 
+          @click="emitChangeSettings" 
+          class="w-full hover:bg-gray-400 p-3 sm:p-2 rounded text-base font-medium touch-manipulation"
+        >
           Thay đổi
         </button>
       </div>
@@ -175,6 +189,9 @@ export default {
       audioEnabled.value = this.audio;
       audioVolume.value = this.volume / 100;
 
+      sessionStorage.setItem("audioEnabled", this.audio);
+      sessionStorage.setItem("audioVolume", this.volume / 100);
+
       // Emit new settings to Game.vue
       this.$emit("changeSettings", {
         newSpeed: this.speed,
@@ -197,5 +214,10 @@ export default {
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none;  /* Chrome, Safari and Opera */
+}
+
+/* Improve touch targeting */
+.touch-manipulation {
+  touch-action: manipulation;
 }
 </style>

@@ -4,13 +4,13 @@ class Stalker extends Role {
   #trait;
   #abilityIconsPath = {
     stalk: "./src/models/roles/assets/person-running-solid.png",
-    knife: "./src/models/roles/assets/knife.png"
+    knife: "./src/models/roles/assets/knife.png",
   };
 
   constructor(trait = "mad") {
     const name = "Stalker";
     const imagePath = "./src/models/roles/assets/stalker.png";
-    
+
     super(name, "", {}, [], 2, 0, imagePath, []);
     this.#trait = trait;
     this.configureTrait(trait);
@@ -18,13 +18,14 @@ class Stalker extends Role {
 
   configureTrait(trait) {
     const icons = [];
-    const baseDescription = "Biết được những người có cùng mục tiêu với bản thân";
-    
+    const baseDescription =
+      "Biết được những người có cùng mục tiêu với bản thân";
+
     // Default configuration
     let abilities = { canStalk: true, canKill: false };
     let description = baseDescription + ".";
-    let availableAction = "stalk";
-    
+    let availableAction = ["stalk"];
+
     if (trait === "mad") {
       abilities = { canStalk: false, canKill: false };
     } else if (trait === "bad") {
@@ -32,15 +33,13 @@ class Stalker extends Role {
       description = baseDescription + ". Có thể giết mục tiêu.";
       availableAction = ["stalk", "kill"];
     }
-    
+
     // Add icons based on abilities
-    if (abilities.canStalk) {
-      icons.push(super.convertImageToBase64(this.#abilityIconsPath.stalk));
-    }
+    icons.push(super.convertImageToBase64(this.#abilityIconsPath.stalk));
     if (abilities.canKill) {
       icons.push(super.convertImageToBase64(this.#abilityIconsPath.knife));
     }
-    
+
     // Apply configuration
     this.setAbilities(abilities);
     super.setDescription(description);

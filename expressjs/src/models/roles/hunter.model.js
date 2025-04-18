@@ -24,7 +24,7 @@ class Hunter extends Role {
     let description = defaultDescription;
     let count = 2;
     let actionPriority = 2;
-    let availableAction = "trap";
+    let availableAction = ["trap"];
 
     // Trait-specific configurations
     if (trait === "mad") {

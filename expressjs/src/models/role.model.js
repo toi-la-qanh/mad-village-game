@@ -70,12 +70,7 @@ class Role {
 
     // Check if the target is alive
     if (!target.status.isAlive) {
-      return false;
-    }
-
-    // Check if the action is available for the player's role
-    if (action !== this.#availableAction) {
-      console.log(`${action} is not available`);
+      
       return false;
     }
 
@@ -91,20 +86,21 @@ class Role {
   /**
    * Method to allow the player to use action
    */
-  async useAction(action, performer) {
+  async useAction(action, performer, target, game) {
     // Check if player can perform this action
-    if (!this.canPerformAction(action, performer)) {
+    if (!this.canPerformAction(action, performer, target)) {
       return false;
     }
 
     // Action is not effective if player has mad trait
-    if (this.hasTrait("mad")) {
+    if (performer.trait === "mad") {
+      console.log("Player is mad, so their skill not work");
       return false;
     }
 
     // Reduce the count of this action
     performer.count--;
-    await performer.save();
+    await game.save();
 
     return true;
   }
