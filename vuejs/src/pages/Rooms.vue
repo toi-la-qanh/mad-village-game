@@ -169,7 +169,6 @@ export default {
 
     closeCreateRoom() {
       this.showCreateRoom = false;
-      this.refreshRooms();
     },
 
     searchHelper() {

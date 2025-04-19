@@ -601,6 +601,28 @@ class GameController {
     // Timeout setup
     this.emitTimeOut(30000, "Thời gian hành động");
 
+    // Get the player's action from Redis
+    const actionKey = `game:${game._id}:action:${this.playerID.toString()}`;
+    let action = await redis.get(actionKey);
+
+    if (action) {
+      action = JSON.parse(action);
+      if (action.status !== "pending") {
+        return {
+          status: "error",
+          message: "Bạn đã thực hiện hành động cho đêm nay rồi !",
+        };
+      }
+    } else {
+      action = {
+        status: "pending",
+        name: "",
+        performer: [],
+        target: [],
+      };
+      await redis.set(actionKey, JSON.stringify(action), "EX", 86400);
+    }
+
     const waitForTarget = () => {
       return new Promise((resolve) => {
         const handler = (data) => {
@@ -657,31 +679,13 @@ class GameController {
       };
     }
 
-    // Get the player's action from Redis
-    const actionKey = `game:${game._id}:action:${this.playerID.toString()}`;
-    let action = await redis.get(actionKey);
-
-    if (action) {
-      action = JSON.parse(action);
-    } else {
-      action = {
-        status: "pending",
-        name: "",
-        performer: [],
-        target: [],
-      };
-      await redis.set(actionKey, JSON.stringify(action), "EX", 86400);
-    }
-
-    if (action.status !== "pending") {
-      return {
-        status: "error",
-        message: "Bạn đã thực hiện hành động cho đêm nay rồi !",
-      };
-    }
-
     if (
-      !(await RoleController.submitAction(player, inputAction, target, game))
+      !(await RoleController.submitAction(
+        player,
+        inputAction,
+        target,
+        game._id
+      ))
     ) {
       // Save the state of the action
       action.status = "failed";
@@ -698,7 +702,7 @@ class GameController {
       };
     }
 
-    await RoleController.resolveActions(player, inputAction, target, game);
+    await RoleController.resolveActions(player, inputAction, target, game._id);
 
     // Save successful action
     action.status = "successful";

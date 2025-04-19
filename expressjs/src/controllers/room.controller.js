@@ -331,10 +331,14 @@ class RoomController {
               "Bạn phải nhường chức chủ phòng cho một ai đó trước khi rời khỏi phòng!",
           });
         }
+        
         await room.deleteOne();
         return res.status(200).json({ message: "Xoá phòng thành công!" });
       }
-      room.players.remove(user);
+
+      room.players = room.players.filter(
+        (playerId) => !playerId.equals(user._id)
+      );
 
       await room.save();
 

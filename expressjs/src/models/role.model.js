@@ -1,4 +1,5 @@
 const fs = require("fs");
+const Game = require("../models/game.model");
 
 class Role {
   #name;
@@ -70,7 +71,6 @@ class Role {
 
     // Check if the target is alive
     if (!target.status.isAlive) {
-      
       return false;
     }
 
@@ -86,7 +86,7 @@ class Role {
   /**
    * Method to allow the player to use action
    */
-  async useAction(action, performer, target, game) {
+  async useAction(action, performer, target, gameID) {
     // Check if player can perform this action
     if (!this.canPerformAction(action, performer, target)) {
       return false;
@@ -98,9 +98,11 @@ class Role {
       return false;
     }
 
-    // Reduce the count of this action
-    performer.count--;
-    await game.save();
+    // Decrease the performer's available count atomically
+    await Game.updateOne(
+      { _id: gameID, "players._id": performer._id },
+      { $inc: { "players.$.count": -1 } }
+    );
 
     return true;
   }

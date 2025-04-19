@@ -5,8 +5,7 @@ const Witch = require("../models/roles/witch.model");
 const Doctor = require("../models/roles/doctor.model");
 const Villager = require("../models/roles/villager.model");
 const { checkSchema, validationResult } = require("express-validator");
-const Room = require("../models/room.model");
-const User = require("../models/user.model");
+const Game = require("../models/game.model");
 
 class RoleController {
   constructor(game) {
@@ -191,11 +190,11 @@ class RoleController {
   /**
    * Method to submit an action
    */
-  static async submitAction(player, actionType, target, game) {
+  static async submitAction(player, actionType, target, gameID) {
     const role = this.getRoleFromPlayer(player.role, player.trait);
 
     // Deduct action count
-    if (!(await role.useAction(actionType, player, target, game))) {
+    if (!(await role.useAction(actionType, player, target, gameID))) {
       return false;
     }
 
@@ -205,76 +204,93 @@ class RoleController {
   /**
    * Method to resolve actions at the end of the phase
    */
-  static async resolveActions(performer, actionType, target, game) {
-    // Resolve action based on type
+  static async resolveActions(performer, actionType, target, gameID) {
     switch (actionType) {
       case "block":
-        target.status.isBeing.push("blocked");
-        await game.save();
+        await Game.findOneAndUpdate(
+          { _id: gameID, "players._id": target._id },
+          { $push: { "players.$.status.isBeing": "blocked" } }
+        );
         console.log(`${performer.name} blocks player ${target.name}`);
         break;
-
+  
       case "protect":
-        target.status.isBeing.push("protected");
-        await game.save();
+        await Game.findOneAndUpdate(
+          { _id: gameID, "players._id": target._id },
+          { $push: { "players.$.status.isBeing": "protected" } }
+        );
         console.log(`${performer.name} protects player ${target.name}`);
         break;
-
+  
       case "save":
-        target.status.isAlive = true;
-        await game.save();
+        await Game.findOneAndUpdate(
+          { _id: gameID, "players._id": target._id },
+          { $set: { "players.$.status.isAlive": true } }
+        );
         console.log(`${performer.name} saves player ${target.name}`);
         break;
-
+  
       case "kill":
         if (target.status.isBeing.includes("protected")) {
           console.log(
-            `${performer.name} failed to kill player ${target.name} because someone has protected them.`
+            `${performer.name} failed to kill ${target.name} because they are protected.`
           );
           break;
         }
-        target.status.isAlive = false;
-        await game.save();
-        console.log(`${performer.name} killed player ${target.name}`);
+        await Game.findOneAndUpdate(
+          { _id: gameID, "players._id": target._id },
+          { $set: { "players.$.status.isAlive": false } }
+        );
+        console.log(`${performer.name} kills player ${target.name}`);
         break;
-
+  
       case "stalk":
-        target.status.isBeing.push("watched");
-        await game.save();
+        await Game.findOneAndUpdate(
+          { _id: gameID, "players._id": target._id },
+          { $push: { "players.$.status.isBeing": "watched" } }
+        );
         console.log(`${performer.name} stalks player ${target.name}`);
         break;
-
+  
       case "poison":
-        target.status.isBeing.push("poisoned");
-        target.status.poisonDaysRemaining = 2;
-        await game.save();
+        await Game.findOneAndUpdate(
+          { _id: gameID, "players._id": target._id },
+          {
+            $push: { "players.$.status.isBeing": "poisoned" },
+            $set: { "players.$.status.poisonDaysRemaining": 2 },
+          }
+        );
         console.log(`${performer.name} poisons player ${target.name}`);
         break;
-
+  
       case "paralyze":
-        target.status.isBeing.push("paralyzed");
-        await game.save();
+        await Game.findOneAndUpdate(
+          { _id: gameID, "players._id": target._id },
+          { $push: { "players.$.status.isBeing": "paralyzed" } }
+        );
         console.log(`${performer.name} paralyzes player ${target.name}`);
         break;
-
+  
       case "detox":
-        const toxinsToRemove = ["poisoned", "paralyzed"];
-        target.status.isBeing = target.status.isBeing.filter(
-          (status) => !toxinsToRemove.includes(status)
+        await Game.findOneAndUpdate(
+          { _id: gameID, "players._id": target._id },
+          {
+            $pull: {
+              "players.$.status.isBeing": { $in: ["poisoned", "paralyzed"] },
+            },
+          }
         );
-        await game.save();
         console.log(`${performer.name} detoxes player ${target.name}`);
         break;
-
+  
       case "cure":
-        // New case to only remove poisoned status
-        target.status.isBeing = target.status.isBeing.filter(
-          (status) => status !== "poisoned"
+        await Game.findOneAndUpdate(
+          { _id: gameID, "players._id": target._id },
+          { $pull: { "players.$.status.isBeing": "poisoned" } }
         );
-        await game.save();
         console.log(`${performer.name} cures player ${target.name}`);
         break;
-
+  
       default:
         console.log(`Unknown action type: ${actionType}`);
     }
