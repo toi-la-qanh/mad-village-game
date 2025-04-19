@@ -1,6 +1,5 @@
 <template>
   <div class="audio-player">
-    <!-- Actual audio element -->
     <audio ref="audioElement" loop>
       <source :src="audioSrc" type="audio/mpeg">
       Your browser does not support the audio element.
@@ -22,9 +21,9 @@ export default {
   },
   setup(props) {
     const audioElement = ref(null);
+    const userInteracted = ref(false);
     
     // Initialize audio from sessionStorage if available
-    // Default to true if not set previously
     if (sessionStorage.getItem('audioEnabled') !== null) {
       audioEnabled.value = sessionStorage.getItem('audioEnabled') === 'true';
     } else {
@@ -35,26 +34,41 @@ export default {
       audioVolume.value = parseFloat(sessionStorage.getItem('audioVolume'));
     }
 
+    // Safe play function that handles promise rejection
+    const safePlay = () => {
+      if (!audioElement.value || !audioEnabled.value) return;
+      
+      const playPromise = audioElement.value.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.info('Play prevented:', error);
+          // Don't keep trying to play if the user hasn't interacted
+          if (!userInteracted.value) {
+            setupInteractionHandlers();
+          }
+        });
+      }
+    };
+
+    // Set up event handlers for user interaction
+    const setupInteractionHandlers = () => {
+      const playOnInteraction = () => {
+        userInteracted.value = true;
+        safePlay();
+      };
+      
+      // Add to various events for better mobile support
+      ['click', 'touchstart', 'touchend', 'pointerdown'].forEach(eventType => {
+        document.addEventListener(eventType, playOnInteraction, { once: true });
+      });
+    };
+
     // Watch for changes in audio settings
     watch(audioEnabled, (newValue) => {
       if (audioElement.value) {
-        if (newValue) {
-          // Try to play with user interaction
-          const playPromise = audioElement.value.play();
-          if (playPromise !== undefined) {
-            playPromise.catch(e => {
-              // Auto-play was prevented, create a one-time click handler to play
-              const playOnInteraction = () => {
-                audioElement.value.play();
-                document.removeEventListener('click', playOnInteraction);
-                document.removeEventListener('touchstart', playOnInteraction);
-              };
-              
-              document.addEventListener('click', playOnInteraction, { once: true });
-              document.addEventListener('touchstart', playOnInteraction, { once: true });
-            });
-          }
-        } else {
+        if (newValue && userInteracted.value) {
+          safePlay();
+        } else if (!newValue) {
           audioElement.value.pause();
         }
         sessionStorage.setItem('audioEnabled', newValue);
@@ -68,53 +82,46 @@ export default {
       }
     });
 
+    // Pause audio when tab is not visible to save resources
+    const handleVisibilityChange = () => {
+      if (!audioElement.value) return;
+      
+      if (document.hidden) {
+        if (!audioElement.value.paused) {
+          audioElement.value.pause();
+        }
+      } else if (audioEnabled.value && userInteracted.value) {
+        safePlay();
+      }
+    };
+
     onMounted(() => {
       if (audioElement.value) {
         audioElement.value.volume = audioVolume.value;
         
-        // Try to autoplay
+        // Try to autoplay if enabled
         if (audioEnabled.value) {
-          const playPromise = audioElement.value.play();
+          safePlay();
           
-          // Handle autoplay restrictions
-          if (playPromise !== undefined) {
-            playPromise.catch(e => {
-              console.info('Autoplay prevented by browser, waiting for user interaction');
-              
-              // Set up one-time event listeners for user interaction
-              const playOnInteraction = () => {
-                audioElement.value.play();
-                document.removeEventListener('click', playOnInteraction);
-                document.removeEventListener('touchstart', playOnInteraction);
-              };
-              
-              document.addEventListener('click', playOnInteraction, { once: true });
-              document.addEventListener('touchstart', playOnInteraction, { once: true });
-            });
+          // If autoplay doesn't work, we'll need user interaction
+          if (!userInteracted.value) {
+            setupInteractionHandlers();
           }
         }
+        
+        // Add visibility change listener
+        document.addEventListener('visibilitychange', handleVisibilityChange);
       }
-
-      // Add a page visibility change listener to pause/resume audio
-      document.addEventListener('visibilitychange', handleVisibilityChange);
     });
 
     onUnmounted(() => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      
+      // Clean up any remaining event listeners
+      ['click', 'touchstart', 'touchend', 'pointerdown'].forEach(eventType => {
+        document.removeEventListener(eventType, () => {});
+      });
     });
-
-    // Pause audio when tab is not visible to save resources
-    const handleVisibilityChange = () => {
-      if (audioElement.value) {
-        if (document.hidden) {
-          if (!audioElement.value.paused) {
-            audioElement.value.pause();
-          }
-        } else if (audioEnabled.value) {
-          audioElement.value.play().catch(e => console.error('Error resuming audio:', e));
-        }
-      }
-    };
 
     return {
       audioElement,
@@ -122,4 +129,4 @@ export default {
     };
   }
 };
-</script> 
+</script>
