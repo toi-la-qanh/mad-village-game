@@ -96,7 +96,7 @@ export default {
 
         this.closePopup();
         roomID.value = response.roomID;
-        this.$socket.emit("room:created", response);
+        this.$socket.emit("room:join", response.roomID);
         this.$router.push({ name: "room", params: { id: response.roomID } });
       } catch (error) {
         if (error.status === 422) {

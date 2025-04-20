@@ -1016,7 +1016,7 @@ class GameController {
       };
     }
 
-    const message = `Những người chết đêm ${game.day}: ${deadPlayerDetails
+    const message = `Những người đã chết: ${deadPlayerDetails
       .map((p) => `${p.name} với vai trò ${p.role}`)
       .join(", ")}`;
 
@@ -1055,8 +1055,8 @@ class GameController {
       };
     }
 
-    // Broadcast the message to all players in the room
-    this.io.to(game.room.toHexString()).emit("game:fetchDayChat", {
+    // Broadcast the message to all players in the room except the sender
+    this.socket.to(game.room.toHexString()).emit("game:fetchDayChat", {
       playerName: player.name,
       message: message,
     });

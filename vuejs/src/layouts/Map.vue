@@ -246,11 +246,9 @@ export default {
 
   async mounted() {
     // Initial map load
-    console.log(this.players);
     this.loadMapImage();
     const skill = JSON.parse(sessionStorage.getItem("abilityIcons"));
     if (skill) {
-      console.log(skill);
       this.abilityIcons = skill.abilityIcons;
       this.availableActions = skill.availableActions;
     } else {

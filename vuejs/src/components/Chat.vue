@@ -57,7 +57,7 @@
               <!-- Player Rows -->
               <div
                 v-for="(player, playerIndex) in players.filter(
-                  (p) => p.isAlive
+                  (p) => p.alive
                 )"
                 :key="playerIndex"
                 class="flex justify-between items-center py-1"
@@ -188,12 +188,7 @@ export default {
       isVoteSending: false, // Cooldown flag for votes
     };
   },
-
-  mounted() {
-    const me = this.players.find((p) => p.name === this.username);
-    console.log(me);
-  },
-
+  
   components: {
     FontAwesomeIcon,
   },
@@ -236,6 +231,8 @@ export default {
           if (data.status === 400) return;
           this.error = data.message;
         } else {
+          const messageText = this.newMessage.trim();
+
           // Clear input after successful send
           this.newMessage = "";
 
@@ -258,7 +255,7 @@ export default {
           // Add message immediately (optimistic UI update)
           dayConversation.chat.push({
             name: this.username,
-            message: this.newMessage.trim(),
+            message: messageText,
           });
 
           // Update storage
