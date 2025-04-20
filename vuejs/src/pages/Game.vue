@@ -214,12 +214,8 @@ export default {
       // Get the timeout and messages
       this.$socket.on("game:timeOut", (data) => {
         if (data) {
-          // Convert milliseconds to seconds
-          this.timeOut = Math.floor(data.timeout / 1000);
+          this.timeOut = data.timeout;
           this.timeOutMessage = data.message;
-          if (this.timeOut) {
-            this.startCountdown();
-          }
         } else {
           this.timeOut = null;
           this.timeOutMessage = null;
@@ -338,8 +334,8 @@ export default {
           this.game.period = data.period;
           this.game.day = data.day;
         }
-      });
-    },
+      });     
+    },  
 
     getGameEvents() {
       // Retrieve the current event of the game
@@ -452,7 +448,7 @@ export default {
       this.showDayReport = true;
       setTimeout(() => {
         this.showDayReport = false;
-      }, 5000);
+      }, 3000);
 
       console.log("Day phase:", data);
     },

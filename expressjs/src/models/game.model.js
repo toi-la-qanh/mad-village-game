@@ -46,28 +46,6 @@ const GameSchema = new mongoose.Schema({
 
   players: [PlayerSchema],
   
-  gameTurns: [
-    {
-      turn: {
-        type: Number,
-        required: true,
-      },
-      playerNotYetAct: [
-        {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
-          required: true,
-        },
-      ],
-      playerActed: [
-        {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
-          required: true,
-        },
-      ],
-    },
-  ],
 });
 
 const Game = mongoose.model("Game", GameSchema);

@@ -1,7 +1,7 @@
 <template>
   <div
     class="flex absolute overflow-auto w-screen h-full touch-auto main-component"
-    style="scrollbar-width: none"
+    style="scrollbar-width: auto"
   >
     <div class="relative" style="min-width: 1300px; min-height: 900px">
       <!-- Directly accessing the canvas element without ref -->
@@ -73,7 +73,6 @@
           v-if="
             playerIDs[index] !== user_id &&
             selectButtonClicked &&
-            endMoving &&
             clickedHouseIndex === index &&
             yourTurn &&
             !actionSelected
@@ -859,3 +858,16 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+@media (max-width: 1025px) {
+  .main-component {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+  
+  .main-component::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+}
+</style>
