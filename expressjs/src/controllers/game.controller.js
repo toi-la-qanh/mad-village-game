@@ -110,7 +110,11 @@ class GameController {
 
       // Update game phase after 5 seconds
       const interval = setInterval(async () => {
-        this.emitTimeOut(countdown, "Trò chơi sẽ bắt đầu trong", game.room.toHexString());
+        this.emitTimeOut(
+          countdown,
+          "Trò chơi sẽ bắt đầu trong",
+          game.room.toHexString()
+        );
 
         countdown--;
 
@@ -165,7 +169,11 @@ class GameController {
 
       // Update game phase after 5 seconds
       const interval = setInterval(async () => {
-        this.emitTimeOut(countdown, "Thời gian hành động", game.room.toHexString());
+        this.emitTimeOut(
+          countdown,
+          "Thời gian hành động",
+          game.room.toHexString()
+        );
 
         countdown--;
 
@@ -188,7 +196,11 @@ class GameController {
 
       // Update game phase after 5 seconds
       const interval = setInterval(async () => {
-        this.emitTimeOut(countdown, "Giai đoạn tiếp theo", game.room.toHexString());
+        this.emitTimeOut(
+          countdown,
+          "Giai đoạn tiếp theo",
+          game.room.toHexString()
+        );
 
         countdown--;
 
@@ -212,7 +224,11 @@ class GameController {
 
       // Update game phase after 5 seconds
       const interval = setInterval(async () => {
-        this.emitTimeOut(countdown, "Thời gian thảo luận", game.room.toHexString());
+        this.emitTimeOut(
+          countdown,
+          "Thời gian thảo luận",
+          game.room.toHexString()
+        );
 
         countdown--;
 
@@ -238,7 +254,11 @@ class GameController {
 
       // Update game phase after 5 seconds
       const interval = setInterval(async () => {
-        this.emitTimeOut(countdown, "Thời gian bỏ phiếu", game.room.toHexString());
+        this.emitTimeOut(
+          countdown,
+          "Thời gian bỏ phiếu",
+          game.room.toHexString()
+        );
 
         countdown--;
 
@@ -271,7 +291,11 @@ class GameController {
       let countdown = 5;
       // Update game phase after 5 seconds
       const interval = setInterval(async () => {
-        this.emitTimeOut(countdown, "Chuyển qua giai đoạn tiếp theo", game.room.toHexString());
+        this.emitTimeOut(
+          countdown,
+          "Chuyển qua giai đoạn tiếp theo",
+          game.room.toHexString()
+        );
 
         countdown--;
 
@@ -340,6 +364,7 @@ class GameController {
         players: game.players.map((player) => ({
           _id: player._id,
           name: player.name,
+          alive: player.status.isAlive
         })),
         day: game.day,
       };
@@ -360,7 +385,6 @@ class GameController {
       } else {
         console.log("Game loop already running for", gameID);
       }
-      
 
       const game = await this.getGameData(gameID);
       console.log(`The game is at ${game.phases} phase`);
@@ -927,12 +951,6 @@ class GameController {
       (player) => player.status.isAlive
     ).length;
 
-    // Get the count of traits
-    const traitCount = players.reduce((count, player) => {
-      count[player.trait] = (count[player.trait] || 0) + 1;
-      return count;
-    }, {});
-
     let poisonMessage = "";
 
     const poisonedPlayers = players.filter(
@@ -985,8 +1003,12 @@ class GameController {
 
     await game.save();
 
+    const allTraits = players
+      .filter((player) => player.status.isAlive)
+      .map((player) => player.trait);
+
     // Check end game conditions
-    const isGameOver = await this.gameEnd(game, alivePlayers, traitCount);
+    const isGameOver = await this.gameEnd(game, alivePlayers, allTraits);
     if (isGameOver) {
       return {
         status: "success",
@@ -1243,17 +1265,14 @@ class GameController {
     // Mark player as dead
     player.status.isAlive = false;
 
-    // Count traits for game end check
-    const traitCount = game.players.reduce((count, player) => {
-      count[player.trait] = (count[player.trait] || 0) + 1;
-      return count;
-    }, {});
-
     // Save game state
     await game.save();
 
+    const allTraits = game.players
+      .filter((player) => player.status.isAlive)
+      .map((player) => player.trait);
     // Check end game conditions
-    const isGameOver = await this.gameEnd(game, alivePlayers - 1, traitCount);
+    const isGameOver = await this.gameEnd(game, alivePlayers - 1, allTraits);
     if (isGameOver) {
       return {
         status: "success",

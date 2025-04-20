@@ -228,6 +228,7 @@ export default {
 
       this.$socket.on("game:end", (data) => {
         if (!data) return;
+        this.event.end = true;
         this.playerDetails = data;
       });
 

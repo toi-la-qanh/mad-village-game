@@ -19,7 +19,7 @@
 
       <!-- Fetch the chat messages -->
       <div
-        class="max-h-screen w-full flex flex-col pl-4 gap-1 overflow-y-auto pb-12"
+        class="max-h-screen w-full flex flex-col pl-4 gap-1 overflow-y-auto md:pb-12 pb-15"
         style="scrollbar-width: none"
       >
         <div v-for="(convo, index) in conversation" :key="index" class="mb-4">
@@ -56,7 +56,9 @@
 
               <!-- Player Rows -->
               <div
-                v-for="(player, playerIndex) in players"
+                v-for="(player, playerIndex) in players.filter(
+                  (p) => p.isAlive
+                )"
                 :key="playerIndex"
                 class="flex justify-between items-center py-1"
               >
@@ -161,7 +163,7 @@ export default {
     day: { type: Number, required: true },
     dayChat: { type: Boolean, required: true },
     nightChat: { type: Boolean, required: true },
-    players: { type: Object, required: true },
+    players: { type: Array, required: true },
     voteEvent: { type: Boolean, required: true },
     gameID: { type: String, required: true },
     conversation: { type: Array, required: true },
@@ -187,6 +189,11 @@ export default {
     };
   },
 
+  mounted() {
+    const me = this.players.find((p) => p.name === this.username);
+    console.log(me);
+  },
+
   components: {
     FontAwesomeIcon,
   },
@@ -203,6 +210,12 @@ export default {
 
       if (!this.dayChat) {
         this.error = "Không thể gửi tin nhắn trong giai đoạn này!";
+        return;
+      }
+
+      const me = this.players.find((p) => p.name === this.username);
+      if (!me || !me.alive) {
+        this.error = "Bạn đã chết, không thể gửi tin nhắn!";
         return;
       }
 

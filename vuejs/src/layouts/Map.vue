@@ -53,7 +53,8 @@
               clickedHouseIndex === index &&
               !selectButtonClicked &&
               playerIDs[index] !== user_id &&
-              yourTurn
+              yourTurn &&
+              players[index].alive
             "
             class="absolute bottom-0 left-0 w-full h-full flex justify-center items-center"
           >
@@ -75,7 +76,8 @@
             selectButtonClicked &&
             clickedHouseIndex === index &&
             yourTurn &&
-            !actionSelected
+            !actionSelected &&
+            players[index].alive
           "
           :key="index"
         >
@@ -193,6 +195,7 @@ export default {
       selectButtonClicked: false,
       playerIDs: this.game.players.map((player) => player._id),
       playerNames: this.game.players.map((player) => player.name),
+      players: this.game.players,
       user_id: user.value.id,
       isMoving: false,
       isGathering: false,
@@ -237,11 +240,13 @@ export default {
       currentPeriod: "day",
       playerBeingWatched: [], // Initialize as empty array, not null
       isYourTurn: this.yourTurn,
+      charactersGathering: [],
     };
   },
 
   async mounted() {
     // Initial map load
+    console.log(this.players);
     this.loadMapImage();
     const skill = JSON.parse(sessionStorage.getItem("abilityIcons"));
     if (skill) {
@@ -253,11 +258,13 @@ export default {
     }
     this.resetGameState();
     this.moveSpeed = this.characterSpeed;
-    this.placeCharacters();
     window.addEventListener("resize", this.updateCanvasSize);
-    
+
     // Center the view programmatically after the component is mounted
     this.$nextTick(() => {
+      if (this.players && this.players.length > 0) {
+      this.placeCharacters();
+    }
       this.centerViewport();
     });
   },
@@ -329,7 +336,11 @@ export default {
     },
 
     placeCharacters() {
-      const anglePerPlayer = 360 / this.playerCount;
+      const alivePlayers = this.players.filter(
+        (player) => player.alive
+      );
+      const anglePerPlayer = 360 / alivePlayers.length;
+
       const characterRadius = 100; // Distance from the center to place the character
       // const canvas = this.$el.querySelector("canvas"); // Access canvas element
       const Ox = this.canvasWidth / 2;
@@ -339,7 +350,7 @@ export default {
       this.charactersGathering = []; // Reset characters array
 
       // Loop through each player and position the character
-      for (let i = 0; i < this.playerCount; i++) {
+      for (let i = 0; i < alivePlayers.length; i++) {
         const angle = i * anglePerPlayer; // Angle in degrees
 
         // Position characters in a circle around the center
@@ -636,7 +647,7 @@ export default {
       requestAnimationFrame(updateMovement); // Start movement loop
     },
 
-    async updateCharacterImage(direction, index) {
+    async updateCharacterImage(direction) {
       let imageSrc = "";
       switch (direction) {
         case "left":
@@ -865,7 +876,7 @@ export default {
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* IE and Edge */
   }
-  
+
   .main-component::-webkit-scrollbar {
     display: none; /* Chrome, Safari, Opera */
   }
