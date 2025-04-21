@@ -95,9 +95,9 @@ class GameController {
           await redis.del(`game:${game._id}:currentPhase`);
 
           const playerKeys = game.players.map((p) => `user:${p._id}`);
-  
+
           for (const key of playerKeys) {
-            await redis.hSet(key, 'gameID', null);
+            await redis.hSet(key, "gameID", null);
             await redis.expire(key, 86400);
           }
 
@@ -191,7 +191,7 @@ class GameController {
       const interval = setInterval(async () => {
         this.emitTimeOut(
           countdown,
-          "Thời gian hành động",
+          `Lượt ${game.currentTurn}:`,
           game.room.toHexString()
         );
 
@@ -369,9 +369,6 @@ class GameController {
       // Remove the listener right after it's fired
       this.socket.removeAllListeners("game:start");
 
-      const loopKey = `game:${gameID}:currentPhase`;
-      await redis.set(loopKey, game.phases, 'EX', 86400);
-
       this.updateGamePhase(gameID);
     });
 
@@ -392,7 +389,7 @@ class GameController {
         players: game.players.map((player) => ({
           _id: player._id,
           name: player.name,
-          alive: player.status.isAlive
+          alive: player.status.isAlive,
         })),
         day: game.day,
       };
@@ -405,18 +402,10 @@ class GameController {
       const game = await this.getGameData(gameID);
       console.log(`The game is at ${game.phases} phase`);
 
-      const loopKey = `game:${gameID}:currentPhase`;
-      const lastPhase = await redis.get(loopKey);
-
-      if (lastPhase !== game.phases) {
-        console.log("Started game loop for", gameID);
-        await redis.set(loopKey, game.phases, 'EX', 86400);
-        this.updateGamePhase(gameID);
-      } else {
-        console.log("Game loop already running for", gameID);
-      }
-
       let result = {};
+
+      this.socket.removeAllListeners("game:voteTarget");
+      this.socket.removeAllListeners("game:discussion");
 
       switch (game.phases) {
         case "showRoles":
@@ -441,6 +430,7 @@ class GameController {
           break;
 
         case "discussion":
+          this.socket.removeAllListeners("game:discussion"); // prevent duplicates
           this.socket.on("game:discussion", async (message, callback) => {
             const data = await this.discussionPhase(game, message);
             callback(data);
@@ -450,6 +440,7 @@ class GameController {
           break;
 
         case "vote":
+          this.socket.removeAllListeners("game:voteTarget"); // prevent duplicates
           // Set up the socket handler for vote target
           this.socket.on("game:voteTarget", async (targetID, callback) => {
             const data = await this.votePhase(game, targetID);
@@ -1285,7 +1276,7 @@ class GameController {
     const allTraits = game.players
       .filter((player) => player.status.isAlive)
       .map((player) => player.trait);
-      
+
     // Check end game conditions
     const isGameOver = await this.gameEnd(game, alivePlayers - 1, allTraits);
     if (isGameOver) {

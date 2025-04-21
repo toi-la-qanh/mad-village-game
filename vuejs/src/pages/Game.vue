@@ -264,6 +264,9 @@ export default {
           "conversation",
           JSON.stringify(this.conversation)
         );
+        
+        // Notify Vue that the data has changed to trigger watchers
+        this.conversation = [...this.conversation];
       });
 
       // Votes listener

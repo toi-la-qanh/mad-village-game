@@ -261,8 +261,8 @@ export default {
     // Center the view programmatically after the component is mounted
     this.$nextTick(() => {
       if (this.players && this.players.length > 0) {
-      this.placeCharacters();
-    }
+        this.placeCharacters();
+      }
       this.centerViewport();
     });
   },
@@ -334,9 +334,7 @@ export default {
     },
 
     placeCharacters() {
-      const alivePlayers = this.players.filter(
-        (player) => player.alive
-      );
+      const alivePlayers = this.players.filter((player) => player.alive);
       const anglePerPlayer = 360 / alivePlayers.length;
 
       const characterRadius = 100; // Distance from the center to place the character
