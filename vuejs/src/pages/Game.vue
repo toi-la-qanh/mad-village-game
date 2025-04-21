@@ -159,7 +159,7 @@ export default {
         {
           day: 0,
           chat: [],
-          gameMessage: "",
+          gameMessages: [],
           voteResult: "",
           votes: [],
         },
@@ -391,26 +391,6 @@ export default {
             break;
         }
       });
-    },
-
-    // Count down the timeouts
-    startCountdown() {
-      // Clear any existing interval
-      if (this.countdownInterval) {
-        clearInterval(this.countdownInterval);
-      }
-
-      this.countdownInterval = setInterval(() => {
-        if (this.timeOut > 0) {
-          this.timeOut--;
-        } else {
-          clearInterval(this.countdownInterval);
-          this.countdownInterval = null;
-          this.timeOutMessage = null;
-          this.timeOut = null;
-          this.role = null;
-        }
-      }, 1000);
     },
 
     // Helper function to open role info when clicked on the info button
