@@ -472,7 +472,7 @@ export default {
       });
     },
 
-    exitGame() {
+    async exitGame() {
       const confirmed = window.confirm("Bạn có chắc chắn muốn rời khỏi trò chơi?");
 
       if (!confirmed) return;

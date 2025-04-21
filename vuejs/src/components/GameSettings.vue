@@ -2,10 +2,15 @@
   <div
     class="w-full h-full fixed top-0 left-0 z-30 flex items-center justify-center overflow-auto scrollbar-hide"
   >
-    <div class="md:p-5 p-3 h-full md:max-h-min w-full md:max-w-md bg-gray-900/50 relative text-white rounded-lg">
+    <div
+      class="md:p-5 p-3 h-full md:max-h-min w-full md:max-w-md bg-gray-900/50 relative text-white rounded-lg"
+    >
       <!-- Close button -->
       <button class="absolute md:right-2 md:top-2 right-2 top-5" @click="close">
-        <FontAwesomeIcon class="hover:text-gray-700 text-white text-2xl" :icon="faXmark" />
+        <FontAwesomeIcon
+          class="hover:text-gray-700 text-white text-2xl"
+          :icon="faXmark"
+        />
       </button>
 
       <!-- Settings Section -->
@@ -17,9 +22,15 @@
         <div class="flex flex-row justify-between items-start gap-4">
           <!-- Left column with labels -->
           <div class="flex flex-col flex-1 space-y-6 sm:space-y-4 w-full">
-            <h3 class="text-base sm:text-base h-12 sm:h-10 flex items-center">Tốc độ di chuyển:</h3>
-            <h3 class="text-base sm:text-base h-12 sm:h-10 flex items-center">Hiệu ứng hoạt ảnh:</h3>
-            <h3 class="text-base sm:text-base h-12 sm:h-10 flex items-center">Nhạc nền:</h3>
+            <h3 class="text-base sm:text-base h-12 sm:h-10 flex items-center">
+              Tốc độ di chuyển:
+            </h3>
+            <h3 class="text-base sm:text-base h-12 sm:h-10 flex items-center">
+              Hiệu ứng hoạt ảnh:
+            </h3>
+            <h3 class="text-base sm:text-base h-12 sm:h-10 flex items-center">
+              Nhạc nền:
+            </h3>
           </div>
 
           <!-- Right column with controls -->
@@ -52,51 +63,53 @@
                 <FontAwesomeIcon :icon="faPlus" />
               </button>
             </div>
-            
+
             <!-- Toggle button for Animation -->
-            <button 
-              @click="toggleAnimation" 
+            <button
+              @click="toggleAnimation"
               class="w-full hover:bg-gray-400 px-4 py-2 sm:p-1 rounded text-base sm:text-base h-12 sm:h-10 flex items-center justify-center touch-manipulation"
             >
               {{ animation ? "Bật" : "Tắt" }}
             </button>
-            
+
             <!-- Toggle button for Audio -->
-            <button 
-              @click="toggleAudio" 
+            <button
+              @click="toggleAudio"
               class="w-full hover:bg-gray-400 px-4 py-2 sm:p-1 rounded text-base sm:text-base h-12 sm:h-10 flex items-center justify-center touch-manipulation"
             >
               {{ audio ? "Bật" : "Tắt" }}
             </button>
           </div>
         </div>
-        
+
         <!-- Volume Slider (full width) -->
         <div class="flex justify-between items-center w-full gap-2 mt-4">
           <h3 class="whitespace-nowrap text-base">Âm lượng:</h3>
-          <input 
-            type="range" 
-            min="0" 
-            max="100" 
-            :value="volume" 
-            @input="updateVolume" 
+          <input
+            type="range"
+            min="0"
+            max="100"
+            :value="volume"
+            @input="updateVolume"
             class="flex-grow accent-white h-8"
           />
-          <span class="min-w-[40px] text-center bg-gray-700 px-2 py-1 rounded text-base whitespace-nowrap">
+          <span
+            class="min-w-[40px] text-center bg-gray-700 px-2 py-1 rounded text-base whitespace-nowrap"
+          >
             {{ Math.round(volume) }}%
           </span>
         </div>
 
-        <button 
-          @click="exitGame" 
+        <button
+          @click="exitGame"
           class="w-full hover:bg-gray-400 p-3 sm:p-2 mt-3 rounded text-base font-medium touch-manipulation"
         >
           Thoát game
         </button>
 
         <!-- Submit button -->
-        <button 
-          @click="emitChangeSettings" 
+        <button
+          @click="emitChangeSettings"
           class="w-full hover:bg-gray-400 p-3 sm:p-2 rounded text-base font-medium touch-manipulation"
         >
           Thay đổi
@@ -172,11 +185,11 @@ export default {
     updateVolume(e) {
       this.volume = parseFloat(e.target.value);
     },
-    
+
     // Quit game and redirect to home
     quitGame() {
       if (window.confirm("Bạn có chắc chắn muốn thoát game?")) {
-        this.$router.push('/');
+        this.$router.push("/");
       }
     },
 
@@ -185,7 +198,7 @@ export default {
       // Save settings to sessionStorage when the change button is clicked
       sessionStorage.setItem("speed", this.speed); // Save speed
       sessionStorage.setItem("animation", this.animation); // Save animation
-      
+
       // Update audio settings in store
       audioEnabled.value = this.audio;
       audioVolume.value = this.volume / 100;
@@ -200,8 +213,10 @@ export default {
       });
     },
 
-    exitGame() {
-      const confirmed = window.confirm("Bạn có chắc chắn muốn rời khỏi trò chơi?");
+    async exitGame() {
+      const confirmed = window.confirm(
+        "Bạn có chắc chắn muốn rời khỏi trò chơi?"
+      );
 
       if (!confirmed) return;
 
@@ -209,7 +224,7 @@ export default {
         const game = new GameApi();
         await game.exit();
         gameID.value = null;
-        if(roomID.value){
+        if (roomID.value) {
           this.$router.push({ name: "room", params: { id: roomID.value } });
         } else {
           this.$router.push("/rooms");
@@ -229,11 +244,11 @@ export default {
 <style scoped>
 /* Hide scrollbar but keep functionality */
 .scrollbar-hide {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 }
 .scrollbar-hide::-webkit-scrollbar {
-  display: none;  /* Chrome, Safari and Opera */
+  display: none; /* Chrome, Safari and Opera */
 }
 
 /* Improve touch targeting */
