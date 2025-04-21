@@ -1055,8 +1055,8 @@ class GameController {
       };
     }
 
-    // Broadcast the message to all players in the room except the sender
-    this.socket.to(game.room.toHexString()).emit("game:fetchDayChat", {
+    // Broadcast the message to all players in the room
+    this.io.to(game.room.toHexString()).emit("game:fetchDayChat", {
       playerName: player.name,
       message: message,
     });
@@ -1271,6 +1271,7 @@ class GameController {
     const allTraits = game.players
       .filter((player) => player.status.isAlive)
       .map((player) => player.trait);
+      
     // Check end game conditions
     const isGameOver = await this.gameEnd(game, alivePlayers - 1, allTraits);
     if (isGameOver) {

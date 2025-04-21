@@ -228,8 +228,7 @@ export default {
 
       this.$socket.on("game:end", (data) => {
         if (!data) return;
-        this.event.end = true;
-        this.playerDetails = data;
+        this.endEvent(data);
       });
 
       // Listen for new chat messages
@@ -252,13 +251,7 @@ export default {
           };
           this.conversation.push(dayConversation);
         }
-
-        // Add new message to day's chat
-        dayConversation.chat.push({
-          name: data.playerName,
-          message: data.message,
-        });
-
+        
         // Update session storage
         sessionStorage.setItem(
           "conversation",
@@ -387,9 +380,6 @@ export default {
             break;
           case "vote":
             this.voteEvent(data);
-            break;
-          case "end":
-            this.endEvent(data);
             break;
           default:
             break;

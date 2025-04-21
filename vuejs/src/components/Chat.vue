@@ -56,9 +56,7 @@
 
               <!-- Player Rows -->
               <div
-                v-for="(player, playerIndex) in players.filter(
-                  (p) => p.alive
-                )"
+                v-for="(player, playerIndex) in players.filter((p) => p.alive)"
                 :key="playerIndex"
                 class="flex justify-between items-center py-1"
               >
@@ -188,7 +186,7 @@ export default {
       isVoteSending: false, // Cooldown flag for votes
     };
   },
-  
+
   components: {
     FontAwesomeIcon,
   },
@@ -231,8 +229,6 @@ export default {
           if (data.status === 400) return;
           this.error = data.message;
         } else {
-          const messageText = this.newMessage.trim();
-
           // Clear input after successful send
           this.newMessage = "";
 
@@ -251,12 +247,6 @@ export default {
             };
             this.conversation.push(dayConversation);
           }
-
-          // Add message immediately (optimistic UI update)
-          dayConversation.chat.push({
-            name: this.username,
-            message: messageText,
-          });
 
           // Update storage
           sessionStorage.setItem(
