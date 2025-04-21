@@ -92,7 +92,6 @@ class GameController {
           await handleVotesEvent(game);
           break;
         case "end":
-          clearInterval(intervalId);
           await redis.del(`game:${game._id}:currentPhase`);
 
           const playerKeys = game.players.map((p) => `user:${p._id}`);
@@ -109,6 +108,10 @@ class GameController {
           this.socket.removeAllListeners("game:getAbilityIcons");
 
           this.emitTimeOut(null, "Trò chơi đã kết thúc");
+
+          console.log("the game is deleted !");
+
+          clearInterval(intervalId);
           break;
         default:
           console.log("Unknown phase!");
