@@ -188,6 +188,7 @@
       </div>
 
       <div v-if="error" class="text-red-500">{{ error }}</div>
+      
       <!-- Send Message Section -->
       <div
         class="md:absolute fixed bottom-0 w-full md:h-auto h-13 bg-white p-2 flex justify-between gap-2"

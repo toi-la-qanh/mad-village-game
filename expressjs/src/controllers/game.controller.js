@@ -92,25 +92,7 @@ class GameController {
           await handleVotesEvent(game);
           break;
         case "end":
-          await redis.del(`game:${game._id}:currentPhase`);
-
-          const playerKeys = game.players.map((p) => `user:${p._id}`);
-
-          for (const key of playerKeys) {
-            await redis.hSet(key, "gameID", null);
-            await redis.expire(key, 86400);
-          }
-
-          await game.deleteOne();
-
-          this.socket.removeAllListeners("game:data");
-          this.socket.removeAllListeners("game:event");
-          this.socket.removeAllListeners("game:getAbilityIcons");
-
           this.emitTimeOut(null, "Trò chơi đã kết thúc");
-
-          console.log("the game is deleted !");
-
           clearInterval(intervalId);
           break;
         default:
@@ -450,6 +432,24 @@ class GameController {
           result = { phase: "vote" }; // Add phase info
           break;
 
+        case "end":
+          const playerKeys = game.players.map((p) => `user:${p._id}`);
+
+          for (const key of playerKeys) {
+            await redis.hSet(key, "gameID", null);
+            await redis.expire(key, 86400);
+          }
+
+          await game.deleteOne();
+
+          this.socket.removeAllListeners("game:data");
+          this.socket.removeAllListeners("game:event");
+          this.socket.removeAllListeners("game:getAbilityIcons");
+          this.socket.removeAllListeners("game:timeOut");
+
+          console.log("the game is deleted !");
+
+          result = { phase: "end" };
         default:
           result = { phase: game.phases || "unknown" }; // Include phase
           break;
