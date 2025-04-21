@@ -140,17 +140,15 @@ export default {
       timeOut: null,
       timeOutMessage: null,
       openSettingsSection: false,
-      countdownInterval: null, // Add this to store the interval ID
       event: reactive({
         showRoles: false,
         performAction: false,
         day: false,
         discussion: false,
         nightChat: false,
-        vote: false, // Ensure this is reactive
+        vote: false,
         end: false,
       }),
-      gameMessages: [],
       characterSpeed: parseFloat(sessionStorage.getItem("speed")) || 1,
       animation: JSON.parse(sessionStorage.getItem("animation")) || true,
       playerDetails: reactive({}),
