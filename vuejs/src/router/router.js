@@ -31,6 +31,7 @@ const routes = [
     path: "/settings",
     name: "settings",
     component: () => import("../pages/Settings.vue"),
+    beforeEnter: authMiddleware,
   },
   {
     path: "/",
