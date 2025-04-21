@@ -254,6 +254,7 @@ export default {
     } else {
       this.fetchAbilityIcons();
     }
+    
     this.resetGameState();
     this.moveSpeed = this.characterSpeed;
     window.addEventListener("resize", this.updateCanvasSize);
@@ -863,6 +864,10 @@ export default {
   beforeDestroy() {
     window.removeEventListener("resize", this.updateCanvasSize);
   },
+
+  beforeUnmount() {
+    sessionStorage.removeItem("abilityIcons");
+  }
 };
 </script>
 

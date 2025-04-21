@@ -77,6 +77,8 @@ export default {
     goBack() {
       localStorage.removeItem("gameID");
       gameID.value = null;
+      this.$socket.removeAllListeners("game:data");
+      this.$socket.removeAllListeners("game:event");
       showBackground.value = true;
       if (roomID.value) {
         // If roomID is available, navigate to the /rooms page and pass the roomID as a query parameter

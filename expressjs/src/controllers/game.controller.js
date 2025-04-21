@@ -91,10 +91,6 @@ class GameController {
         case "handleVotes":
           await handleVotesEvent(game);
           break;
-        case "end":
-          this.emitTimeOut(null, "Trò chơi đã kết thúc");
-          clearInterval(intervalId);
-          break;
         default:
           console.log("Unknown phase!");
           phaseInProgress = false; // avoid deadlock.
@@ -197,6 +193,24 @@ class GameController {
       const timeShow = 5000;
       let countdown = timeShow / 1000;
 
+      const data = await this.dayPhase(game);
+      if(data.gameEnded) {
+        this.emitTimeOut(null, "Trò chơi đã kết thúc");
+
+        const playerKeys = game.players.map((p) => `user:${p._id}`);
+
+        for (const key of playerKeys) {
+          await redis.hSet(key, "gameID", null);
+          await redis.expire(key, 86400);
+        }
+
+        await game.deleteOne();
+
+        phaseInProgress = false;
+        clearInterval(intervalId);
+      }
+      this.io.to(game.room.toString()).emit("game:dayReport", data);
+
       // Update game phase after 5 seconds
       const interval = setInterval(async () => {
         this.emitTimeOut(
@@ -290,6 +304,21 @@ class GameController {
 
       // Handle the vote event
       const result = await this.afterVoteHandler(game);
+      if(result.gameEnded) {
+        this.emitTimeOut(null, "Trò chơi đã kết thúc");
+
+        const playerKeys = game.players.map((p) => `user:${p._id}`);
+
+        for (const key of playerKeys) {
+          await redis.hSet(key, "gameID", null);
+          await redis.expire(key, 86400);
+        }
+
+        await game.deleteOne();
+        
+        phaseInProgress = false;
+        clearInterval(intervalId);
+      }
 
       // Emit to client
       this.io.to(game.room.toHexString()).emit("game:voteResult", result);
@@ -407,7 +436,6 @@ class GameController {
           break;
 
         case "day":
-          result = await this.dayPhase(game);
           result.phase = "day"; // Add phase info
           break;
 
@@ -433,15 +461,6 @@ class GameController {
           break;
 
         case "end":
-          const playerKeys = game.players.map((p) => `user:${p._id}`);
-
-          for (const key of playerKeys) {
-            await redis.hSet(key, "gameID", null);
-            await redis.expire(key, 86400);
-          }
-
-          await game.deleteOne();
-
           this.socket.removeAllListeners("game:data");
           this.socket.removeAllListeners("game:event");
           this.socket.removeAllListeners("game:getAbilityIcons");
@@ -450,6 +469,8 @@ class GameController {
           console.log("the game is deleted !");
 
           result = { phase: "end" };
+          break;
+
         default:
           result = { phase: game.phases || "unknown" }; // Include phase
           break;
@@ -1018,6 +1039,7 @@ class GameController {
       return {
         status: "success",
         message: "Game over!",
+        gameEnded: true,
       };
     }
 
@@ -1283,6 +1305,7 @@ class GameController {
       return {
         status: "success",
         message: "Game over!",
+        gameEnded: true,
       };
     }
 

@@ -324,6 +324,10 @@ export default {
         this.yourTurn = isYourTurn;
       });
 
+      this.$socket.on("game:dayReport", (data) => {
+        this.dayEvent(data);
+      });
+
       this.$socket.on("game:update", (data) => {
         // Only fetch game data if the phase has changed
         if (data.phase !== this.game?.phases) {
@@ -383,7 +387,6 @@ export default {
             this.performActionEvent(data);
             break;
           case "day":
-            this.dayEvent(data);
             break;
           case "discussion":
             this.discussionEvent(data);
@@ -472,11 +475,14 @@ export default {
       this.$socket.off("game:voteResult");
       this.$socket.off("game:yourTurn");
       this.$socket.off("game:update");
+      this.$socket.off("game:dayReport");
     },
   },
 
   beforeUnmount() {
     this.removeSocketListeners();
+    sessionStorage.removeItem("speed");
+    sessionStorage.removeItem("animation");
   },
 };
 </script>

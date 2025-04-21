@@ -1,6 +1,5 @@
 const { checkSchema, validationResult } = require("express-validator");
 const Room = require("../models/room.model");
-const { ObjectId } = require("mongodb");
 const redis = require("../database/redis");
 const bcrypt = require("bcrypt");
 
