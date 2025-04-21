@@ -251,7 +251,13 @@ export default {
           };
           this.conversation.push(dayConversation);
         }
-        
+
+        // Add new message to day's chat
+        dayConversation.chat.push({
+          name: data.playerName,
+          message: data.message,
+        });
+
         // Update session storage
         sessionStorage.setItem(
           "conversation",
@@ -328,8 +334,8 @@ export default {
           this.game.period = data.period;
           this.game.day = data.day;
         }
-      });     
-    },  
+      });
+    },
 
     getGameEvents() {
       // Retrieve the current event of the game

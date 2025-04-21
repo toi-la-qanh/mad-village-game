@@ -94,6 +94,21 @@ class GameController {
         case "end":
           clearInterval(intervalId);
           await redis.del(`game:${game._id}:phaseLoopRunning`);
+
+          const playerKeys = game.players.map((p) => `user:${p._id}`);
+  
+          for (const key of playerKeys) {
+            await redis.hSet(key, 'gameID', null);
+            await redis.expire(key, 86400);
+          }
+
+          await game.deleteOne();
+
+          this.socket.removeAllListeners("game:data");
+          this.socket.removeAllListeners("game:event");
+          this.socket.removeAllListeners("game:getAbilityIcons");
+
+          this.emitTimeOut(null, "Trò chơi đã kết thúc");
           break;
         default:
           console.log("Unknown phase!");
@@ -118,8 +133,9 @@ class GameController {
 
         countdown--;
 
-        if (countdown <= 0) {
+        if (countdown < 1) {
           clearInterval(interval);
+          this.socket.removeAllListeners("game:timeOut");
 
           // Proceed to next game phase
           game.phases = "performAction";
@@ -144,6 +160,7 @@ class GameController {
       // Move to the next phase
       if (game.currentTurn > maxTurn) {
         this.socket.removeAllListeners("game:watch");
+        this.socket.removeAllListeners("game:timeOut");
 
         // Delete action key from redis
         const actionKey = `game:${game._id}:action:${this.playerID.toString()}`;
@@ -177,8 +194,9 @@ class GameController {
 
         countdown--;
 
-        if (countdown <= 0) {
+        if (countdown < 1) {
           clearInterval(interval);
+          this.socket.removeAllListeners("game:timeOut");
 
           game.currentTurn += 1;
           await game.save();
@@ -204,8 +222,9 @@ class GameController {
 
         countdown--;
 
-        if (countdown <= 0) {
+        if (countdown < 1) {
           clearInterval(interval);
+          this.socket.removeAllListeners("game:timeOut");
 
           // Proceed to next game phase
           game.phases = "discussion";
@@ -232,8 +251,9 @@ class GameController {
 
         countdown--;
 
-        if (countdown <= 0) {
+        if (countdown < 1) {
           clearInterval(interval);
+          this.socket.removeAllListeners("game:timeOut");
 
           // Proceed to next game phase
           game.phases = "vote";
@@ -262,8 +282,9 @@ class GameController {
 
         countdown--;
 
-        if (countdown <= 0) {
+        if (countdown < 1) {
           clearInterval(interval);
+          this.socket.removeAllListeners("game:timeOut");
 
           // Proceed to next game phase
           game.phases = "handleVotes";
@@ -299,8 +320,9 @@ class GameController {
 
         countdown--;
 
-        if (countdown <= 0) {
+        if (countdown < 1) {
           clearInterval(interval);
+          this.socket.removeAllListeners("game:timeOut");
 
           // Get current votes from Redis
           const gameVoteKey = `game:${game._id}:votes`;
@@ -429,24 +451,6 @@ class GameController {
           });
 
           result = { phase: "vote" }; // Add phase info
-          break;
-
-        case "end":
-          const playerKeys = game.players.map((p) => `user:${p._id}`);
-  
-          for (const key of playerKeys) {
-            await redis.hSet(key, 'gameID', null);
-            await redis.expire(key, 86400);
-          }
-
-          await game.deleteOne();
-
-          this.socket.removeAllListeners("game:data");
-          this.socket.removeAllListeners("game:event");
-          this.socket.removeAllListeners("game:getAbilityIcons");
-
-          this.emitTimeOut(null, "Trò chơi đã kết thúc");
-          result = { phase: "end" };
           break;
 
         default:
