@@ -1,6 +1,5 @@
 const { checkSchema, validationResult } = require("express-validator");
 const User = require("../models/user.model");
-const Room = require("../models/room.model");
 const createSecretToken = require("../auth/token");
 const redis = require("../database/redis");
 
@@ -24,20 +23,16 @@ class UserController {
     const responseData = { id, name };
 
     const userData = await redis.get(`user:${req.user}`);
+
     let userDataParsed;
     if (userData) {
       userDataParsed = JSON.parse(userData);
     } else {
-      userDataParsed = { room: null, game: null };
+      userDataParsed = { roomID: null, gameID: null };
     }
-
-    if (userDataParsed.roomID) {
-      responseData.room = userDataParsed.roomID;
-    }
-
-    if (userDataParsed.gameID) {
-      responseData.game = userDataParsed.gameID;
-    }
+    
+    responseData.room = userDataParsed.roomID;
+    responseData.game = userDataParsed.gameID;
 
     // Check if the user's account is about to close
     if (isAboutToClose) {

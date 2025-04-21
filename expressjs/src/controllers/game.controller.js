@@ -432,8 +432,12 @@ class GameController {
           break;
 
         case "end":
-          const keysToDelete = game.players.map((p) => `user:${p._id}`);
-          await redis.del(...keysToDelete);
+          const playerKeys = game.players.map((p) => `user:${p._id}`);
+  
+          for (const key of playerKeys) {
+            await redis.hSet(key, 'gameID', null);
+            await redis.expire(key, 86400);
+          }
 
           await game.deleteOne();
 

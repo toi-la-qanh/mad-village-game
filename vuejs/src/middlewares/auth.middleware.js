@@ -17,14 +17,6 @@ export default async function authMiddleware(to, from, next) {
   isLoading.value = true;
 
   try {
-    // Check if user is already authenticated to avoid unnecessary API calls
-    if (user.value?.id) {
-      // Ensure socket connection
-      ensureSocketConnection();
-      isLoading.value = false;
-      return next();
-    }
-
     const response = await userApi.getUser();
 
     if (response) {
@@ -36,14 +28,13 @@ export default async function authMiddleware(to, from, next) {
         id: response.id,
       };
 
-      if (response.room) {
-        roomID.value = response.room;
+      roomID.value = response.room;
+
+      if (roomID.value) {
         socket.emit("room:join", response.room);
       }
-
-      if (response.game) {
-        gameID.value = response.game;
-      }
+      
+      gameID.value = response.game;
 
       if (response.message) {
         alert(response.message);

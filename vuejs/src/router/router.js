@@ -54,7 +54,6 @@ const router = createRouter({
 });
 
 router.afterEach(async (to, from) => {
-  // Assuming roomID is a reactive ref
   const room = roomID.value;
   const game = gameID.value;
   
