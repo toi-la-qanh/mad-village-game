@@ -231,28 +231,7 @@ export default {
         } else {
           // Clear input after successful send
           this.newMessage = "";
-
-          // Find or create day's conversation - for immediate feedback
-          let dayConversation = this.conversation.find(
-            (convo) => convo.day === this.day
-          );
-
-          if (!dayConversation) {
-            dayConversation = {
-              day: this.day,
-              chat: [{ name: "", message: "" }],
-              gameMessages: [],
-              voteResult: "",
-              votes: [],
-            };
-            this.conversation.push(dayConversation);
-          }
-
-          // Update storage
-          sessionStorage.setItem(
-            "conversation",
-            JSON.stringify(this.conversation)
-          );
+          // Don't add message locally - it will be added via socket event in Game.vue
         }
       });
 

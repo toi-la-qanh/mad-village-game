@@ -209,6 +209,9 @@ export default {
     },
 
     setupGameEvents() {
+      // Remove any existing listeners first to prevent duplicates
+      this.removeSocketListeners();
+      
       // Get the timeout and messages
       this.$socket.on("game:timeOut", (data) => {
         if (data) {
@@ -458,12 +461,14 @@ export default {
 
     removeSocketListeners() {
       // Cleanup the socket listener when the component is destroyed
-      this.$socket.removeAllListeners("game:error");
-      this.$socket.removeAllListeners("game:timeout");
-      this.$socket.removeAllListeners("game:fetchDayChat");
-      this.$socket.removeAllListeners("game:fetchVotes");
-      this.$socket.removeAllListeners("game:voteResult");
-      this.$socket.removeAllListeners("game:message");
+      this.$socket.off("game:timeOut");
+      this.$socket.off("game:error");
+      this.$socket.off("game:end");
+      this.$socket.off("game:fetchDayChat");
+      this.$socket.off("game:fetchVotes");
+      this.$socket.off("game:voteResult");
+      this.$socket.off("game:yourTurn");
+      this.$socket.off("game:update");
     },
   },
 

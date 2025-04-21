@@ -93,7 +93,7 @@ class GameController {
           break;
         case "end":
           clearInterval(intervalId);
-          await redis.del(`game:${game._id}:phaseLoopRunning`);
+          await redis.del(`game:${game._id}:currentPhase`);
 
           const playerKeys = game.players.map((p) => `user:${p._id}`);
   
@@ -366,6 +366,9 @@ class GameController {
       // Remove the listener right after it's fired
       this.socket.removeAllListeners("game:start");
 
+      const loopKey = `game:${gameID}:currentPhase`;
+      await redis.set(loopKey, game.phases, 'EX', 86400);
+
       this.updateGamePhase(gameID);
     });
 
@@ -396,20 +399,20 @@ class GameController {
 
     // Retrieve the game event to the client
     this.socket.on("game:event", async (gameID, callback) => {
-      const loopKey = `game:${gameID}:phaseLoopRunning`;
-      const isAlreadyRunning = await redis.setNX(loopKey, "true");
+      const game = await this.getGameData(gameID);
+      console.log(`The game is at ${game.phases} phase`);
 
-      if (isAlreadyRunning) {
-        // Only if the key was just now set successfully
-        await redis.expire(loopKey, 60);
+      const loopKey = `game:${gameID}:currentPhase`;
+      const lastPhase = await redis.get(loopKey);
+
+      if (lastPhase !== game.phases) {
         console.log("Started game loop for", gameID);
+        await redis.set(loopKey, game.phases, 'EX', 86400);
         this.updateGamePhase(gameID);
       } else {
         console.log("Game loop already running for", gameID);
       }
 
-      const game = await this.getGameData(gameID);
-      console.log(`The game is at ${game.phases} phase`);
       let result = {};
 
       switch (game.phases) {
