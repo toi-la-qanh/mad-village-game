@@ -88,7 +88,7 @@
         </div>
 
         <button 
-          @click="quitGame" 
+          @click="exitGame" 
           class="w-full hover:bg-gray-400 p-3 sm:p-2 mt-3 rounded text-base font-medium touch-manipulation"
         >
           Thoát game
@@ -109,7 +109,8 @@
 <script>
 import { faXmark, faPlus, faMinus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { audioEnabled, audioVolume } from "../store";
+import { audioEnabled, audioVolume, gameID, roomID } from "../store";
+import GameApi from "../api/game.api";
 
 export default {
   components: {
@@ -197,6 +198,25 @@ export default {
         newSpeed: this.speed,
         newAnimation: this.animation,
       });
+    },
+
+    exitGame() {
+      const confirmed = window.confirm("Bạn có chắc chắn muốn rời khỏi trò chơi?");
+
+      if (!confirmed) return;
+
+      try {
+        const game = new GameApi();
+        await game.exit();
+        gameID.value = null;
+        if(roomID.value){
+          this.$router.push({ name: "room", params: { id: roomID.value } });
+        } else {
+          this.$router.push("/rooms");
+        }
+      } catch (error) {
+        console.log(error);
+      }
     },
 
     close() {

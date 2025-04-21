@@ -17,4 +17,8 @@ export default class GameApi extends BaseApi {
   start(data) {
     return this.post(`${url}/start`, data);
   }
+
+  exit() {
+    return this.delete(`${url}/exit`);
+  }
 };

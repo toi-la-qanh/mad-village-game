@@ -20,5 +20,6 @@ const limiter = rateLimit({
 router.get("/roles", RoleController.roleIndex);
 router.get("/roles/info", RoleController.roleInfo);
 router.post("/start", auth, limiter, GameController.gameStart);
+router.delete("/exit", auth, limiter, GameController.gameOut);
 
 module.exports = router;

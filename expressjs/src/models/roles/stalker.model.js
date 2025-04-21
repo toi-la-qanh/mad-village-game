@@ -31,7 +31,7 @@ class Stalker extends Role {
     } else if (trait === "bad") {
       abilities = { canStalk: true, canKill: true };
       description = baseDescription + ". Có thể giết mục tiêu.";
-      availableAction = ["stalk", "kill"];
+      availableAction.push("kill");
     }
 
     // Add icons based on abilities

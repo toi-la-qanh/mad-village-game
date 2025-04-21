@@ -96,13 +96,20 @@
       >
         Tải lại trang
       </button>
+      <button
+        @click="exitGame()"
+        class="text-gray-800 bg-green-400 hover:bg-green-300 border boder-black rounded-full p-2 mt-2"
+      >
+        Thoát game
+      </button>
     </div>
   </div>
 </template>
 
 <script>
 import { defineAsyncComponent, reactive, ref } from "vue";
-import { showBackground } from "../store";
+import { showBackground, gameID, roomID } from "../store";
+import GameApi from "../api/game.api";
 
 export default {
   components: {
@@ -211,7 +218,7 @@ export default {
     setupGameEvents() {
       // Remove any existing listeners first to prevent duplicates
       this.removeSocketListeners();
-      
+
       // Get the timeout and messages
       this.$socket.on("game:timeOut", (data) => {
         if (data) {
@@ -264,7 +271,7 @@ export default {
           "conversation",
           JSON.stringify(this.conversation)
         );
-        
+
         // Notify Vue that the data has changed to trigger watchers
         this.conversation = [...this.conversation];
       });
@@ -402,7 +409,7 @@ export default {
 
     // Helper function to open role info when clicked on the info button
     showRoleInfo() {
-      this.role = JSON.parse(localStorage.getItem("role")); // change to sessionStorage for production
+      this.role = JSON.parse(localStorage.getItem("role"));
     },
 
     showRolesEvent(data) {
@@ -463,6 +470,25 @@ export default {
       Object.keys(this.event).forEach((key) => {
         this.event[key] = false;
       });
+    },
+
+    exitGame() {
+      const confirmed = window.confirm("Bạn có chắc chắn muốn rời khỏi trò chơi?");
+
+      if (!confirmed) return;
+
+      try {
+        const game = new GameApi();
+        await game.exit();
+        gameID.value = null;
+        if(roomID.value){
+          this.$router.push({ name: "room", params: { id: roomID.value } });
+        } else {
+          this.$router.push("/rooms");
+        }
+      } catch (error) {
+        console.log(error);
+      }
     },
 
     removeSocketListeners() {

@@ -161,6 +161,15 @@ class GameController {
         return;
       }
 
+      const player = this.getPlayer(game);
+
+      // Turn check
+      if (player.priority !== game.currentTurn) {
+        this.socket.emit("game:yourTurn", false);
+        phaseInProgress = false;
+      }
+      this.socket.emit("game:yourTurn", true);
+
       // Emit timeout to client
       const actionTimeout = 30000;
       let countdown = actionTimeout / 1000;
@@ -194,7 +203,7 @@ class GameController {
       let countdown = timeShow / 1000;
 
       const data = await this.dayPhase(game);
-      if(data.gameEnded) {
+      if (data.gameEnded) {
         this.emitTimeOut(null, "Trò chơi đã kết thúc");
 
         const playerKeys = game.players.map((p) => `user:${p._id}`);
@@ -304,18 +313,18 @@ class GameController {
 
       // Handle the vote event
       const result = await this.afterVoteHandler(game);
-      if(result.gameEnded) {
+      if (result.gameEnded) {
         this.emitTimeOut(null, "Trò chơi đã kết thúc");
 
         const playerKeys = game.players.map((p) => `user:${p._id}`);
 
         for (const key of playerKeys) {
-          await redis.hSet(key, "gameID", null);
+          await redis.hDel(key, "gameID");
           await redis.expire(key, 86400);
         }
 
         await game.deleteOne();
-        
+
         phaseInProgress = false;
         clearInterval(intervalId);
       }
@@ -691,6 +700,56 @@ class GameController {
   ];
 
   /**
+   * Method to exit the game
+   */
+  static gameOut = [
+    checkSchema({
+      gameID: {
+        notEmpty: {
+          errorMessage: "Mã phòng không được để trống !",
+        },
+        isMongoId: {
+          errorMessage: "Mã không hợp lệ !",
+        },
+      },
+    }),
+    async (req, res) => {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(422).json({ errors: errors.array() });
+      }
+
+      const { gameID } = req.params;
+      const userID = req.user;
+
+      const game = await Game.findById(gameID);
+      if (!game) {
+        return res.status(404).json({ message: "Không tìm thấy ván chơi!" });
+      }
+
+      // Remove player from game
+      game.players = game.players.filter(
+        (p) => p._id.toString() !== userID.toString()
+      );
+
+      // Save game state if anyone is left
+      if (game.players.length > 0) {
+        await game.save();
+      } else {
+        await game.deleteOne();
+      }
+
+      // Clear user's Redis entry
+      const redisKey = `user:${userID}`;
+      await redis.hDel(redisKey, "gameID");
+
+      return res.status(200).json({
+        message: "Bạn đã rời khỏi trò chơi!",
+      });
+    },
+  ];
+
+  /**
    * Method to show role of a player
    */
   showRoles(game) {
@@ -740,21 +799,6 @@ class GameController {
         status: 400,
       };
     }
-
-    const player = this.getPlayer(game);
-
-    // Turn check
-    if (player.priority !== game.currentTurn) {
-      this.emitTimeOut(null, "Chờ người khác hành động");
-      this.socket.emit("game:yourTurn", false);
-
-      return {
-        status: "error",
-        message: "Chưa đến lượt của bạn!",
-      };
-    }
-
-    this.socket.emit("game:yourTurn", true);
 
     // Get the player's action from Redis
     const actionKey = `game:${game._id}:action:${this.playerID.toString()}`;
