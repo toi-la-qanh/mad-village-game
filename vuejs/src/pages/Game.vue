@@ -327,10 +327,6 @@ export default {
         }
       });
 
-      this.$socket.on("game:yourTurn", (isYourTurn) => {
-        this.yourTurn = isYourTurn;
-      });
-
       this.$socket.on("game:dayReport", (data) => {
         this.dayEvent(data);
       });
@@ -419,6 +415,11 @@ export default {
 
     performActionEvent(data) {
       this.event.performAction = true;
+
+      this.$socket.removeAllListeners("game:yourTurn");
+      this.$socket.on("game:yourTurn", (isYourTurn) => {
+        this.yourTurn = isYourTurn;
+      });
     },
 
     dayEvent(data) {
@@ -493,15 +494,15 @@ export default {
 
     removeSocketListeners() {
       // Cleanup the socket listener when the component is destroyed
-      this.$socket.off("game:timeOut");
-      this.$socket.off("game:error");
-      this.$socket.off("game:end");
-      this.$socket.off("game:fetchDayChat");
-      this.$socket.off("game:fetchVotes");
-      this.$socket.off("game:voteResult");
-      this.$socket.off("game:yourTurn");
-      this.$socket.off("game:update");
-      this.$socket.off("game:dayReport");
+      this.$socket.removeAllListeners("game:timeOut");
+      this.$socket.removeAllListeners("game:error");
+      this.$socket.removeAllListeners("game:end");
+      this.$socket.removeAllListeners("game:fetchDayChat");
+      this.$socket.removeAllListeners("game:fetchVotes");
+      this.$socket.removeAllListeners("game:voteResult");
+      this.$socket.removeAllListeners("game:yourTurn");
+      this.$socket.removeAllListeners("game:update");
+      this.$socket.removeAllListeners("game:dayReport");
     },
   },
 

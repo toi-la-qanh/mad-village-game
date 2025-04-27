@@ -165,9 +165,9 @@ class GameController {
 
       // Turn check
       if (player.priority !== game.currentTurn) {
-        this.socket.emit("game:yourTurn", false);
         phaseInProgress = false;
       }
+
       this.socket.emit("game:yourTurn", true);
 
       // Emit timeout to client
@@ -878,6 +878,7 @@ class GameController {
       };
     }
 
+    const player = this.getPlayer(game);
     if (
       !(await RoleController.submitAction(
         player,

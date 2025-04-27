@@ -11,7 +11,7 @@ const openai = new OpenAI({
 /**
  * Call LLM API for updating
  */
-const updateLLMResponse = async (req,res) => {
+const updateLLMResponse = async (req, res) => {
   console.log("run llm api");
   const response = await openai.chat.completions.create({
     messages: [
@@ -26,6 +26,7 @@ const updateLLMResponse = async (req,res) => {
       },
     ],
     model: "deepseek/deepseek-chat-v3-0324:free",
+    temperature: 0.2
   });
 
   const result = response.choices[0].message.content;
@@ -36,7 +37,9 @@ const updateLLMResponse = async (req,res) => {
   const key = `llm:game-summary`;
   await redis.set(key, JSON.stringify(result));
 
-  return res.status(200).json({message: "Cập nhật hướng dẫn game thành công !"});
+  return res
+    .status(200)
+    .json({ message: "Cập nhật hướng dẫn game thành công !" });
 };
 
 // Run every 1 hour

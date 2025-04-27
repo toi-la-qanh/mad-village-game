@@ -24,12 +24,14 @@
         ref="chatBox"
       >
         <!-- Sticky Vote Section - stays at top when scrolling -->
-        <div 
-          v-if="voteEvent && getCurrentDayConversation()" 
+        <div
+          v-if="voteEvent && getCurrentDayConversation()"
           class="sticky top-0 w-11/12 lg:w-2/3 mx-auto bg-white rounded-lg z-30 p-4 shadow-lg text-black mb-4"
         >
           <div class="mb-2">
-            <h3 class="font-bold text-lg">Giai đoạn bỏ phiếu (Ngày {{ day }})</h3>
+            <h3 class="font-bold text-lg">
+              Giai đoạn bỏ phiếu (Ngày {{ day }})
+            </h3>
           </div>
 
           <!-- Vote Details -->
@@ -188,12 +190,41 @@
       </div>
 
       <div v-if="error" class="text-red-500">{{ error }}</div>
-      
+
       <!-- Send Message Section -->
       <div
         class="md:absolute fixed bottom-0 w-full md:h-auto h-13 bg-white p-2 flex justify-between gap-2"
         :class="{ 'bg-gray-600': !dayChat }"
       >
+        <!-- AI Helper Question Component - shows when input is focused -->
+        <div 
+          v-if="showQuestion" 
+          class="absolute bottom-full left-0 w-full bg-gray-800 rounded-t-lg p-3 shadow-lg cursor-pointer"
+          @click="getAIHelperAndDisplay"
+        >
+          <div class="flex justify-between items-center">
+            <p class="text-white font-semibold">{{ question }}</p>
+            <span v-if="isLoading" class="text-white text-sm">Đang xử lý...</span>
+          </div>
+        </div>
+        
+        <!-- AI Helper Answer - temporary display -->
+        <div 
+          v-if="showAnswer" 
+          class="absolute bottom-full left-0 w-full bg-gray-700 rounded-t-lg p-4 shadow-lg"
+        >
+          <div class="flex flex-col">
+            <h3 class="font-bold">Bot</h3>
+            <p>{{ answer }}</p>
+            <button 
+              @click="showAnswer = false" 
+              class="self-end mt-2 bg-gray-600 hover:bg-gray-500 text-white px-2 py-1 rounded text-xs"
+            >
+              Đóng
+            </button>
+          </div>
+        </div>
+        
         <input
           type="text"
           v-model="newMessage"
@@ -202,6 +233,8 @@
           :class="{ 'cursor-not-allowed': !dayChat }"
           :disabled="!dayChat"
           @keydown.enter="sendMessage($event)"
+          @focus="showQuestion = !showAnswer ? true : false"
+          @blur="setTimeout(() => showQuestion = false, 200)"
         />
         <button
           @disable="!dayChat"
@@ -222,7 +255,8 @@
 import { faTurnUp, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { user } from "../store";
-import { ref, onMounted, watch } from "vue";
+import { ref } from "vue";
+import LLMApi from "../api/llm.api";
 
 export default {
   props: {
@@ -254,6 +288,11 @@ export default {
       selectedPlayerId: null,
       isMessageSending: false, // Cooldown flag for messages
       isVoteSending: false, // Cooldown flag for votes
+      question: "Ai là kẻ đáng nghi nhất?",
+      answer: "",
+      showQuestion: false,
+      showAnswer: false,
+      isLoading: false
     };
   },
 
@@ -366,7 +405,34 @@ export default {
     },
 
     getCurrentDayConversation() {
-      return this.conversation.find(c => c.day === this.day) || null;
+      return this.conversation.find((c) => c.day === this.day) || null;
+    },
+
+    async getAIHelperAndDisplay() {
+      try {
+        this.isLoading = true;
+        const model = new LLMApi();
+        const response = await model.getAIResponse({
+          conversation: this.conversation,
+          question: this.question,
+        });
+
+        if (response) {
+          this.answer = response.message;
+          this.showQuestion = false;
+          this.showAnswer = true;
+        }
+      } catch (error) {
+        if (error.status === 422) {
+          this.error = error.response?.data?.errors.map(
+            (err) => err.msg || err
+          );
+        } else {
+          this.error = error.response?.data?.errors;
+        }
+      } finally {
+        this.isLoading = false;
+      }
     },
   },
 
@@ -376,8 +442,8 @@ export default {
       deep: true,
       handler() {
         this.scrollToBottom();
-      }
-    }
+      },
+    },
   },
 
   mounted() {

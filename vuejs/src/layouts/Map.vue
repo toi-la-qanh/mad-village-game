@@ -94,12 +94,12 @@
 
         <!-- Display selected action -->
         <div
-          class="absolute top-5 left-[-15px] bg-yellow-500 rounded-full p-2 text-xs"
+          class="absolute top-7 right-[7px] bg-yellow-500 rounded-full p-2 text-xs"
           v-if="
             playerIDs[index] !== user_id &&
             selectButtonClicked &&
             endMoving &&
-            clickedHouseIndex === index &&
+            targetHouseIndex === index &&
             yourTurn &&
             actionSelected
           "
@@ -192,6 +192,7 @@ export default {
       canvasHeight: 1000,
       housePositions: [], // Store positions of the houses
       clickedHouseIndex: null,
+      targetHouseIndex: null, // Track the target house separately
       selectButtonClicked: false,
       playerIDs: this.game.players.map((player) => player._id),
       playerNames: this.game.players.map((player) => player.name),
@@ -438,6 +439,7 @@ export default {
         this.selectedAction = null;
         this.endMoving = false;
         this.clickedHouseIndex = null;
+        this.targetHouseIndex = null; // Reset target house index
         this.isYourTurn = false;
 
         // Update the current day and period to the new game state
@@ -452,6 +454,8 @@ export default {
 
     async getTarget(targetID, index) {
       this.selectButtonClicked = true;
+      this.targetHouseIndex = index; // Store the target house index
+      
       if (targetID) {
         this.$socket.emit("game:targetSelected", targetID);
         this.targetSelected = true;
