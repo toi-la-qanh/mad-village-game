@@ -25,7 +25,7 @@ const updateLLMResponse = async (req, res) => {
         ],
       },
     ],
-    model: "deepseek/deepseek-chat-v3-0324:free",
+    model: "meta-llama/llama-3.3-8b-instruct:free",
     temperature: 0.2
   });
 

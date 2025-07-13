@@ -18,7 +18,7 @@ const limiter = rateLimit({
 });
 
 router.get("/instruction", LLMController.gameSummary);
-router.get("/update", updateLLMResponse);
+router.get("/update", limiter, updateLLMResponse);
 router.post("/answer", auth, limiter, LLMController.answerQuestion);
 
 module.exports = router;

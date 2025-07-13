@@ -1,6 +1,9 @@
 const express = require("express");
 const app = express();
 
+// Load environment variables
+require('@dotenvx/dotenvx').config();
+
 /* Start the server */
 
 const server = require("http").createServer(app);
@@ -15,9 +18,6 @@ server.listen(PORT, '0.0.0.0', () => {
 // server.listen(PORT, () => {
 //   console.log(`Server is running on port ${PORT}`);
 // });
-
-// Load environment variables
-require("dotenv").config();
 
 // Connect to the database
 const dbConnection = require("./database/db.js");
@@ -78,6 +78,6 @@ app.use("/api/llm", llmRoutes);
 // updateLLMResponse();
 
 app.set('trust proxy', 3 /* number of proxies between user and server */);
-app.get('/ip', (request, response) => response.send(request.ip));
+// app.get('/ip', (request, response) => response.send(request.ip));
 
 module.exports = app;

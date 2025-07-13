@@ -22,7 +22,7 @@ const RoomSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-    createdAt: { type: Date, default: Date.now },
+    createdAt: { type: Date, default: Date.now, expires: "24h" },
   },
   {
     timestamps: true,

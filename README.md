@@ -2,7 +2,8 @@
 
 ![Node.js](https://img.shields.io/badge/Node.js-v20.x-green.svg) ![Vue.js](https://img.shields.io/badge/Vue.js-3.x-brightgreen.svg) ![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-v4.x-blue.svg) ![Socket.IO](https://img.shields.io/badge/Socket.IO-4.x-lightgrey.svg)
 
-![Mad Village Game](./vuejs/src/assets/background.png)
+**Demo Gameplay**
+![Mad Village Game](./vuejs/src/assets/demo.gif)
 
 ## List of contents
 
@@ -27,7 +28,7 @@
   - [Others](#others)
 
 ## About
-
+>This is a school project. You're free to use it, but please consider giving credit for some of the assets and images.
 ### Game Instruction
 
 This game is based on the classic "Werewolf" game, but with some key differences. The basic structure still involves two main groups: the **villagers** and the **werewolves**. However, the **villagers** are further divided into two traits: _good_ and _mad_. The _good_ villagers are those who can perform actions during the game, while the _mad_ villagers are unable to take any actions.
@@ -153,7 +154,7 @@ npm run dev
 Add your env configuration: [Frontend config](./vuejs/README.md)
 
 ## Credits
-
+>I've already purchased all the assets here, but if you want to use them for commercial purposes, please contact the original author.
 ### Assets
 
 - Characters: [shubibubi](https://shubibubi.itch.io)

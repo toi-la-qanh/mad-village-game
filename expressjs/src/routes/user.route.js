@@ -8,8 +8,8 @@ const router = express.Router();
 
 // Set the rate limit
 const limiter = rateLimit({
-  windowMs: 10 * 60 * 1000, // 10 minutes
-  limit: 50, // Limit each IP to 50 requests per `window` (here, per 15 minutes)
+  windowMs: 60 * 1000, // 1 minute
+  limit: 10, // Limit each IP to 10 requests per `window` (here, per 15 minutes)
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   message: { errors: 'Quá nhiều lần thử, xin vui lòng thử lại trong ít phút nữa !' },
