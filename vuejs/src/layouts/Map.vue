@@ -63,7 +63,7 @@
               @click="getTarget(playerIDs[index], index)"
               class="bg-blue-500 p-1 hover:text-white rounded"
             >
-              Chọn
+              {{ $t("game.target.select") }}
             </button>
           </div>
         </transition>

@@ -45,7 +45,7 @@ class GameController {
     }
     const game = await Game.findById(id);
     if (!game) {
-      this.handleError("Không tìm thấy ván chơi!");
+      this.handleError(req.t("game.errors.notFound"));
       this.socket.disconnect();
       return null;
     }
@@ -108,7 +108,7 @@ class GameController {
       const interval = setInterval(async () => {
         this.emitTimeOut(
           countdown,
-          "Trò chơi sẽ bắt đầu trong",
+          req.t("game.messages.startingIn"),
           game.room.toHexString()
         );
 
@@ -178,7 +178,7 @@ class GameController {
       const interval = setInterval(async () => {
         this.emitTimeOut(
           countdown,
-          `Lượt ${game.currentTurn}:`,
+          req.t("game.messages.turn", { turn: game.currentTurn }),
           game.room.toHexString()
         );
 
@@ -204,7 +204,7 @@ class GameController {
 
       const data = await this.dayPhase(game);
       if (data.gameEnded) {
-        this.emitTimeOut(null, "Trò chơi đã kết thúc");
+        this.emitTimeOut(null, req.t("game.messages.gameEnded"));
 
         const playerKeys = game.players.map((p) => `user:${p._id}`);
 
@@ -224,7 +224,7 @@ class GameController {
       const interval = setInterval(async () => {
         this.emitTimeOut(
           countdown,
-          "Giai đoạn tiếp theo",
+          req.t("game.messages.nextPhase"),
           game.room.toHexString()
         );
 
@@ -253,7 +253,7 @@ class GameController {
       const interval = setInterval(async () => {
         this.emitTimeOut(
           countdown,
-          "Thời gian thảo luận",
+          req.t("game.messages.discussionTime"),
           game.room.toHexString()
         );
 
@@ -284,7 +284,7 @@ class GameController {
       const interval = setInterval(async () => {
         this.emitTimeOut(
           countdown,
-          "Thời gian bỏ phiếu",
+          req.t("game.messages.voteTime"),
           game.room.toHexString()
         );
 
@@ -308,13 +308,13 @@ class GameController {
     // Handle votes
     const handleVotesEvent = async (game) => {
       console.log("handle votes phase");
-      this.emitTimeOut(null, "Xử lý phiếu bầu", game.room.toHexString());
+      this.emitTimeOut(null, req.t("game.messages.handleVotes"), game.room.toHexString());
       this.socket.removeAllListeners("game:voteTarget");
 
       // Handle the vote event
       const result = await this.afterVoteHandler(game);
       if (result.gameEnded) {
-        this.emitTimeOut(null, "Trò chơi đã kết thúc");
+        this.emitTimeOut(null, req.t("game.messages.gameEnded"));
 
         const playerKeys = game.players.map((p) => `user:${p._id}`);
 
@@ -337,7 +337,7 @@ class GameController {
       const interval = setInterval(async () => {
         this.emitTimeOut(
           countdown,
-          "Chuyển qua giai đoạn tiếp theo",
+          req.t("game.messages.nextPhase"),
           game.room.toHexString()
         );
 
@@ -509,7 +509,7 @@ class GameController {
     );
 
     if (!player) {
-      this.handleError("Bạn không phải là người chơi !");
+      this.handleError(req.t("game.errors.notPlayer"));
       this.socket.disconnect();
       return null;
     }
@@ -524,27 +524,27 @@ class GameController {
     checkSchema({
       roomID: {
         notEmpty: {
-          errorMessage: "Mã phòng không được để trống !",
+          errorMessage: "game.errors.roomIdEmpty",
         },
         isMongoId: {
-          errorMessage: "Mã không hợp lệ !",
+          errorMessage: "game.errors.roomIdInvalid",
         },
       },
       roles: {
         notEmpty: {
-          errorMessage: "Vai trò không được để trống !",
+          errorMessage: "game.errors.rolesEmpty",
         },
       },
       traits: {
         notEmpty: {
-          errorMessage: "Thuộc tính không được để trống !",
+          errorMessage: "game.errors.traitsEmpty",
         },
       },
       vote_time: {
         optional: true,
         isInt: {
           options: { min: 30, max: 300 },
-          errorMessage: "Thời gian bỏ phiếu phải từ 30-300 giây",
+          errorMessage: "game.errors.voteTimeInvalid",
           bail: true,
         },
       },
@@ -552,7 +552,7 @@ class GameController {
         optional: true,
         isInt: {
           options: { min: 60, max: 600 },
-          errorMessage: "Thời gian thảo luận phải từ 60-600 giây",
+          errorMessage: "game.errors.discussionTimeInvalid",
           bail: true,
         },
       },
@@ -569,7 +569,7 @@ class GameController {
       // Check if room is not found
       const room = await Room.findById(roomID);
       if (!room) {
-        return res.status(404).json({ errors: "Phòng không tồn tại!" });
+        return res.status(404).json({ errors: req.t("game.errors.roomNotFound") });
       }
 
       // Check if game already started
@@ -579,7 +579,7 @@ class GameController {
 
       if (gameExists) {
         return res.status(400).json({
-          message: "Không thể bắt đầu trò chơi vì trò chơi đang diễn ra !",
+          message: req.t("game.errors.gameInProgress"),
         });
       }
 
@@ -587,14 +587,14 @@ class GameController {
       if (!room.owner.equals(ownerID)) {
         return res
           .status(403)
-          .json({ errors: "Chỉ chủ phòng mới có thể bắt đầu trò chơi!" });
+          .json({ errors: req.t("game.errors.onlyOwnerCanStart") });
       }
 
       // Check the count of the players in the room
       if (room.players.length < 6 || room.players.length > 20) {
         return res
           .status(400)
-          .json({ errors: "Số người chơi phải từ 6-20 người!" });
+          .json({ errors: req.t("game.errors.playerCountInvalid") });
       }
 
       const player_ids = room.players;
@@ -695,7 +695,7 @@ class GameController {
 
       return res
         .status(200)
-        .json({ message: "Trò chơi đã bắt đầu!", gameID: game._id });
+        .json({ message: req.t("game.messages.gameStarted"), gameID: game._id });
     },
   ];
 
@@ -706,10 +706,10 @@ class GameController {
     checkSchema({
       gameID: {
         notEmpty: {
-          errorMessage: "Mã phòng không được để trống !",
+          errorMessage: "game.errors.roomIdEmpty",
         },
         isMongoId: {
-          errorMessage: "Mã không hợp lệ !",
+          errorMessage: "game.errors.roomIdInvalid",
         },
       },
     }),
@@ -724,7 +724,7 @@ class GameController {
 
       const game = await Game.findById(gameID);
       if (!game) {
-        return res.status(404).json({ message: "Không tìm thấy ván chơi!" });
+        return res.status(404).json({ message: req.t("game.errors.notFound") });
       }
 
       // Remove player from game
@@ -744,7 +744,7 @@ class GameController {
       await redis.hDel(redisKey, "gameID");
 
       return res.status(200).json({
-        message: "Bạn đã rời khỏi trò chơi!",
+        message: req.t("game.messages.leftGame"),
       });
     },
   ];
@@ -766,9 +766,10 @@ class GameController {
       name: role.getName(),
       image: role.getImage(),
       description: role.getDescription(),
-      message: `Vai trò của bạn là ${role.getName()} ${
-        role.getTrait() === "bad" ? " ác" : ""
-      }`,
+      message: req.t("game.messages.yourRole", {
+        role: req.t(`role.name.${role.getName()}`),
+        trait: req.t(`role.trait.${role.getTrait()}`),
+      }),
     };
 
     return roleData;
@@ -809,7 +810,7 @@ class GameController {
       if (action.status !== "pending") {
         return {
           status: "error",
-          message: "Bạn đã thực hiện hành động cho đêm nay rồi !",
+          message: req.t("game.errors.alreadyPerformedAction"),
         };
       }
     } else {
@@ -839,7 +840,7 @@ class GameController {
     if (!targetID) {
       return {
         status: "success",
-        message: "Bạn đã chọn không làm gì vào đêm nay !",
+        message: req.t("game.errors.noAction"),
       };
     }
 
@@ -851,7 +852,7 @@ class GameController {
     if (!target) {
       return {
         status: "error",
-        message: "Không tìm thấy mục tiêu trong ván chơi !",
+        message: req.t("game.errors.targetNotFound"),
       };
     }
 
@@ -874,7 +875,7 @@ class GameController {
     if (!inputAction) {
       return {
         status: "success",
-        message: `Bạn đã qua nhà ${targetName} nhưng không thực hiện hành động nào !`,
+        message: req.t("game.errors.noAction", { targetName }),
       };
     }
 
@@ -898,7 +899,7 @@ class GameController {
 
       return {
         status: "error",
-        message: "Không thể hành động lên người chơi này !",
+        message: req.t("game.errors.cannotPerformAction"),
       };
     }
 
@@ -915,7 +916,7 @@ class GameController {
     // Return success message
     return {
       status: "success",
-      message: `Bạn đã ${action.name} ${targetName}`,
+      message: req.t("game.messages.performedAction", { action: action.name, targetName }),
     };
   }
 
@@ -946,7 +947,7 @@ class GameController {
     const action = actionData ? JSON.parse(actionData) : null;
 
     if (!action) {
-      return { message: "Lỗi hành động" };
+      return { message: req.t("game.errors.actionError") };
     }
 
     const target = game.players.find(
@@ -956,7 +957,7 @@ class GameController {
     if (!target) {
       return {
         status: "error",
-        message: "Không tìm thấy mục tiêu !",
+        message: req.t("game.errors.targetNotFound"),
       };
     }
 
@@ -964,7 +965,7 @@ class GameController {
     if (!target.status.isBeing.includes("watched")) {
       return {
         status: "error",
-        message: "Mục tiêu không bị dò xét !",
+        message: req.t("game.errors.targetNotBeingWatched"),
       };
     }
 
@@ -986,7 +987,7 @@ class GameController {
       // Return a slice of the shuffled array with random length
       return {
         performers: performerNames,
-        message: `Bạn nhìn thấy ${performerNames} qua nhà ${targetName}`,
+        message: req.t("game.messages.watchedOtherPlayers", { performerNames, targetName }),
       };
     }
 
@@ -997,7 +998,7 @@ class GameController {
 
     return {
       performers: performerNames,
-      message: `Bạn nhìn thấy '${performerNames} qua nhà ${targetName}`,
+      message: req.t("game.messages.watchedOtherPlayers", { performerNames, targetName }),
     };
   }
 
@@ -1042,18 +1043,13 @@ class GameController {
     });
 
     if (poisonedPlayers.length > 0) {
-      poisonMessage = `Người chơi bị đầu độc: ${poisonedPlayers
-        .map(
-          (player) =>
-            `${player.name} (còn ${player.status.poisonDaysRemaining} ngày)`
-        )
-        .join(", ")}`;
+      poisonMessage = req.t("game.messages.poisonedPlayers", { poisonedPlayers });
     }
 
     if (deadPlayers.length === 0) {
       return {
         status: "success",
-        message: "Đêm qua không có ai chết!",
+        message: req.t("game.messages.noDeath"),
       };
     }
 
@@ -1083,14 +1079,12 @@ class GameController {
     if (isGameOver) {
       return {
         status: "success",
-        message: "Game over!",
+        message: req.t("game.messages.gameOver"),
         gameEnded: true,
       };
     }
 
-    const message = `Những người đã chết: ${deadPlayerDetails
-      .map((p) => `${p.name} với vai trò ${p.role}`)
-      .join(", ")}`;
+    const message = req.t("game.messages.deadPlayers", { deadPlayerDetails });
 
     return {
       status: "success",
@@ -1113,7 +1107,7 @@ class GameController {
     if (!message) {
       return {
         status: "error",
-        message: "Tin nhắn không được để trống!",
+        message: req.t("game.errors.messageEmpty"),
       };
     }
 
@@ -1123,7 +1117,7 @@ class GameController {
     if (!player || !player.status.isAlive) {
       return {
         status: "error",
-        message: "Bạn không thể nói chuyện!",
+        message: req.t("game.errors.cannotChat"),
       };
     }
 
@@ -1190,7 +1184,7 @@ class GameController {
     if (!targetID) {
       return {
         status: "success",
-        message: "Bạn đã không bỏ phiếu ai !",
+        message: req.t("game.errors.noVote"),
       };
     }
 
@@ -1203,7 +1197,7 @@ class GameController {
     if (!target) {
       return {
         status: "error",
-        message: "Không tìm thấy mục tiêu!",
+        message: req.t("game.errors.targetNotFound"),
       };
     }
 
@@ -1211,7 +1205,7 @@ class GameController {
     if (!target.status.isAlive) {
       return {
         status: "error",
-        message: "Chỉ được bỏ phiếu cho người chơi còn sống !",
+        message: req.t("game.errors.canOnlyVoteForAlivePlayers"),
       };
     }
 
@@ -1278,7 +1272,7 @@ class GameController {
 
     return {
       status: "success",
-      message: `Bạn đã bỏ phiếu cho ${targetName}`,
+      message: req.t("game.messages.votedFor", { targetName }),
     };
   }
 
@@ -1299,7 +1293,7 @@ class GameController {
     const votes = await redis.get(gameVoteKey);
     // Early return if no votes
     if (!votes) {
-      return { status: "success", message: "Không ai bỏ phiếu!" };
+      return { status: "success", message: req.t("game.errors.noVotes") };
     }
 
     const voteData = JSON.parse(votes);
@@ -1320,7 +1314,7 @@ class GameController {
     if (tiedVotes.length > 1) {
       return {
         status: "tie",
-        message: `Hoà với số phiếu ${maxCount} nên không ai bị treo cổ!`,
+        message: req.t("game.errors.tie", { maxCount }),
       };
     }
 
@@ -1331,7 +1325,7 @@ class GameController {
     );
 
     if (!player) {
-      return { status: "error", message: "Player not found" };
+      return { status: "error", message: req.t("game.errors.playerNotFound") };
     }
 
     // Mark player as dead
@@ -1349,17 +1343,17 @@ class GameController {
     if (isGameOver) {
       return {
         status: "success",
-        message: "Game over!",
+        message: req.t("game.messages.gameOver"),
         gameEnded: true,
       };
     }
 
     // Create appropriate message based on player role
-    const baseMessage = `Kẻ bị tình nghi ${player.name} là (${player.role}), đã bị dân làng treo cổ`;
+    const baseMessage = req.t("game.messages.suspect", { playerName: player.name, role: player.role });
     const message =
       player.trait === "bad"
         ? `${baseMessage}!`
-        : `${baseMessage}, nhưng rõ ràng người này không phải kẻ xấu !`;
+        : `${baseMessage}, ${req.t("game.messages.suspectNotBad")}`;
 
     return {
       status: "success",

@@ -16,20 +16,20 @@
       <!-- Settings Section -->
       <div class="relative flex flex-col gap-2 sm:gap-3 mt-8 sm:mt-6">
         <!-- Title -->
-        <h2 class="text-center text-xl sm:text-2xl font-bold mb-3">Cài đặt</h2>
+        <h2 class="text-center text-xl sm:text-2xl font-bold mb-3">{{ $t("settings.title") }}</h2>
 
         <!-- Columns - stack on mobile, side by side on larger screens -->
         <div class="flex flex-row justify-between items-start gap-4">
           <!-- Left column with labels -->
           <div class="flex flex-col flex-1 space-y-6 sm:space-y-4 w-full">
             <h3 class="text-base sm:text-base h-12 sm:h-10 flex items-center">
-              Tốc độ di chuyển:
+              {{ $t("settings.speed") }}:
             </h3>
             <h3 class="text-base sm:text-base h-12 sm:h-10 flex items-center">
-              Hiệu ứng hoạt ảnh:
+              {{ $t("settings.animation") }}:
             </h3>
             <h3 class="text-base sm:text-base h-12 sm:h-10 flex items-center">
-              Nhạc nền:
+              {{ $t("settings.audio.label") }}:
             </h3>
           </div>
 
@@ -69,7 +69,7 @@
               @click="toggleAnimation"
               class="w-full hover:bg-gray-400 px-4 py-2 sm:p-1 rounded text-base sm:text-base h-12 sm:h-10 flex items-center justify-center touch-manipulation"
             >
-              {{ animation ? "Bật" : "Tắt" }}
+              {{ animation ? $t("settings.animation.on") : $t("settings.animation.off") }}
             </button>
 
             <!-- Toggle button for Audio -->
@@ -77,14 +77,14 @@
               @click="toggleAudio"
               class="w-full hover:bg-gray-400 px-4 py-2 sm:p-1 rounded text-base sm:text-base h-12 sm:h-10 flex items-center justify-center touch-manipulation"
             >
-              {{ audio ? "Bật" : "Tắt" }}
+              {{ audio ? $t("settings.audio.on") : $t("settings.audio.off") }}
             </button>
           </div>
         </div>
 
         <!-- Volume Slider (full width) -->
         <div class="flex justify-between items-center w-full gap-2 mt-4">
-          <h3 class="whitespace-nowrap text-base">Âm lượng:</h3>
+          <h3 class="whitespace-nowrap text-base">{{ $t("settings.audio.volume") }}:</h3>
           <input
             type="range"
             min="0"
@@ -104,7 +104,7 @@
           @click="exitGame"
           class="w-full hover:bg-gray-400 p-3 sm:p-2 mt-3 rounded text-base font-medium touch-manipulation"
         >
-          Thoát game
+          {{ $t("settings.quit") }}
         </button>
 
         <!-- Submit button -->
@@ -112,7 +112,7 @@
           @click="emitChangeSettings"
           class="w-full hover:bg-gray-400 p-3 sm:p-2 rounded text-base font-medium touch-manipulation"
         >
-          Thay đổi
+          {{ $t("settings.submit") }}
         </button>
       </div>
     </div>
@@ -188,7 +188,7 @@ export default {
 
     // Quit game and redirect to home
     quitGame() {
-      if (window.confirm("Bạn có chắc chắn muốn thoát game?")) {
+      if (window.confirm(this.$t("settings.quitGameConfirm"))) {
         this.$router.push("/");
       }
     },
@@ -215,7 +215,7 @@ export default {
 
     async exitGame() {
       const confirmed = window.confirm(
-        "Bạn có chắc chắn muốn rời khỏi trò chơi?"
+        this.$t("settings.quitGameConfirm")
       );
 
       if (!confirmed) return;

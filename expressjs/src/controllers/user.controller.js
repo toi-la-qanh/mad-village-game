@@ -16,7 +16,7 @@ class UserController {
 
     // Check if the user is existing
     if (!user) {
-      return res.status(404).json({ error: "Không tìm thấy người dùng!" });
+      return res.status(404).json({ error: req.t("user.error.notFound") });
     }
 
     const { _id: id, name, isAboutToClose } = user;
@@ -37,7 +37,7 @@ class UserController {
     // Check if the user's account is about to close
     if (isAboutToClose) {
       responseData.message =
-        "Tài khoản của bạn sắp bị xoá! Hãy vào cài đặt xoá cookie và tạo tài khoản mới";
+        req.t("user.message.accountAboutToClose");
     }
 
     return res.status(200).json(responseData);
@@ -50,29 +50,34 @@ class UserController {
     checkSchema({
       name: {
         notEmpty: {
-          errorMessage: "Tên không được để trống !",
+          errorMessage: "user.error.nameEmpty",
         },
         isLength: {
           options: { min: 2, max: 30 },
-          errorMessage: "Tên phải có từ 2-30 ký tự !",
+          errorMessage: "user.error.nameLength",
         },
         matches: {
           options: /^(?=.*[a-zA-Z].*[a-zA-Z])[a-zA-Z0-9\sà-ỹÀ-Ỵ]*$/u,
-          errorMessage: "Tên không phù hợp !",
+          errorMessage: "user.error.nameInvalid",
         },
       },
     }),
     async (req, res) => {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        return res.status(422).json(errors);
+        // Map and translate error messages
+        const translatedErrors = errors.array().map(err => ({
+          ...err,
+          msg: req.t(err.msg) || err.msg
+        }));
+        return res.status(422).json({ errors: translatedErrors });
       }
 
       const { name } = req.body;
       const checkIfUserExists = await User.findOne({ name: name });
 
       if (checkIfUserExists) {
-        return res.status(400).json({ errors: "Tên người dùng đã tồn tại!" });
+        return res.status(400).json({ errors: req.t("user.error.nameExists") });
       }
 
       const user = new User({
@@ -91,7 +96,7 @@ class UserController {
         sameSite: process.env.sameSite, // Set to Lax when run on local
       });
 
-      return res.status(200).json({ message: "Tạo tài khoản thành công!" });
+      return res.status(200).json({ message: req.t("user.message.signupSuccess") });
     },
   ];
 
@@ -103,12 +108,12 @@ class UserController {
 
     // Check if the user was found and deleted
     if (!deletedUser) {
-      return res.status(404).json({ error: "User not found" });
+      return res.status(404).json({ error: req.t("user.error.notFound") });
     }
 
     return res
       .status(200)
-      .json({ message: "Your account has been deleted successfully!" });
+      .json({ message: req.t("user.message.deleteSuccess") });
   };
 }
 

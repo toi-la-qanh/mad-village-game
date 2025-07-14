@@ -11,14 +11,14 @@
         @click="goBack"
         class="absolute left-3 text-lime-700 hover:text-lime-600"
       >
-        < Quay về sảnh
+        < {{ $t("roomDetail.goBack") }}
       </button>
 
       <button
         @click="refreshRoom"
         class="absolute right-3 text-lime-700 hover:text-lime-600"
       >
-        Tải lại <FontAwesomeIcon class="animate-spin" :icon="faRotate" />
+        {{ $t("roomDetail.reload") }} <FontAwesomeIcon class="animate-spin" :icon="faRotate" />
       </button>
 
       <!-- Error -->
@@ -34,7 +34,7 @@
       <div v-if="room" class="space-y-3">
         <!-- Title -->
         <div class="flex flex-row w-full relative mt-4 justify-center gap-2">
-          <h3 class="text-2xl text-center">Phòng chờ</h3>
+          <h3 class="text-2xl text-center">{{ $t("roomDetail.title") }}</h3>
           <div class="flex flex-row text-2xl">
             (
             <p v-if="room.playerCount">{{ room.playerCount }}</p>
@@ -49,11 +49,11 @@
 
         <div v-if="room.owner">
           <!-- Room Owner -->
-          <p v-if="room.owner.name">Chủ phòng: {{ room.owner.name }}</p>
+          <p v-if="room.owner.name">{{ $t("roomDetail.owner") }}: {{ room.owner.name }}</p>
 
           <!-- Player -->
           <div>
-            Người chơi:
+            {{ $t("roomDetail.players") }}:
             <span v-for="(player, index) in filteredPlayers" :key="index">
               {{ player.name }}
 
@@ -88,12 +88,12 @@
         <!-- Join Room Section -->
         <div v-if="!userInRoom" class="bg-white rounded-xl shadow-md p-4 border border-gray-200 mt-6">
           <div v-if="room.password" class="space-y-4">
-            <h3 class="text-xl font-semibold text-gray-800 text-center">Phòng có mật khẩu</h3>
+            <h3 class="text-xl font-semibold text-gray-800 text-center">{{ $t("roomDetail.password.title") }}</h3>
             <div class="flex flex-col md:flex-row items-center gap-3">
               <div class="relative flex-1 w-full">
                 <input
                   :type="isPasswordVisible ? 'text' : 'password'"
-                  placeholder="Nhập mật khẩu"
+                  :placeholder="$t('roomDetail.password.placeholder')"
                   v-model="inputPassword"
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-400 focus:border-transparent outline-none transition-all duration-200"
                 />
@@ -111,7 +111,7 @@
                 @click="joinRoom"
                 class="px-6 py-2 font-bold bg-green-300 text-gray-600 rounded-lg hover:bg-green-500 transition-colors duration-200 w-full md:w-auto whitespace-nowrap"
               >
-                Vào phòng
+                {{ $t("roomDetail.join") }}
               </button>
             </div>
             <p v-if="errorWhenJoiningRoom" class="text-red-500 text-sm text-center mt-2 bg-red-50 p-2 rounded-lg">
@@ -119,13 +119,13 @@
             </p>
           </div>
           <div v-else class="text-center py-4">
-            <h3 class="text-xl font-semibold text-gray-800 mb-4">Phòng không có mật khẩu</h3>
-            <p class="text-gray-600 mb-4">Bạn có thể vào phòng ngay bây giờ</p>
+            <h3 class="text-xl font-semibold text-gray-800 mb-4">{{ $t("roomDetail.noPassword.title") }}</h3>
+            <p class="text-gray-600 mb-4">{{ $t("roomDetail.noPassword.description") }}</p>
             <button
               @click="joinRoom"
               class="px-6 py-3 bg-green-300 text-gray-600 rounded-lg hover:bg-green-500 transition-colors duration-200 font-bold"
             >
-              Vào phòng
+              {{ $t("roomDetail.join") }}
             </button>
           </div>
         </div>
@@ -134,13 +134,13 @@
         <div v-else class="space-y-3">
           <!-- Room Settings -->
           <div v-if="userID === room.owner?._id">
-            <h3 class="text-2xl text-center">Cài đặt phòng</h3>
+            <h3 class="text-2xl text-center">{{ $t("roomDetail.settings.title") }}</h3>
             <h4 class="text-center text-gray-500">
-              Bạn có thể cập nhật lại cài đặt phòng ở đây
+              {{ $t("roomDetail.settings.description") }}
             </h4>
             <div class="flex gap-1 flex-col h-auto relative">
               <div class="flex flex-row gap-2">
-                <p>Số lượng người:</p>
+                <p>{{ $t("roomDetail.settings.capacity") }}:</p>
                 <input
                   type="number"
                   :placeholder="room.capacity"
@@ -150,10 +150,10 @@
                 />
               </div>
               <div class="flex flex-row gap-2">
-                <p>Mật khẩu phòng:</p>
+                <p>{{ $t("roomDetail.settings.password") }}:</p>
                 <input
                   type="text"
-                  placeholder="Nhập mật khẩu mới"
+                  :placeholder="$t('roomDetail.settings.password.placeholder')"
                   v-model="newPassword"
                   class="w-30 outline-0"
                 />
@@ -163,7 +163,7 @@
                 @click="updateRoom"
                 :disabled="disableButton()"
               >
-                Cập nhật
+                {{ $t("roomDetail.settings.update") }}
               </button>
 
               <!-- Error message -->
@@ -189,14 +189,14 @@
 
           <!-- Game Settings -->
           <div>
-            <h3 class="text-2xl text-center">Cài đặt game</h3>
+            <h3 class="text-2xl text-center">{{ $t("roomDetail.gameSettings.title") }}</h3>
             <h4 class="text-center text-gray-500">
-              Chọn ít nhất 1 vai trò tốt, 1 vai trò xấu
+              {{ $t("roomDetail.gameSettings.description") }}
             </h4>
             <div class="flex gap-1 flex-col h-auto relative mt-4">
               <!-- Role Section -->
               <div class="flex flex-wrap flex-row gap-2 relative">
-                Chọn vai trò:
+                {{ $t("roomDetail.gameSettings.selectRole") }}:
                 <div v-for="(role, index) in roles" :key="index">
                   <div class="flex gap-0.5">
                     <img
@@ -219,7 +219,7 @@
 
               <!-- Selected roles -->
               <div class="flex flex-wrap flex-row gap-4 relative">
-                Các vai trò đã chọn:
+                {{ $t("roomDetail.gameSettings.selectedRoles") }}:
                 <div class="flex flex-row gap-5 relative">
                   <div v-for="(role, index) in selectedRoles" :key="index">
                     <div class="flex relative gap-0.5">
@@ -243,7 +243,7 @@
 
               <!-- Vote time -->
               <div>
-                Thời gian bỏ phiếu:
+                {{ $t("roomDetail.gameSettings.voteTime") }}:
                 <input
                   type="number"
                   :placeholder="vote_time"
@@ -251,12 +251,12 @@
                   max="300"
                   class="outline-none w-10"
                 />
-                (giây)
+                ({{ $t("roomDetail.gameSettings.seconds") }})
               </div>
 
               <!-- Discussion time -->
               <div>
-                Thời gian thảo luận:
+                {{ $t("roomDetail.gameSettings.discussionTime") }}:
                 <input
                   type="number"
                   :placeholder="discussion_time"
@@ -273,7 +273,7 @@
                 :disabled="disableButton()"
                 @click="startGame"
               >
-                Bắt đầu chơi
+                {{ $t("roomDetail.gameSettings.startGame") }}
               </button>
 
               <!-- Error message from the form -->

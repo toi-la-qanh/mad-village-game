@@ -5,7 +5,7 @@
     <div
       class="w-full max-w-96 items-center p-3 flex flex-col bg-white rounded-2xl text-black relative"
     >
-      <h1 class="text-center font-medium text-2xl">Trò chơi đã kết thúc</h1>
+      <h1 class="text-center font-medium text-2xl">{{ $t("game.end.title") }}</h1>
 
       <!-- Reasons -->
       <h2>{{ playerDetails.reason }}</h2>
@@ -43,7 +43,7 @@
         class="w-3/4 mt-auto bg-emerald-600 hover:bg-emerald-500 text-white border border-black rounded-lg absolute bottom-2"
         @click="goBack"
       >
-        Trở về phòng
+        {{ $t("game.end.goBack") }}
       </button>
     </div>
   </div>

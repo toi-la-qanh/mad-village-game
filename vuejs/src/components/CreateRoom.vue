@@ -1,6 +1,6 @@
 <template>
   <div class="relative flex flex-col gap-2 p-4">
-    <h3 class="text-xl">Tạo phòng</h3>
+    <h3 class="text-xl">{{ $t("createRoom.title") }}</h3>
     <button class="absolute right-2 top-2 w-6 h-6" @click="closePopup">
       <FontAwesomeIcon
         class="text-xl text-red-600 hover:text-red-400 focus:text-red-400"
@@ -12,28 +12,28 @@
       class="w-full gap-2 flex flex-col relative"
     >
       <div class="flex gap-2 w-full flex-wrap relative">
-        <p class="w-auto">Số lượng người:</p>
+        <p class="w-auto">{{ $t("createRoom.capacity.title") }}:</p>
         <input
           class="outline-none w-auto"
           v-model="capacity"
           type="text"
-          placeholder="Nhập số nguyên dương"
+          :placeholder="$t('createRoom.capacity.placeholder')"
         />
       </div>
       <div class="flex gap-2 w-full flex-wrap relative">
-        <p class="w-auto">Mật khẩu:</p>
+        <p class="w-auto">{{ $t("createRoom.password.title") }}:</p>
         <input
           class="outline-none w-auto"
           v-model="password"
           type="text"
-          placeholder="Không bắt buộc"
+          :placeholder="$t('createRoom.password.placeholder')"
         />
       </div>
       <button
         type="submit"
         class="text-gray-600 bg-green-300 w-full hover:bg-green-500 rounded-md py-2 font-semibold transition-colors duration-200"
       >
-        Tạo
+        {{ $t("createRoom.submit") }}
       </button>
       <div v-if="error">
         <p v-if="Array.isArray(error)" class="flex flex-col">

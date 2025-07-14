@@ -45,7 +45,7 @@ class RoomController {
     }
 
     if (rooms.length === 0) {
-      return res.status(404).json({ errors: "Hiện chưa có phòng chờ !" });
+      return res.status(404).json({ errors: req.t("room.errors.noRooms") });
     }
 
     // Filter out rooms where the owner name is missing
@@ -83,10 +83,10 @@ class RoomController {
     checkSchema({
       id: {
         notEmpty: {
-          errorMessage: "Mã phòng không được để trống !",
+          errorMessage: "room.errors.idEmpty",
         },
         isMongoId: {
-          errorMessage: "Mã phòng không hợp lệ !",
+          errorMessage: "room.errors.idInvalid",
         },
       },
     }),
@@ -103,13 +103,13 @@ class RoomController {
         .populate("players", "name _id");
 
       if (!room) {
-        return res.status(404).json({ errors: "Không tìm thấy phòng này!" });
+        return res.status(404).json({ errors: req.t("room.errors.notFound") });
       }
 
       // If the owner name is not found, it means that the user's account was deleted, so we can delete the room
       if (!room.owner || !room.owner.name) {
         await room.deleteOne();
-        return res.status(404).json({ errors: "Không tìm thấy phòng này!" });
+        return res.status(404).json({ errors: req.t("room.errors.notFound") });
       }
 
       // Filter out players with missing names and remove them from the room
@@ -152,18 +152,18 @@ class RoomController {
     checkSchema({
       capacity: {
         notEmpty: {
-          errorMessage: "Số người chơi không được để trống !",
+          errorMessage: "room.errors.capacityEmpty",
         },
         isInt: {
           options: { min: 6, max: 20 },
-          errorMessage: "Số người chơi phải từ 6-20 người !",
+          errorMessage: "room.errors.capacityInvalid",
         },
       },
       password: {
         optional: true,
         isLength: {
           options: { min: 6, max: 30 },
-          errorMessage: "Mật khẩu phải có từ 6-30 ký tự!",
+          errorMessage: "room.errors.passwordInvalid",
         },
       },
     }),
@@ -171,7 +171,12 @@ class RoomController {
       const errors = validationResult(req);
 
       if (!errors.isEmpty()) {
-        return res.status(422).json({ errors: errors.array() });
+        // Map and translate error messages
+        const translatedErrors = errors.array().map(err => ({
+          ...err,
+          msg: req.t(err.msg) || err.msg
+        }));
+        return res.status(422).json({ errors: translatedErrors });
       }
 
       const owner = req.user;
@@ -179,7 +184,7 @@ class RoomController {
 
       if (checkIfUserInRoom) {
         return res.status(400).json({
-          errors: "Không thể tạo phòng khi bạn đang ở trong một phòng khác !",
+          errors: req.t("room.errors.cannotCreateRoom"),
         });
       }
 
@@ -210,7 +215,7 @@ class RoomController {
 
       return res
         .status(200)
-        .json({ message: "Tạo phòng thành công !", roomID: room._id });
+        .json({ message: req.t("room.messages.createSuccess"), roomID: room._id });
     },
   ];
 
@@ -222,10 +227,10 @@ class RoomController {
       id: {
         in: ["params"],
         notEmpty: {
-          errorMessage: "Mã phòng không được để trống !",
+          errorMessage: "room.errors.idEmpty",
         },
         isMongoId: {
-          errorMessage: "Mã phòng không hợp lệ !",
+          errorMessage: "room.errors.idInvalid",
         },
       },
       password: {
@@ -236,7 +241,12 @@ class RoomController {
     async (req, res) => {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        return res.status(422).json({ errors: errors.array() });
+        // Map and translate error messages
+        const translatedErrors = errors.array().map(err => ({
+          ...err,
+          msg: req.t(err.msg) || err.msg
+        }));
+        return res.status(422).json({ errors: translatedErrors });
       }
 
       const { id } = req.params;
@@ -244,7 +254,7 @@ class RoomController {
       const user = req.user;
 
       if (!room) {
-        return res.status(404).json({ errors: "Không tìm thấy phòng này !" });
+        return res.status(404).json({ errors: req.t("room.errors.notFound") });
       }
 
       // Check if user is already in the room
@@ -252,14 +262,14 @@ class RoomController {
 
       if (isUserInRoom) {
         return res.status(200).json({
-          message: "Bạn đã ở trong phòng này rồi!",
+          message: req.t("room.messages.alreadyInRoom"),
           roomID: room._id,
         });
       }
 
       // Check if the room is full
       if (room.players.length >= room.capacity) {
-        return res.status(400).json({ errors: "Phòng đã đầy !" });
+        return res.status(400).json({ errors: req.t("room.errors.roomFull") });
       }
 
       // Check password if required
@@ -268,12 +278,12 @@ class RoomController {
         if (!password) {
           return res
             .status(403)
-            .json({ errors: "Phòng này yêu cầu mật khẩu!" });
+            .json({ errors: req.t("room.errors.passwordRequired") });
         }
 
         const passwordMatch = await bcrypt.compare(password, room.password);
         if (!passwordMatch) {
-          return res.status(403).json({ errors: "Mật khẩu phòng không đúng!" });
+          return res.status(403).json({ errors: req.t("room.errors.passwordIncorrect") });
         }
       }
 
@@ -291,7 +301,7 @@ class RoomController {
 
       return res
         .status(200)
-        .json({ message: "Vào phòng thành công!", roomID: room._id });
+        .json({ message: req.t("room.messages.joinSuccess"), roomID: room._id });
     },
   ];
 
@@ -302,24 +312,29 @@ class RoomController {
     checkSchema({
       id: {
         notEmpty: {
-          errorMessage: "Mã phòng không được để trống !",
+          errorMessage: "room.errors.idEmpty",
         },
         isMongoId: {
-          errorMessage: "Mã phòng không hợp lệ !",
+          errorMessage: "room.errors.idInvalid",
         },
       },
     }),
     async (req, res) => {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        return res.status(422).json({ errors: errors.array() });
+        // Map and translate error messages
+        const translatedErrors = errors.array().map(err => ({
+          ...err,
+          msg: req.t(err.msg) || err.msg
+        }));
+        return res.status(422).json({ errors: translatedErrors });
       }
 
       const { id } = req.params;
       const room = await Room.findById(id);
 
       if (!room) {
-        return res.status(404).json({ errors: "Không tìm thấy phòng này !" });
+        return res.status(404).json({ errors: req.t("room.errors.notFound") });
       }
 
       const user = req.user;
@@ -327,12 +342,12 @@ class RoomController {
         if (room.players.length > 1) {
           return res.status(400).json({
             errors:
-              "Bạn phải nhường chức chủ phòng cho một ai đó trước khi rời khỏi phòng!",
+              req.t("room.errors.mustLeaveOwner"),
           });
         }
         
         await room.deleteOne();
-        return res.status(200).json({ message: "Xoá phòng thành công!" });
+        return res.status(200).json({ message: req.t("room.messages.deleteSuccess") });
       }
 
       room.players = room.players.filter(
@@ -345,7 +360,7 @@ class RoomController {
 
       return res
         .status(200)
-        .json({ message: "Rời phòng thành công!", roomID: room._id });
+        .json({ message: req.t("room.messages.leaveSuccess"), roomID: room._id });
     },
   ];
 
@@ -356,10 +371,10 @@ class RoomController {
     checkSchema({
       id: {
         notEmpty: {
-          errorMessage: "Mã phòng không được để trống !",
+          errorMessage: "room.errors.idEmpty",
         },
         isMongoId: {
-          errorMessage: "Mã phòng không hợp lệ !",
+          errorMessage: "room.errors.idInvalid",
         },
       },
       capacity: {
@@ -367,32 +382,37 @@ class RoomController {
         isInt: {
           options: { min: 1 },
           errorMessage:
-            "Số người trong phòng phải là số nguyên dương lớn hơn 0 !",
+            "room.errors.capacityInvalid",
         },
       },
       password: {
         optional: true,
-        isString: { errorMessage: "Mật khẩu phải là chuỗi!" },
+        isString: { errorMessage: "room.errors.passwordInvalid" },
       },
     }),
     async (req, res) => {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        return res.status(422).json({ errors: errors.array() });
+        // Map and translate error messages
+        const translatedErrors = errors.array().map(err => ({
+          ...err,
+          msg: req.t(err.msg) || err.msg
+        }));
+        return res.status(422).json({ errors: translatedErrors });
       }
 
       const { id } = req.params;
       const room = await Room.findById(id);
 
       if (!room) {
-        return res.status(404).json({ errors: "Không tìm thấy phòng này !" });
+        return res.status(404).json({ errors: req.t("room.errors.notFound") });
       }
 
       const user = req.user;
       // Check if user is already in the room
       if (!room.owner.equals(user)) {
         return res.status(403).json({
-          errors: "Bạn không có quyền chỉnh sửa thông tin trong phòng này!",
+          errors: req.t("room.errors.noPermissionToUpdate"),
         });
       }
 
@@ -404,7 +424,7 @@ class RoomController {
         if (capacity < room.players.length) {
           return res.status(400).json({
             errors:
-              "Số lượng người không được nhỏ hơn số người hiện tại ở trong phòng!",
+              req.t("room.errors.capacityTooSmall"),
           });
         }
         updateData.capacity = capacity;
@@ -420,7 +440,7 @@ class RoomController {
 
       return res
         .status(200)
-        .json({ message: "Cập nhật phòng thành công!", roomID: room._id });
+        .json({ message: req.t("room.messages.updateSuccess"), roomID: room._id });
     },
   ];
 
@@ -431,18 +451,18 @@ class RoomController {
     checkSchema({
       id: {
         notEmpty: {
-          errorMessage: "Mã phòng không được để trống !",
+          errorMessage: "room.errors.idEmpty",
         },
         isMongoId: {
-          errorMessage: "Mã phòng không hợp lệ !",
+          errorMessage: "room.errors.idInvalid",
         },
       },
       user_id: {
         notEmpty: {
-          errorMessage: "Mã người dùng không được để trống !",
+          errorMessage: "room.errors.userIdEmpty",
         },
         isMongoId: {
-          errorMessage: "Mã người dùng không hợp lệ !",
+          errorMessage: "room.errors.userIdInvalid",
         },
       },
     }),
@@ -456,14 +476,14 @@ class RoomController {
       const room = await Room.findById(id);
 
       if (!room) {
-        return res.status(404).json({ errors: "Không tìm thấy phòng này !" });
+        return res.status(404).json({ errors: req.t("room.errors.notFound") });
       }
 
       const user = req.user;
       // Check if user is already in the room
       if (!room.owner.equals(user)) {
         return res.status(403).json({
-          errors: "Bạn không có quyền đuổi người chơi ra khỏi phòng này!",
+          errors: req.t("room.errors.noPermissionToKick"),
         });
       }
 
@@ -472,7 +492,7 @@ class RoomController {
       // Prevent owner from kicking themselves
       if (user_id === user.toString()) {
         return res.status(400).json({
-          error: "Chủ phòng không thể tự đuổi mình ra khỏi phòng!",
+          error: req.t("room.errors.cannotKickOwner"),
         });
       }
 
@@ -485,7 +505,7 @@ class RoomController {
       if (playerIndex === -1) {
         return res
           .status(404)
-          .json({ errors: "Không tìm thấy người dùng này trong phòng !" });
+          .json({ errors: req.t("room.errors.userNotFound") });
       }
 
       // Remove the user from the players array
@@ -497,7 +517,7 @@ class RoomController {
       await redis.del(`user:${user_id}`);
 
       return res.status(200).json({
-        message: "Đã xoá một người dùng ra khỏi phòng!",
+        message: req.t("room.messages.kickSuccess"),
         roomID: room._id,
       });
     },

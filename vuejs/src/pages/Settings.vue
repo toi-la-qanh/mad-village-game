@@ -5,20 +5,20 @@
     <div class="w-full max-w-md bg-white rounded-xl shadow-lg p-6 space-y-6">
       <!-- Header -->
       <div class="text-center">
-        <h1 class="text-2xl font-bold text-gray-800 mb-2">Cài đặt</h1>
+        <h1 class="text-2xl font-bold text-gray-800 mb-2">{{ $t("settings.title") }}</h1>
         <p class="text-gray-600 text-sm">
-          Quản lý tài khoản và cài đặt của bạn
+          {{ $t("settings.description") }}
         </p>
       </div>
 
       <!-- Audio Settings -->
       <div class="space-y-4">
-        <h2 class="text-xl font-semibold text-gray-700">Cài đặt âm thanh</h2>
+        <h2 class="text-xl font-semibold text-gray-700">{{ $t("settings.audio.title") }}</h2>
 
         <!-- Audio Toggle -->
         <div class="flex justify-between items-center">
           <label for="audio-toggle" class="text-gray-700 font-medium"
-            >Nhạc nền:</label
+            >{{ $t("settings.audio.label") }}</label
           >
           <div class="relative inline-block w-12 align-middle select-none">
             <input
@@ -42,7 +42,7 @@
         <!-- Volume Slider -->
         <div class="space-y-2">
           <div class="flex items-center gap-3">
-            <label for="volume-slider" class="text-gray-700 font-medium whitespace-nowrap">Âm lượng:</label>
+            <label for="volume-slider" class="text-gray-700 font-medium whitespace-nowrap">{{ $t("settings.audio.volume") }}</label>
             <input
               id="volume-slider"
               type="range"
@@ -77,8 +77,7 @@
           </div>
           <div class="ml-3">
             <p class="text-sm text-yellow-700">
-              Tài khoản của bạn sẽ bị xoá sau 24 tiếng, trước khi xoá sẽ có một
-              thông báo hiển thị cho bạn biết
+              {{ $t("settings.account.delete") }}
             </p>
           </div>
         </div>
@@ -102,7 +101,7 @@
               clip-rule="evenodd"
             />
           </svg>
-          Lưu cài đặt
+          {{ $t("settings.save") }}
         </button>
 
         <button
@@ -116,7 +115,7 @@
               clip-rule="evenodd"
             />
           </svg>
-          Xoá tài khoản
+          {{ $t("settings.account.delete") }}
         </button>
 
         <button
@@ -130,7 +129,7 @@
               clip-rule="evenodd"
             />
           </svg>
-          Quay trở lại trang chủ
+          {{ $t("settings.back") }}
         </button>
       </div>
     </div>
@@ -171,13 +170,13 @@ export default {
       sessionStorage.setItem("audioVolume", this.volume / 100);
 
       // Show a success message
-      alert("Cài đặt đã được lưu thành công!");
+      alert(this.$t("settings.success"));
     },
 
     async deleteAccount() {
       // Show a confirmation dialog
       const userConfirmed = window.confirm(
-        "Bạn sẽ mất dữ liệu nếu xoá tài khoản?"
+        this.$t("settings.account.deleteConfirm")
       );
 
       // If the user clicks "OK", delete the cookie

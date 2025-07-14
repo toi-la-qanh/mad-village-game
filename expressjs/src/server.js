@@ -2,7 +2,7 @@ const express = require("express");
 const app = express();
 
 // Load environment variables
-require('@dotenvx/dotenvx').config();
+require("dotenv").config();
 
 /* Start the server */
 
@@ -10,7 +10,7 @@ const server = require("http").createServer(app);
 const PORT = process.env.PORT || 3000;
 
 // Bind to 0.0.0.0 (necessary for Render)
-server.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, "0.0.0.0", () => {
   console.log(`Server is running on port ${PORT}`);
 });
 
@@ -18,6 +18,29 @@ server.listen(PORT, '0.0.0.0', () => {
 // server.listen(PORT, () => {
 //   console.log(`Server is running on port ${PORT}`);
 // });
+
+const i18next = require('i18next');
+const Backend = require('i18next-fs-backend');
+const i18nextMiddleware = require('i18next-http-middleware');
+const path = require('path');
+
+i18next
+  .use(Backend)
+  .use(i18nextMiddleware.LanguageDetector)
+  .init({
+    fallbackLng: 'en',
+    preload: ['en', 'vi'],
+    backend: {
+      loadPath: path.join(__dirname, 'locales/{{lng}}.json')
+    },
+    detection: {
+      order: ['querystring', 'cookie', 'header'],
+      lookupQuerystring: 'lang',
+      caches: ['cookie']
+    }
+  });
+
+app.use(i18nextMiddleware.handle(i18next));
 
 // Connect to the database
 const dbConnection = require("./database/db.js");
@@ -36,18 +59,18 @@ const cookieParser = require("cookie-parser");
 app.use(cookieParser());
 
 // CORS middleware
-const cors = require('cors');
+const cors = require("cors");
 const corsOptions = {
-  origin: process.env.Frontend_URL, 
-  methods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH'], 
-  allowedHeaders: ['Content-Type', 'Authorization'], 
+  origin: process.env.Frontend_URL,
+  methods: ["GET", "POST", "DELETE", "PUT", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
 };
 
 app.use(cors(corsOptions));
 
 // Handle preflight requests (OPTIONS)
-app.options('*', cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 // Root route
 app.get("/", (req, res) => {
@@ -77,7 +100,7 @@ app.use("/api/llm", llmRoutes);
 // const updateLLMResponse = require("./cron/llm.cron.js");
 // updateLLMResponse();
 
-app.set('trust proxy', 3 /* number of proxies between user and server */);
+app.set("trust proxy", 3 /* number of proxies between user and server */);
 // app.get('/ip', (request, response) => response.send(request.ip));
 
 module.exports = app;

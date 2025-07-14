@@ -10,7 +10,7 @@ import { errorMessages } from "../store";
         @click="reloadPage"
         class="text-gray-600 bg-green-300 w-full max-w-[220px] hover:bg-green-500 rounded-md py-2 font-semibold transition-colors duration-200"
       >
-        Tải lại trang
+        {{$t("errorPopup.reload")}}
       </button>
     </div>
   </div>

@@ -6,19 +6,19 @@
       @click="toggleSignUpForm"
       class="w-44 p-5 outline-none border-2 border-yellow-600 bg-green-600 hover:bg-lime-500"
     >
-      Chơi
+      {{ $t("buttons.play") }}
     </button>
     <button
       class="w-44 p-5 outline-none border-2 border-yellow-600 bg-green-600 hover:bg-lime-500"
       @click="switchToInstructionPage"
     >
-      Hướng dẫn
+      {{ $t("buttons.instruction") }}
     </button>
     <button
       class="w-44 p-5 outline-none border-2 border-yellow-600 bg-green-600 hover:bg-lime-500"
       @click="goToSettingsPage"
     >
-      Cài đặt
+      {{ $t("buttons.settings") }}
     </button>
   </div>
 </template>

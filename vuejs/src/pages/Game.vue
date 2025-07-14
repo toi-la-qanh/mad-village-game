@@ -89,18 +89,18 @@
   <!-- Condition if there is no game data -->
   <div v-else>
     <div class="text-center w-screen absolute mt-12">
-      <p class="text-red-700">Lỗi không tìm thấy dữ liệu game</p>
+      <p class="text-red-700">{{ i18n.global.t("errors.notFound.game") }}</p>
       <button
         @click="reload()"
         class="text-gray-800 bg-green-400 hover:bg-green-300 border boder-black rounded-full p-2 mt-2"
       >
-        Tải lại trang
+        {{ i18n.global.t("buttons.reload") }}
       </button>
       <button
         @click="exitGame()"
         class="text-gray-800 bg-green-400 hover:bg-green-300 border boder-black rounded-full p-2 mt-2"
       >
-        Thoát game
+        {{ i18n.global.t("buttons.exit") }}
       </button>
     </div>
   </div>
@@ -110,6 +110,7 @@
 import { defineAsyncComponent, reactive, ref } from "vue";
 import { showBackground, gameID, roomID } from "../store";
 import GameApi from "../api/game.api";
+import i18n from "../translation";
 
 export default {
   components: {

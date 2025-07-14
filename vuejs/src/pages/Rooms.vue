@@ -11,12 +11,12 @@
         @click="goBack"
         class="outline-none text-lime-700 hover:text-lime-600"
       >
-        < Trang chủ
+        < {{$t("rooms.goBack.home")}}
       </button>
 
       <!-- Title -->
       <div class="mt-4 flex justify-between flex-wrap">
-        <h3 class="text-2xl font-bold">Sảnh chờ</h3>
+        <h3 class="text-2xl font-bold">{{ $t("rooms.title") }}</h3>
         <div class="flex relative gap-2 items-center">
           <FontAwesomeIcon
             class="text-blue-900"
@@ -25,7 +25,7 @@
           />
           <input
             type="text"
-            placeholder="Tìm phòng ..."
+            :placeholder="$t('rooms.searchPlaceholder')"
             class="outline-none max-w-35"
             @input="searchRooms"
           />
@@ -34,7 +34,7 @@
 
       <!-- Search Helper -->
       <span class="hidden text-gray-400" id="searchInfo">
-        Tìm phòng bằng mã phòng hoặc tên của chủ phòng
+        {{ $t("rooms.searchHelper") }}
       </span>
 
       <div class="mt-2 flex justify-between">
@@ -43,7 +43,7 @@
           @click="createRoom"
           class="text-lime-700 hover:text-lime-600 focus:text-lime-600"
         >
-          + Tạo phòng
+          + {{ $t("rooms.createRoom") }}
         </button>
 
         <!-- Refresh Button -->
@@ -51,7 +51,7 @@
           class="flex gap-2 items-center text-lime-700 hover:text-lime-600 focus:text-lime-600"
         >
           <FontAwesomeIcon class="animate-spin" :icon="faRotate" />
-          <button @click="refreshRooms()">Tải lại</button>
+          <button @click="refreshRooms()">{{ $t("rooms.reload") }}</button>
         </div>
       </div>
 
@@ -63,16 +63,16 @@
             class="mb-2 border-2 border-lime-700 p-2 my-2 gap-5"
           >
             <div class="flex justify-between">
-              <p>Phòng {{ index + 1 }}</p>
+              <p>{{ $t("rooms.room") }} {{ index + 1 }}</p>
               <p>{{ room.playerCount }}/{{ room.capacity }}</p>
             </div>
             <div class="flex justify-between">
-              <p>Chủ phòng: {{ room.ownerName }}</p>
+              <p>{{ $t("rooms.owner") }}: {{ room.ownerName }}</p>
               <button
                 @click="navigateToRoom(room.roomID)"
                 class="text-lime-700 font-bold hover:text-lime-600 focus:text-lime-600"
               >
-                Vào phòng >>
+                {{ $t("rooms.enterRoom") }} >>
               </button>
             </div>
           </div>
@@ -149,7 +149,7 @@ export default {
         }
       } catch (error) {
         sessionStorage.removeItem("rooms");
-        this.error = error.response?.data?.errors || "Không thể tải danh sách phòng";
+        this.error = error.response?.data?.errors || this.$t("rooms.errors.loadRooms");
       } finally {
         isLoading.value = false;
       }
@@ -196,7 +196,7 @@ export default {
       );
       
       if (this.filteredRooms.length === 0 && this.searchQuery) {
-        this.error = "Không tìm thấy phòng nào khớp với yêu cầu!";
+        this.error = this.$t("rooms.errors.noRoomFound");
       } else {
         this.error = null;
       }

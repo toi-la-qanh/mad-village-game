@@ -1,5 +1,6 @@
 import axios from "axios";
 import { authError, errorMessages, showSignUpForm } from "../store";
+import i18n from "../translation";
 
 /**
  * Default base api implementation
@@ -16,8 +17,9 @@ export default class BaseApi {
   }
 
   handleError(error) {
+    const t = i18n.global.t;
     if (error.message === "Network Error") {
-      errorMessages.value = "Lỗi kết nối với máy chủ !";
+      errorMessages.value = t("errors.network");
       return;
     }
     

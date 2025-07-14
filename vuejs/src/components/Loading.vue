@@ -5,7 +5,7 @@
     <div
       class="flex flex-col justify-center items-center bg-white px-10 pt-4 rounded-lg border border-black"
     >
-      <p class="text-xl">Chờ tí nhé</p>
+      <p class="text-xl">{{ $t("loading") }}</p>
       <div v-show="loading" class="lds-ellipsis">
         <div v-bind:style="[spinnerStyle]"></div>
         <div v-bind:style="[spinnerStyle]"></div>

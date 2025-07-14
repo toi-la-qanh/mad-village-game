@@ -7,7 +7,7 @@
         <FontAwesomeIcon class="hover:text-gray-500 text-lg" :icon="faXmark" />
       </button>
       <div class="text-red-600 font-bold">
-        Lỗi
+        {{ $t("game.error.title") }}
         <p class="">{{ error.errors }}</p>
       </div>
     </div>

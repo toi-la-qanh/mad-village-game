@@ -83,13 +83,13 @@ class RoleController {
 
     // Format role details for response
     const rolesDetail = roles.map((role) => ({
-      name: role.getName(),
-      description: role.getDescription(),
+      name: req.t(`role.name.${role.getName()}`),
+      description: req.t(`role.description.${role.getName()}`),
       counts:
-        role.getCount() === Infinity ? "Vô số lần" : role.getCount() + " lần",
+        role.getCount() === Infinity ? req.t("role.counts.infinite") : role.getCount() + " " + req.t("role.counts.times"),
       image: role.getImage(),
       abilityIcons: role.getAbilityIcons(),
-      trait: role.getTrait(),
+      trait: req.t(`role.trait.${role.getTrait()}`),
     }));
 
     return res.status(200).json({ rolesDetail });
@@ -99,22 +99,22 @@ class RoleController {
     checkSchema({
       name: {
         notEmpty: {
-          errorMessage: "Tên vai trò không được để trống !",
+          errorMessage: "role.error.nameEmpty",
         },
         isString: {
-          errorMessage: "Tên vai trò phải là một chuỗi ký tự !",
+          errorMessage: "role.error.nameInvalid",
         },
       },
       trait: {
         notEmpty: {
-          errorMessage: "Thuộc tính của vai trò không được để trống !",
+          errorMessage: "role.error.traitEmpty",
         },
         isString: {
-          errorMessage: "Thuộc tính của vai trò phải là một chuỗi ký tự !",
+          errorMessage: "role.error.traitInvalid",
         },
         isIn: {
           options: [["good", "bad", "mad"]], // Valid trait values
-          errorMessage: "Thuộc tính vai trò không hợp lệ !",
+          errorMessage: "role.error.traitInvalid",
         },
       },
     }),
@@ -122,7 +122,12 @@ class RoleController {
       const errors = validationResult(req);
 
       if (!errors.isEmpty()) {
-        return res.status(422).json({ errors: errors.array() });
+        // Map and translate error messages
+        const translatedErrors = errors.array().map(err => ({
+          ...err,
+          msg: req.t(err.msg) || err.msg
+        }));
+        return res.status(422).json({ errors: translatedErrors });
       }
       const { name, trait } = req.query;
       const roleClasses = {
@@ -138,16 +143,16 @@ class RoleController {
       if (!RoleClass) {
         return res
           .status(404)
-          .json({ errors: `Role class '${name}' not found.` });
+          .json({ errors: req.t("role.error.notFound", { name }) });
       }
 
       const role = new RoleClass(trait);
 
       // Return the details of the requested role
       return res.status(200).json({
-        name: role.getName(),
-        trait: role.getTrait(),
-        description: role.getDescription(),
+        name: req.t(`role.name.${role.getName()}`),
+        trait: req.t(`role.trait.${role.getTrait()}`),
+        description: req.t(`role.description.${role.getName()}`),
         image: role.getImage(),
         action: role.getAvailableAction(),
       });

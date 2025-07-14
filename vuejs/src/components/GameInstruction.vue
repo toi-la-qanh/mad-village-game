@@ -9,7 +9,7 @@
         >
           <FontAwesomeIcon :icon="faArrowLeft" class="text-xl" />
         </button>
-        <h3 class="text-xl font-semibold text-gray-800">Hướng dẫn chơi</h3>
+        <h3 class="text-xl font-semibold text-gray-800">{{ $t("instruction.title") }}</h3>
         <button 
           @click="showListOfContents" 
           class="p-2 text-green-600 hover:text-gray-600 transition-colors duration-200"
@@ -27,7 +27,7 @@
 
         <!-- Roles Section -->
         <div class="space-y-8 mb-20">
-          <h3 class="text-xl font-semibold text-gray-800" id="roles">Các vai trò</h3>
+          <h3 class="text-xl font-semibold text-gray-800" id="roles">{{ $t("instruction.roles") }}</h3>
           
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div
@@ -63,11 +63,11 @@
                   
                   <div class="space-y-2">
                     <p class="text-sm text-gray-500">
-                      Số lần sử dụng kỹ năng: {{ role.counts }}
+                      {{ $t("instruction.skillUsage") }}: {{ role.counts }}
                     </p>
                     
                     <div class="flex flex-wrap gap-2">
-                      <span class="text-sm text-gray-500">Kỹ năng:</span>
+                      <span class="text-sm text-gray-500">{{ $t("instruction.skill") }}:</span>
                       <div class="flex flex-wrap gap-2">
                         <img
                           v-for="(icon, iconIndex) in role.abilityIcons"
@@ -93,20 +93,20 @@
         class="absolute right-0 top-0 h-full w-64 bg-white border-l border-gray-200 shadow-lg transform transition-transform duration-300 ease-in-out overflow-auto"
       >
         <div class="px-4 py-6">
-          <h4 class="text-lg font-semibold text-gray-800 mb-4">Mục lục</h4>
+          <h4 class="text-lg font-semibold text-gray-800 mb-4">{{ $t("instruction.tableOfContents") }}</h4>
           <nav class="space-y-2">
             <a 
               href="#guide" 
               class="block px-3 py-2 text-gray-600 hover:text-green-600 hover:bg-gray-50 rounded-lg transition-colors duration-200"
             >
-              Hướng dẫn cách chơi
+              {{ $t("instruction.guide") }}
             </a>
             <div class="space-y-1 pl-4">
               <a 
                 href="#roles" 
                 class="block px-3 py-2 text-gray-600 hover:text-green-600 hover:bg-gray-50 rounded-lg transition-colors duration-200"
               >
-                Các vai trò
+                {{ $t("instruction.roles") }}
               </a>
               <div class="space-y-1 pl-4">
                 <a 
@@ -133,7 +133,7 @@ import { user } from "../store";
 import LlmApi from "../api/llm.api";
 import GameApi from "../api/game.api";
 import { isLoading } from "../store";
-import MarkdownIt from "markdown-it";
+import markdownit from 'markdown-it'
 
 export default {
   emits: ["close"],
@@ -173,7 +173,7 @@ export default {
         const response = await ai.getInstruction();
 
         if (response != null) {
-          const md = new MarkdownIt();
+          const md = markdownit();
           this.text = md.render(response);
           sessionStorage.setItem("instruction", JSON.stringify(this.text));
         }

@@ -6,7 +6,7 @@
       class="font-mono w-full max-w-md sm:p-8 px-4 py-8 space-y-6 bg-white border border-lime-700 shadow-md rounded-xl"
     >
       <h2 class="text-2xl text-lime-700 font-semibold text-center">
-        Tên của bạn là
+        {{ $t("signup.title") }}
       </h2>
 
       <!-- Signup Form -->
@@ -29,7 +29,7 @@
             :disabled="isSubmitting"
             class="text-white w-full px-4 py-2 bg-lime-700 rounded-md hover:bg-lime-600 focus:outline-none focus:ring-2 focus:ring-gray-200 disabled:bg-gray-400"
           >
-            Vào chơi thôi
+            {{ $t("signup.submit") }}
           </button>
         </div>
 
