@@ -1,17 +1,20 @@
 const Role = require("../role.model");
+const i18next = require('i18next');
 
 class Bully extends Role {
   #trait;
+  #lang;
   #abilityIconsPath = {
     lock: "./src/models/roles/assets/lock-solid.png",
     knife: "./src/models/roles/assets/knife.png",
   };
 
-  constructor(trait = "") {
+  constructor(trait = "mad", lang = "en") {
     const name = "Bully";
     const imagePath = "./src/models/roles/assets/bully.png";
     super(name, "", {}, [], 1, 0, imagePath, []);
     this.#trait = trait;
+    this.#lang = lang;
     this.configureTrait(trait);
   }
 
@@ -20,7 +23,7 @@ class Bully extends Role {
 
     // Default configuration
     let abilities = { canBlock: true, canKill: false };
-    let description = "Chặn hành động người chơi được chỉ định.";
+    let descriptionKey = "role.description.Bully.default";
     const availableAction = ["block"];
 
     // Trait-specific configurations
@@ -28,7 +31,7 @@ class Bully extends Role {
       abilities = { canBlock: false, canKill: false };
     } else if (trait === "bad") {
       abilities = { canBlock: true, canKill: true };
-      description = "Chặn hành động và giết người chơi được chỉ định.";
+      descriptionKey = "role.description.Bully.bad";
       availableAction.push("kill");
     }
 
@@ -40,6 +43,7 @@ class Bully extends Role {
 
     // Apply configuration
     this.setAbilities(abilities);
+    const description = i18next.t(descriptionKey, { lng: this.#lang });
     super.setDescription(description);
     super.setCount(Infinity);
     this.setAvailableAction(availableAction);

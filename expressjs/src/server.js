@@ -19,25 +19,32 @@ server.listen(PORT, "0.0.0.0", () => {
 //   console.log(`Server is running on port ${PORT}`);
 // });
 
-const i18next = require('i18next');
-const Backend = require('i18next-fs-backend');
-const i18nextMiddleware = require('i18next-http-middleware');
-const path = require('path');
+const i18next = require("i18next");
+const Backend = require("i18next-fs-backend");
+const i18nextMiddleware = require("i18next-http-middleware");
+const path = require("path");
 
 i18next
   .use(Backend)
   .use(i18nextMiddleware.LanguageDetector)
   .init({
-    fallbackLng: 'en',
-    preload: ['en', 'vi'],
+    fallbackLng: "en",
+    preload: ["en", "vi"],
     backend: {
-      loadPath: path.join(__dirname, 'locales/{{lng}}.json')
+      loadPath: path.join(__dirname, "locales/{{lng}}.json"),
     },
     detection: {
-      order: ['querystring', 'cookie', 'header'],
-      lookupQuerystring: 'lang',
-      caches: ['cookie']
-    }
+      order: ["querystring", "cookie", "header"],
+      lookupQuerystring: "lang",
+      caches: ["cookie"],
+      cookieOptions: {
+        path: "/",
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production", // true in prod (HTTPS)
+        sameSite: process.env.sameSite, // or 'none' if cross-site cookie, but requires secure:true
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      },
+    },
   });
 
 app.use(i18nextMiddleware.handle(i18next));

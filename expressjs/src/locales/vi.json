@@ -77,6 +77,63 @@
       "suspectNotBad": "nhưng rõ ràng người này không phải kẻ xấu"
     }
   },
+  "role": {
+    "name": {
+      "Villager": "Dân làng",
+      "Bully": "Kẻ bắt nạt",
+      "Hunter": "Người săn",
+      "Doctor": "Bác sĩ",
+      "Witch": "Phù thủy",
+      "Stalker": "Người theo dõi"
+    },
+    "description": {
+      "Bully": {
+        "default": "Chặn hành động của người chơi được chỉ định.",
+        "bad": "Chặn và giết người chơi được chỉ định."
+      },
+      "Doctor": {
+        "default": "Kim tiêm: chữa trị (loại bỏ độc tố) cho người chơi chỉ định. Băng gạc: cầm máu (cứu) cho người chơi chỉ định."
+      },
+      "Hunter": {
+        "default": "Đặt một cái bẫy cho người chơi được chỉ định."
+      },
+      "Stalker": {
+        "default": "Biết được những người có cùng mục tiêu với bản thân.",
+        "bad": "Biết được những người có cùng mục tiêu với bản thân và có thể giết mục tiêu."
+      },
+      "Witch": {
+        "good": "Có 2 bình thuốc: thuốc giải độc dùng để hoá giải độc tố cho người chơi, và thuốc hạ độc dùng để hạ độc người chơi.",
+        "bad": "Có 2 bình thuốc: thuốc độc dùng để hạ độc người chơi, và thuốc tê liệt ngăn chặn người chơi sử dụng kỹ năng.",
+        "mad": "Có 2 bình thuốc: thuốc giải độc dùng để hoá giải độc tố cho người chơi, và thuốc hạ độc dùng để hạ độc người chơi."
+      },
+      "Villager": {
+        "default": "Chọn ngẫu nhiên một vai trò với thuộc tính điên"
+      }
+    },
+    "trait": {
+      "good": "Tốt",
+      "bad": "Xấu",
+      "mad": "Điên"
+    },
+    "counts": {
+      "infinite": "Không giới hạn",
+      "times": "lần"
+    },
+    "errors": {
+      "roleEmpty": "Vai trò không được để trống",
+      "roleInvalid": "Vai trò không hợp lệ",
+      "traitsEmpty": "Thuộc tính không được để trống",
+      "traitsInvalid": "Thuộc tính phải là một mảng",
+      "traitsCountInvalid": "Số lượng thuộc tính phải bằng với số người chơi",
+      "traitsGoodCountMissing": "Số lượng thuộc tính tốt phải là ít nhất 1",
+      "traitsGoodCountNotHalf": "Số lượng thuộc tính tốt phải ít hơn một nửa số người chơi",
+      "traitsBadCountMissing": "Số lượng thuộc tính xấu phải là ít nhất 1",
+      "traitsBadCountNotHalf": "Số lượng thuộc tính xấu phải ít hơn một nửa số người chơi",
+      "alivePlayersInvalid": "Số người chơi còn sống phải là một số dương",
+      "voteCountInvalid": "Số phiếu bầu phải là một số dương",
+      "traitsMustBeString": "Thuộc tính phải là một chuỗi"
+    }
+  },
   "rules": {
     "errors": {
       "rolesEmpty": "Vai trò không được để trống",

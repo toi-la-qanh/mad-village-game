@@ -52,6 +52,8 @@ class RoleController {
       Doctor: ["good"],
     };
 
+    const lang = req.query.lang || "en";
+
     // Create all roles based on allowed traits
     const roles = [];
 
@@ -73,18 +75,18 @@ class RoleController {
       if (RoleClass) {
         // Create role instances for each allowed trait
         allowedTraits.forEach((trait) => {
-          roles.push(new RoleClass(trait));
+          roles.push(new RoleClass(trait, lang));
         });
       }
     });
 
     // Add Villager role
-    roles.push(new Villager());
+    roles.push(new Villager("mad", lang));
 
     // Format role details for response
     const rolesDetail = roles.map((role) => ({
       name: req.t(`role.name.${role.getName()}`),
-      description: req.t(`role.description.${role.getName()}`),
+      description: role.getDescription(),
       counts:
         role.getCount() === Infinity ? req.t("role.counts.infinite") : role.getCount() + " " + req.t("role.counts.times"),
       image: role.getImage(),
@@ -99,22 +101,22 @@ class RoleController {
     checkSchema({
       name: {
         notEmpty: {
-          errorMessage: "role.error.nameEmpty",
+          errorMessage: "role.errors.roleEmpty",
         },
         isString: {
-          errorMessage: "role.error.nameInvalid",
+          errorMessage: "role.errors.roleInvalid",
         },
       },
       trait: {
         notEmpty: {
-          errorMessage: "role.error.traitEmpty",
+          errorMessage: "role.errors.traitEmpty",
         },
         isString: {
-          errorMessage: "role.error.traitInvalid",
+          errorMessage: "role.errors.traitInvalid",
         },
         isIn: {
           options: [["good", "bad", "mad"]], // Valid trait values
-          errorMessage: "role.error.traitInvalid",
+          errorMessage: "role.errors.traitInvalid",
         },
       },
     }),
@@ -129,13 +131,13 @@ class RoleController {
         }));
         return res.status(422).json({ errors: translatedErrors });
       }
-      const { name, trait } = req.query;
+      const { name, trait, lang } = req.query;
       const roleClasses = {
-        Bully,
-        Hunter,
-        Stalker,
-        Witch,
-        Villager,
+        Bully: Bully(lang),
+        Hunter: Hunter(lang),
+        Stalker: Stalker(lang),
+        Witch: Witch(lang),
+        Villager: Villager(lang),
       };
 
       // Check if the requested role class exists
@@ -152,7 +154,7 @@ class RoleController {
       return res.status(200).json({
         name: req.t(`role.name.${role.getName()}`),
         trait: req.t(`role.trait.${role.getTrait()}`),
-        description: req.t(`role.description.${role.getName()}`),
+        description: role.getDescription(),
         image: role.getImage(),
         action: role.getAvailableAction(),
       });

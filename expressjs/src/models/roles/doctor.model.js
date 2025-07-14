@@ -1,18 +1,20 @@
 const Role = require("../role.model");
+const i18next = require("i18next");
 
 class Doctor extends Role {
+  #lang;
   #trait;
   #abilityIcons = {
     cure: "./src/models/roles/assets/syringe.png",
     save: "./src/models/roles/assets/bandage.png",
   };
 
-  constructor(trait = "mad") {
+  constructor(trait = "mad", lang = "en") {
     const name = "Doctor";
     const imagePath = "./src/models/roles/assets/doctor.png";
-
     super(name, "", {}, [], 3, 0, imagePath, []);
     this.#trait = trait;
+    this.#lang = lang;
     this.configureTrait(trait);
   }
 
@@ -21,8 +23,7 @@ class Doctor extends Role {
 
     // Default configuration (normal trait)
     let abilities = { canCure: true, canSave: true };
-    let description =
-      "Kim tiêm: chữa trị (loại bỏ độc tố) cho người chơi chỉ định. Băng gạc: cầm máu (cứu) cho người chơi chỉ định.";
+    let description = i18next.t("role.description.Doctor.default", { lng: this.#lang });
     let count = 2;
     let availableAction = ["cure", "save"];
     let actionPriority = 4;
