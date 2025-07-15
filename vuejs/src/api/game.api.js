@@ -1,7 +1,7 @@
 import BaseApi from './base.api';
 
 let url = `${import.meta.env.VITE_BACKEND_URL}/api/game`;
-const language = localStorage.getItem('locale') || 'en';
+const language = sessionStorage.getItem('language') || 'en';
 
 export default class GameApi extends BaseApi {
   /**

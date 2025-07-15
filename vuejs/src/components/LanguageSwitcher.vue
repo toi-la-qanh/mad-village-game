@@ -19,7 +19,9 @@ export default {
       const newLocale = event.target.value;
       locale.value = newLocale;
       i18n.global.locale.value = newLocale;
+      sessionStorage.clear();
       sessionStorage.setItem("language", newLocale);
+      window.location.reload();
     };
 
     onMounted(() => {

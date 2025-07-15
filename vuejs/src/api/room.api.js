@@ -1,7 +1,7 @@
 import BaseApi from './base.api';
 
 let url = `${import.meta.env.VITE_BACKEND_URL}/api/rooms`;
-const language = localStorage.getItem('locale') || 'en';
+const language = sessionStorage.getItem('language') || 'en';
 
 export default class RoomApi extends BaseApi {
   /**
