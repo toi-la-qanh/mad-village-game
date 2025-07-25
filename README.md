@@ -131,8 +131,6 @@ The game will _end_ when one of the following conditions is met:
 
 ## Install
 
-_Note: The test cases for both backend and frontend are on progress_
-
 ### Backend
 
 ```

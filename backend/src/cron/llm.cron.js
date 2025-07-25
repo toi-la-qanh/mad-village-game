@@ -24,8 +24,8 @@ const updateLLMResponse = async (req, res) => {
           },
         ],
       },
-    ],
-    model: "meta-llama/llama-3.3-70b-instruct:free",
+    ], 
+    model: process.env.LLM_API_Model,
     temperature: 0.2
   });
 

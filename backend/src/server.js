@@ -5,7 +5,6 @@ const app = express();
 require("dotenv").config();
 
 /* Start the server */
-
 const server = require("http").createServer(app);
 const PORT = process.env.PORT || 3000;
 
@@ -19,6 +18,7 @@ server.listen(PORT, "0.0.0.0", () => {
 //   console.log(`Server is running on port ${PORT}`);
 // });
 
+/* Language Translation Setup */
 const i18next = require("i18next");
 const Backend = require("i18next-fs-backend");
 const i18nextMiddleware = require("i18next-http-middleware");
@@ -40,8 +40,9 @@ i18next
       cookieOptions: {
         path: "/",
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production", // true in prod (HTTPS)
-        sameSite: process.env.sameSite, // or 'none' if cross-site cookie, but requires secure:true
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.sameSite,
+        cookieDomain: process.env.cookieDomain, // for production
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       },
     },
@@ -89,7 +90,6 @@ const SocketController = require("./socketHandle/socket.controller.js");
 new SocketController(server);
 
 /* Routes */
-
 const userRoutes = require("./routes/user.route.js");
 const roomRoutes = require("./routes/room.route.js");
 const gameRoutes = require("./routes/game.route.js");

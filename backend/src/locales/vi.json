@@ -81,10 +81,10 @@
     "name": {
       "Villager": "Dân làng",
       "Bully": "Kẻ bắt nạt",
-      "Hunter": "Người săn",
-      "Doctor": "Bác sĩ",
+      "Hunter": "Thợ săn",
+      "Doctor": "Thầy thuốc",
       "Witch": "Phù thủy",
-      "Stalker": "Người theo dõi"
+      "Stalker": "Kẻ theo dõi"
     },
     "description": {
       "Bully": {

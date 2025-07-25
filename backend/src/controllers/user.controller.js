@@ -16,7 +16,7 @@ class UserController {
 
     // Check if the user is existing
     if (!user) {
-      return res.status(404).json({ error: req.t("user.error.notFound") });
+      return res.status(404).json({ error: req.t("user.errors.notFound") });
     }
 
     const { _id: id, name, isAboutToClose } = user;
@@ -37,7 +37,7 @@ class UserController {
     // Check if the user's account is about to close
     if (isAboutToClose) {
       responseData.message =
-        req.t("user.message.accountAboutToClose");
+        req.t("user.messages.accountAboutToClose");
     }
 
     return res.status(200).json(responseData);
@@ -50,15 +50,15 @@ class UserController {
     checkSchema({
       name: {
         notEmpty: {
-          errorMessage: "user.error.nameEmpty",
+          errorMessage: "user.errors.nameEmpty",
         },
         isLength: {
           options: { min: 2, max: 30 },
-          errorMessage: "user.error.nameLength",
+          errorMessage: "user.errors.nameLength",
         },
         matches: {
           options: /^(?=.*[a-zA-Z].*[a-zA-Z])[a-zA-Z0-9\sà-ỹÀ-Ỵ]*$/u,
-          errorMessage: "user.error.nameInvalid",
+          errorMessage: "user.errors.nameInvalid",
         },
       },
     }),
@@ -77,7 +77,7 @@ class UserController {
       const checkIfUserExists = await User.findOne({ name: name });
 
       if (checkIfUserExists) {
-        return res.status(400).json({ errors: req.t("user.error.nameExists") });
+        return res.status(400).json({ errors: req.t("user.errors.nameExists") });
       }
 
       const user = new User({
@@ -96,7 +96,7 @@ class UserController {
         sameSite: process.env.sameSite, // Set to Lax when run on local
       });
 
-      return res.status(200).json({ message: req.t("user.message.signupSuccess") });
+      return res.status(200).json({ message: req.t("user.messages.signupSuccess") });
     },
   ];
 
@@ -108,12 +108,12 @@ class UserController {
 
     // Check if the user was found and deleted
     if (!deletedUser) {
-      return res.status(404).json({ error: req.t("user.error.notFound") });
+      return res.status(404).json({ error: req.t("user.errors.notFound") });
     }
 
     return res
       .status(200)
-      .json({ message: req.t("user.message.deleteSuccess") });
+      .json({ message: req.t("user.messages.deleteSuccess") });
   };
 }
 

@@ -1,10 +1,5 @@
 const request = require('supertest');
 const express = require('express');
-const dotenv = require('dotenv');
-dotenv.config();
-
-// Mock the Google GenAI module
-jest.mock('@google/genai');
 
 // Create a mock for the caches object and its methods
 const mockCaches = {
