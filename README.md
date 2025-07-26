@@ -3,7 +3,7 @@
 ![Node.js](https://img.shields.io/badge/Node.js-v20.x-green.svg) ![Vue.js](https://img.shields.io/badge/Vue.js-3.x-brightgreen.svg) ![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-v4.x-blue.svg) ![Socket.IO](https://img.shields.io/badge/Socket.IO-4.x-lightgrey.svg)
 
 **Demo Gameplay**
-![Mad Village Game](./vuejs/src/assets/demo.gif)
+![Mad Village Game](./frontend/src/assets/demo.gif)
 
 ## List of contents
 
@@ -133,23 +133,25 @@ The game will _end_ when one of the following conditions is met:
 
 ### Backend
 
+From your main folder, run
 ```
-cd expressjs
+cd backend
 npm install
 nodemon
 ```
 
-Add your env configuration: [Backend config](./expressjs/README.md)
+Add your env configuration: [Backend config](./backend/README.md)
 
 ### Frontend
 
+From your main folder, run
 ```
-cd vuejs
+cd frontend
 npm install
 npm run dev
 ```
 
-Add your env configuration: [Frontend config](./vuejs/README.md)
+Add your env configuration: [Frontend config](./frontend/README.md)
 
 ## Credits
 >I've already purchased all the assets here, but if you want to use them for commercial purposes, please contact the original author.
