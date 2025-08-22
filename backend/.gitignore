@@ -1,0 +1,11 @@
+.env.keys
+src/migrations/*
+src/migrate-mongo-config.js
+node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+logs/
+dist/
+build/
+.vscode/*

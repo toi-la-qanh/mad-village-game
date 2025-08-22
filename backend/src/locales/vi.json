@@ -1,0 +1,181 @@
+{
+  "user": {
+    "errors": {
+      "notFound": "Không tìm thấy người dùng",
+      "nameEmpty": "Tên không được để trống",
+      "nameLength": "Tên phải có từ 2 đến 30 ký tự",
+      "nameInvalid": "Tên phải có ít nhất 2 chữ cái",
+      "nameExists": "Tên đã tồn tại"
+    },
+    "messages": {
+      "signupSuccess": "Đăng ký thành công",
+      "deleteSuccess": "Xoá tài khoản thành công"
+    }
+  },
+  "room": {
+    "errors": {
+      "noRooms": "Hiện chưa có phòng chờ",
+      "idEmpty": "Mã phòng không được để trống",
+      "idInvalid": "Mã phòng không hợp lệ",
+      "notFound": "Không tìm thấy phòng",
+      "cannotCreateRoom": "Không thể tạo phòng khi đang ở trong phòng khác",
+      "roomFull": "Phòng đã đầy",
+      "passwordRequired": "Phòng yêu cầu mật khẩu",
+      "passwordIncorrect": "Mật khẩu không đúng",
+      "noPermissionToUpdate": "Bạn không có quyền cập nhật phòng này",
+      "noPermissionToKick": "Bạn không có quyền đuổi người chơi ra khỏi phòng",
+      "userNotFound": "Không tìm thấy người chơi",
+      "capacityEmpty": "Số lượng người không được để trống",
+      "capacityInvalid": "Số lượng người không hợp lệ",
+      "capacityTooSmall": "Số lượng người phải lớn hơn số người hiện tại ở trong phòng",
+      "userIdEmpty": "Mã người chơi không được để trống",
+      "userIdInvalid": "Mã người chơi không hợp lệ",
+      "mustLeaveOwner": "Bạn phải nhường chức chủ phòng cho một ai đó trước khi rời khỏi phòng"
+    },
+    "messages": {
+      "createSuccess": "Tạo phòng thành công",
+      "joinSuccess": "Vào phòng thành công",
+      "leaveSuccess": "Rời phòng thành công",
+      "updateSuccess": "Cập nhật phòng thành công",
+      "kickSuccess": "Đuổi người chơi thành công",
+      "deleteSuccess": "Xoá phòng thành công",
+      "alreadyInRoom": "Bạn đã ở trong phòng này",
+      "cannotKickOwner": "Bạn không thể đuổi chủ phòng"
+    }
+  },
+  "game": {
+    "errors": {
+      "noRooms": "Không có phòng chờ",
+      "idEmpty": "Mã phòng không được để trống",
+      "idInvalid": "Mã phòng không hợp lệ",
+      "notFound": "Không tìm thấy phòng",
+      "gameInProgress": "Trò chơi đã được bắt đầu",
+      "onlyOwnerCanStart": "Chỉ chủ phòng mới có thể bắt đầu trò chơi",
+      "playerCountInvalid": "Số người chơi phải từ 6 đến 20",
+      "gameStarted": "Trò chơi đã bắt đầu thành công",
+      "gameEnded": "Trò chơi đã kết thúc",
+      "performedAction": "Bạn {action} {targetName}",
+      "watchedOtherPlayers": "Bạn đã xem {performerNames} qua nhà {targetName}",
+      "poisonedPlayers": "Các người chơi bị đầu độc: {poisonedPlayers}",
+      "noDeath": "Đêm qua không có ai chết",
+      "deadPlayers": "Các người chơi đã chết: {deadPlayerDetails}",
+      "messageEmpty": "Tin nhắn không được để trống",
+      "cannotChat": "Bạn không thể nói chuyện",
+      "suspect": "Kẻ bị tình nghi {playerName} là {role}",
+      "suspectNotBad": "nhưng rõ ràng người này không phải kẻ xấu"
+    },
+    "messages": {
+      "gameEnded": "Trò chơi đã kết thúc",
+      "performedAction": "Bạn {action} {targetName}",
+      "watchedOtherPlayers": "Bạn đã xem {performerNames} qua nhà {targetName}",
+      "poisonedPlayers": "Các người chơi bị đầu độc: {poisonedPlayers}",
+      "noDeath": "Đêm qua không có ai chết",
+      "deadPlayers": "Các người chơi đã chết: {deadPlayerDetails}",
+      "messageEmpty": "Tin nhắn không được để trống",
+      "cannotChat": "Bạn không thể nói chuyện",
+      "suspect": "Kẻ bị tình nghi {playerName} là {role}",
+      "suspectNotBad": "nhưng rõ ràng người này không phải kẻ xấu"
+    }
+  },
+  "role": {
+    "name": {
+      "Villager": "Dân làng",
+      "Bully": "Kẻ bắt nạt",
+      "Hunter": "Thợ săn",
+      "Doctor": "Thầy thuốc",
+      "Witch": "Phù thủy",
+      "Stalker": "Kẻ theo dõi"
+    },
+    "description": {
+      "Bully": {
+        "default": "Chặn hành động của người chơi được chỉ định.",
+        "bad": "Chặn và giết người chơi được chỉ định."
+      },
+      "Doctor": {
+        "default": "Kim tiêm: chữa trị (loại bỏ độc tố) cho người chơi chỉ định. Băng gạc: cầm máu (cứu) cho người chơi chỉ định."
+      },
+      "Hunter": {
+        "default": "Đặt một cái bẫy cho người chơi được chỉ định."
+      },
+      "Stalker": {
+        "default": "Biết được những người có cùng mục tiêu với bản thân.",
+        "bad": "Biết được những người có cùng mục tiêu với bản thân và có thể giết mục tiêu."
+      },
+      "Witch": {
+        "good": "Có 2 bình thuốc: thuốc giải độc dùng để hoá giải độc tố cho người chơi, và thuốc hạ độc dùng để hạ độc người chơi.",
+        "bad": "Có 2 bình thuốc: thuốc độc dùng để hạ độc người chơi, và thuốc tê liệt ngăn chặn người chơi sử dụng kỹ năng.",
+        "mad": "Có 2 bình thuốc: thuốc giải độc dùng để hoá giải độc tố cho người chơi, và thuốc hạ độc dùng để hạ độc người chơi."
+      },
+      "Villager": {
+        "default": "Chọn ngẫu nhiên một vai trò với thuộc tính điên"
+      }
+    },
+    "trait": {
+      "good": "Tốt",
+      "bad": "Xấu",
+      "mad": "Điên"
+    },
+    "counts": {
+      "infinite": "Không giới hạn",
+      "times": "lần"
+    },
+    "errors": {
+      "roleEmpty": "Vai trò không được để trống",
+      "roleInvalid": "Vai trò không hợp lệ",
+      "traitsEmpty": "Thuộc tính không được để trống",
+      "traitsInvalid": "Thuộc tính phải là một mảng",
+      "traitsCountInvalid": "Số lượng thuộc tính phải bằng với số người chơi",
+      "traitsGoodCountMissing": "Số lượng thuộc tính tốt phải là ít nhất 1",
+      "traitsGoodCountNotHalf": "Số lượng thuộc tính tốt phải ít hơn một nửa số người chơi",
+      "traitsBadCountMissing": "Số lượng thuộc tính xấu phải là ít nhất 1",
+      "traitsBadCountNotHalf": "Số lượng thuộc tính xấu phải ít hơn một nửa số người chơi",
+      "alivePlayersInvalid": "Số người chơi còn sống phải là một số dương",
+      "voteCountInvalid": "Số phiếu bầu phải là một số dương",
+      "traitsMustBeString": "Thuộc tính phải là một chuỗi"
+    }
+  },
+  "rules": {
+    "errors": {
+      "rolesEmpty": "Vai trò không được để trống",
+      "rolesInvalid": "Vai trò phải là một mảng",
+      "playerCountInvalid": "Số người chơi phải là một số dương",
+      "rolesCountInvalid": "Số lượng vai trò phải bằng với số người chơi",
+      "roleInvalid": "Vai trò không hợp lệ",
+      "traitsEmpty": "Thuộc tính không được để trống",
+      "traitsInvalid": "Thuộc tính phải là một mảng",
+      "traitsCountInvalid": "Số lượng thuộc tính phải bằng với số người chơi",
+      "traitsGoodCountMissing": "Số lượng thuộc tính tốt phải là ít nhất 1",
+      "traitsGoodCountNotHalf": "Số lượng thuộc tính tốt phải ít hơn một nửa số người chơi",
+      "traitsBadCountMissing": "Số lượng thuộc tính xấu phải là ít nhất 1",
+      "traitsBadCountNotHalf": "Số lượng thuộc tính xấu phải ít hơn một nửa số người chơi",
+      "alivePlayersInvalid": "Số người chơi còn sống phải là một số dương",
+      "voteCountInvalid": "Số phiếu bầu phải là một số dương",
+      "traitsMustBeString": "Thuộc tính phải là một chuỗi"
+    },
+    "messages": {
+      "gameOverBadTraitsMissing": "Trò chơi đã kết thúc vì không còn kẻ xấu",
+      "gameOverBadTraitsDominant": "Trò chơi đã kết thúc vì số lượng kẻ xấu đã chiếm đa số"
+    }
+  },
+  "llm": {
+    "errors": {
+      "noData": "Không có dữ liệu",
+      "conversationEmpty": "Thiếu dữ liệu cuộc trò chuyện"
+    },
+    "messages": {
+      "successfulUpdate": "Cập nhật hướng dẫn game thành công",
+      "gameSummaryPrompt": "Bạn là một quản trị viên của trò chơi trực tuyến có tên là `Làng điên`, hãy giải thích cách chơi và mẹo chơi (dành cho cả 2 bên dân làng và ma sói) của trò chơi này cho người chơi. Đây là mô tả của trò chơi: Trò chơi sẽ giữ nguyên cấu trúc cơ bản của trò chơi `Ma sói` cổ điển nhưng có sự thay đổi quan trọng trong các đặc điểm của dân làng. Thay vì chỉ có một nhóm dân làng, tôi chia thành hai loại: dân làng tốt và dân làng điên. Dân làng tốt, là phe chính diện, có thể thực hiện các kỹ năng đặc biệt. Dân làng xấu, là ma sói đại diện cho phe phản diện, sẽ có khả năng thực hiện nhiều kỹ năng hơn dân làng. Dân làng điên, cũng là phe chính diện nhưng kỹ năng của họ sẽ không có tác dụng. Cấu trúc trò chơi sẽ được chia thành các giai đoạn như sau: Giai đoạn ban đêm: Trong giai đoạn này, người chơi sẽ chọn mục tiêu để thực hiện hành động của mình. Giai đoạn ban ngày: Kết quả của các hành động trong đêm sẽ được báo cáo cho tất cả người chơi. Giai đoạn thảo luận: Người chơi sẽ được phép trò chuyện và thảo luận về các sự kiện đã xảy ra trong đêm, tìm ra ai là dân làng xấu. Giai đoạn bỏ phiếu: Người chơi sẽ bỏ phiếu cho người mà họ nghĩ là người xấu, và người có số phiếu cao nhất sẽ bị treo cổ. Trò chơi kết thúc khi một trong các điều kiện sau được đáp ứng: Số dân làng ít hơn hoặc bằng số ma sói; Không còn ma sói trong trò chơi."
+    }
+  },
+  "auth": {
+    "errors": {
+      "notCreatedAccountYet": "Bạn chưa tạo tài khoản hoặc tài khoản của bạn đã bị xóa!",
+      "tokenInvalid": "Token không hợp lệ"
+    }
+  },
+  "rateLimit": {
+    "errors": {
+      "tooManyRequests": "Quá nhiều lần thử, xin vui lòng thử lại trong ít phút nữa !"
+    }
+  }
+}

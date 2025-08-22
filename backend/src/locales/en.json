@@ -1,0 +1,190 @@
+{
+  "user": {
+    "errors": {
+      "notFound": "User not found",
+      "nameEmpty": "Name is required",
+      "nameLength": "Name must be between 2 and 30 characters",
+      "nameInvalid": "Name must contain at least 2 letters",
+      "nameExists": "Name already exists"
+    },
+    "messages": {
+      "signupSuccess": "Signup successful",
+      "deleteSuccess": "Account deleted successfully"
+    }
+  },
+  "room": {
+    "errors": {
+      "noRooms": "No rooms available",
+      "idEmpty": "Room ID is required",
+      "idInvalid": "Invalid room ID",
+      "notFound": "Room not found",
+      "cannotCreateRoom": "Cannot create room while in another room",
+      "roomFull": "Room is full",
+      "passwordRequired": "Room requires a password",
+      "passwordIncorrect": "Incorrect password",
+      "noPermissionToUpdate": "You do not have permission to update this room",
+      "noPermissionToKick": "You do not have permission to kick this user",
+      "userNotFound": "User not found",
+      "capacityEmpty": "Capacity is required",
+      "capacityInvalid": "Invalid capacity",
+      "capacityTooSmall": "Capacity must be greater than the number of players in the room",
+      "userIdEmpty": "User ID is required",
+      "userIdInvalid": "Invalid user ID",
+      "mustLeaveOwner": "You must leave the owner role before leaving the room"
+    },
+    "messages": {
+      "createSuccess": "Room created successfully",
+      "joinSuccess": "Joined room successfully",
+      "leaveSuccess": "Left room successfully",
+      "updateSuccess": "Room updated successfully",
+      "kickSuccess": "Kicked user successfully",
+      "deleteSuccess": "Room deleted successfully",
+      "alreadyInRoom": "You are already in this room",
+      "cannotKickOwner": "You cannot kick the owner"
+    }
+  },
+  "game": {
+    "errors": {
+      "noRooms": "No rooms available",
+      "idEmpty": "Room ID is required",
+      "idInvalid": "Invalid room ID",
+      "notFound": "Room not found",
+      "gameInProgress": "Game is already in progress",
+      "onlyOwnerCanStart": "Only the owner can start the game",
+      "playerCountInvalid": "Player count must be between 6 and 20",
+      "gameStarted": "Game started successfully",
+      "leftGame": "Left game successfully",
+      "yourRole": "Your role is {role} {trait}",
+      "noAction": "You did not perform any action",
+      "targetNotFound": "Target not found",
+      "cannotPerformAction": "You cannot perform this action",
+      "alreadyPerformedAction": "You have already performed an action",
+      "actionError": "Action error",
+      "targetNotBeingWatched": "Target is not being watched",
+      "noVote": "You did not vote for anyone",
+      "canOnlyVoteForAlivePlayers": "You can only vote for alive players",
+      "votedFor": "You voted for {targetName}",
+      "noVotes": "No votes",
+      "tie": "Tie with {maxCount} votes, so no one is hanged",
+      "playerNotFound": "Player not found",
+      "gameOver": "Game over",
+      "nextPhase": "Next phase",
+      "turn": "Turn {turn}",
+      "voteTime": "Vote time",
+      "discussionTime": "Discussion time",
+      "handleVotes": "Handle votes",
+      "poisonedPlayers": "The following players were poisoned: {poisonedPlayers}",
+      "noDeath": "No one died last night",
+      "deadPlayers": "The following players died: {deadPlayerDetails}",
+      "messageEmpty": "Message cannot be empty",
+      "cannotChat": "You cannot chat",
+      "suspect": "Suspect {playerName} is {role}",
+      "suspectNotBad": "but clearly this person is not bad"
+    },
+    "messages": {
+      "gameEnded": "Game ended",
+      "performedAction": "You {action} {targetName}",
+      "watchedOtherPlayers": "You watched {performerNames} through {targetName}",
+      "poisonedPlayers": "The following players were poisoned: {poisonedPlayers}",
+      "noDeath": "No one died last night",
+      "deadPlayers": "The following players died: {deadPlayerDetails}",
+      "messageEmpty": "Message cannot be empty",
+      "cannotChat": "You cannot chat",
+      "suspect": "Suspect {playerName} is {role}",
+      "suspectNotBad": "but clearly this person is not bad"
+    }
+  },
+  "role": {
+    "name": {
+      "Villager": "Villager",
+      "Bully": "Bully",
+      "Hunter": "Hunter",
+      "Doctor": "Doctor",
+      "Witch": "Witch",
+      "Stalker": "Stalker"
+    },
+    "description": {
+      "Bully": {
+        "default": "Block the action of the target.",
+        "bad": "Block and kill the target."
+      },
+      "Doctor": {
+        "default": "Syringe: cure (remove toxins) for the target. Bandage: stop bleeding (save) for the target."
+      },
+      "Hunter": {
+        "default": "Set a trap for the target."
+      },
+      "Stalker": {
+        "default": "See who has the same target as you.",
+        "bad": "See who has the same target as you. Can kill the target."
+      },
+      "Witch": {
+        "good": "Has two potions: antidote to cure toxins, and poison to poison a player.",
+        "bad": "Has two potions: poison to poison a player, and paralysis to prevent a player from using skills.",
+        "mad": "Has two potions: antidote to cure toxins, and poison to poison a player."
+      },
+      "Villager": {
+        "default": "Randomly selects a role with the mad trait."
+      }
+    },
+    "trait": {
+      "good": "Good",
+      "bad": "Bad",
+      "mad": "Mad"
+    },
+    "counts": {
+      "infinite": "Infinite",
+      "times": "times"
+    },
+    "errors": {
+      "roleEmpty": "Role is required",
+      "roleInvalid": "Role is invalid",
+      "roleNotExists": "Role does not exist"
+    },
+    "messages": {}
+  },
+  "rules": {
+    "errors": {
+      "rolesEmpty": "Roles cannot be empty",
+      "rolesInvalid": "Roles must be an array",
+      "playerCountInvalid": "Player count must be a positive number",
+      "rolesCountInvalid": "Roles count must be equal to player count",
+      "roleInvalid": "Role is invalid",
+      "traitsEmpty": "Traits cannot be empty",
+      "traitsInvalid": "Traits must be an array",
+      "traitsCountInvalid": "Traits count must be equal to player count",
+      "traitsGoodCountMissing": "Traits good count must be at least 1",
+      "traitsGoodCountNotHalf": "Traits good count must be less than half of the player count",
+      "traitsBadCountMissing": "Traits bad count must be at least 1",
+      "traitsBadCountNotHalf": "Traits bad count must be less than half of the player count",
+      "alivePlayersInvalid": "Alive players must be a positive number",
+      "voteCountInvalid": "Vote count must be a positive number",
+      "traitsMustBeString": "Traits must be a string"
+    },
+    "messages": {
+      "gameOverBadTraitsMissing": "Game over because there are no bad traits",
+      "gameOverBadTraitsDominant": "Game over because the bad traits are dominant"
+    }
+  },
+  "llm": {
+    "errors": {
+      "noData": "No data",
+      "conversationEmpty": "Conversation data is missing"
+    },
+    "messages": {
+      "successfulUpdate": "Game summary updated successfully",
+      "gameSummaryPrompt": "You are an administrator of an online game called `Mad Village`, explain the gameplay and tips (for both villagers and werewolves) of this game to the players. Here is the description of the game: The game will keep the basic structure of the classic `Werewolf` game but with an important change in the characteristics of the villagers. Instead of having only one group of villagers, I divided them into two types: good villagers and crazy villagers. Good villagers, who are the positive side, can perform special skills. Bad villagers, who are the werewolves representing the negative side, will be able to perform more skills than villagers. Crazy villagers, who are also positive but their skills will not be effective. The game structure will be divided into the following stages: Night stage: In this stage, players will choose a target to perform their actions. Day Phase: The results of the actions during the night will be reported to all players. Discussion Phase: Players will be allowed to chat and discuss the events that happened during the night, finding out who the bad villagers are. Voting Phase: Players will vote for who they think is the bad person, and the person with the most votes will be hanged. The game ends when one of the following conditions is met: The number of villagers is less than or equal to the number of werewolves; There are no more werewolves in the game."
+    }
+  },
+  "auth": {
+    "errors": {
+      "notCreatedAccountYet": "You haven't created account yet or maybe your account was deleted!",
+      "tokenInvalid": "Token is invalid"
+    }
+  },
+  "rateLimit": {
+    "errors": {
+      "tooManyRequests": "Too many requests, please try again in a few minutes"
+    }
+  }
+}

@@ -1,0 +1,125 @@
+{
+  "errors": {
+    "network": "Connection error with the server!"
+  },
+  "loading": "Please wait a sec",
+  "instruction": {
+    "title": "Instruction",
+    "guide": "Guide",
+    "roles": "Roles",
+    "tableOfContents": "Table of Contents",
+    "skill": "Skill",
+    "skillUsage": "Skill Usage"
+  },
+  "buttons": {
+    "play": "Play",
+    "instruction": "Instruction",
+    "settings": "Settings"
+  },
+  "signup": {
+    "title": "Your name",
+    "submit": "Let's play"
+  },
+  "settings": {
+    "title": "Settings",
+    "description": "Manage your account and settings",
+    "animation": {
+      "title": "Animation",
+      "on": "On",
+      "off": "Off"
+    },
+    "speed": "Speed",
+    "quit": "Quit game",
+    "quitGameConfirm": "Are you sure you want to quit the game?",
+    "submit": "Submit",
+    "audio":{
+      "title": "Audio",
+      "label": "Background music",
+      "volume": "Volume"
+    },
+    "save": "Save",
+    "back": "Back",
+    "success": "Settings saved successfully",
+    "account": {
+      "delete": "Delete account",
+      "deleteConfirm": "Are you sure you want to delete your account?"
+    }
+  },
+  "rooms": {
+    "title": "Waiting Room",
+    "goBack": {
+      "home": "Back to Home"
+    },
+    "searchPlaceholder": "Search room ...",
+    "searchHelper": "Search room by room code or owner name",
+    "createRoom": "Create room",
+    "reload": "Reload",
+    "room": "Room",
+    "owner": "Owner",
+    "enterRoom": "Enter room",
+    "errors": {
+      "loadRooms": "Failed to load rooms",
+      "noRoomFound": "No room found"
+    }
+  },
+  "roomDetail": {
+    "title": "Room Detail",
+    "owner": "Owner",
+    "players": "Players",
+    "join": "Join",
+    "noPassword": {
+      "title": "No Password",
+      "description": "You can join the room right now"
+    },
+    "settings": {
+      "title": "Room Settings",
+      "description": "You can update the room settings here",
+      "capacity": "Capacity",
+      "password": "Password",
+      "update": "Update"
+    },
+    "gameSettings": {
+      "title": "Game Settings",
+      "description": "You can update the game settings here",
+      "selectRole": "Select Role",
+      "selectedRoles": "Selected Roles",
+      "voteTime": "Vote Time",
+      "discussionTime": "Discussion Time",
+      "startGame": "Start Game",
+      "seconds": "seconds"
+    }
+  },
+  "createRoom": {
+    "title": "Create room",
+    "capacity": {
+      "title": "Capacity",
+      "placeholder": "Enter a positive integer"
+    },
+    "password": {
+      "title": "Password",
+      "placeholder": "Optional"
+    },
+    "submit": "Create"
+  },
+  "errorPopup": {
+    "reload": "Reload page"
+  },
+  "game": {
+    "error": {
+      "title": "Error"
+    },
+    "end": {
+      "title": "Game End",
+      "goBack": "Go Back"
+    },
+    "dayReport": {
+      "title": "Day Report",
+      "deadPlayers": "Dead Players"
+    }
+  },
+  "notFound": {
+    "title": "404 - Page Not Found",
+    "description": "The page you are looking for does not exist.",
+    "goBack": "Go Back"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "author": "Quoc Anh Nguyen",
+  "license": "MIT",
+  "dependencies": {
+    "@dotenvx/dotenvx": "^1.49.0",
+    "bcrypt": "^5.1.1",
+    "body-parser": "^1.20.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "express": "^4.21.1",
+    "express-rate-limit": "^7.5.0",
+    "express-validator": "^7.2.1",
+    "i18next": "^25.3.2",
+    "i18next-fs-backend": "^2.6.0",
+    "i18next-http-middleware": "^3.7.4",
+    "jsonwebtoken": "^9.0.2",
+    "migrate-mongo": "^11.0.0",
+    "mongoose": "^8.13.2",
+    "openai": "^4.91.1",
+    "redis": "^4.7.0",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
+    "torch": "^0.2.7"
+  },
+  "scripts": {
+    "dev": "dotenvx run -f .env.local -- nodemon src/server.js",
+    "start": "dotenvx run -f .env.production -- node src/server.js",
+    "test": "dotenvx run -f .env.local -- jest"
+  },
+  "devDependencies": {
+    "jest": "^30.0.4",
+    "nodemon": "^3.1.9",
+    "supertest": "^7.1.3"
+  }
+}

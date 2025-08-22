@@ -1,0 +1,120 @@
+{
+  "errors": {
+    "network": "Lỗi kết nối với máy chủ!"
+  },
+  "loading": "Chờ tí nhé",
+  "instruction": {
+    "title": "Hướng dẫn",
+    "guide": "Hướng dẫn chơi",
+    "roles": "Các vai trò",
+    "tableOfContents": "Mục lục",
+    "skill": "Kỹ năng",
+    "skillUsage": "Số lần sử dụng kỹ năng"
+  },
+  "buttons": {
+    "play": "Chơi",
+    "instruction": "Hướng dẫn",
+    "settings": "Cài đặt"
+  },
+  "signup": {
+    "title": "Tên của bạn là",
+    "submit": "Vào chơi thôi"
+  },
+  "settings": {
+    "title": "Cài đặt",
+    "description": "Quản lý tài khoản và cài đặt của bạn",
+    "animation": {
+      "title": "Hiệu ứng hoạt ảnh",
+      "on": "Bật",
+      "off": "Tắt"
+    },
+    "speed": "Tốc độ di chuyển",
+    "audio": {
+      "title": "Âm thanh",
+      "label": "Nhạc nền",
+      "on": "Bật",
+      "off": "Tắt",
+      "volume": "Âm lượng"
+    },
+    "save": "Lưu",
+    "back": "Quay trở lại",
+    "success": "Cài đặt đã được lưu thành công",
+    "account": {
+      "delete": "Xoá tài khoản",
+      "deleteConfirm": "Bạn có chắc chắn muốn xoá tài khoản của bạn không?"
+    }
+  },
+  "rooms": {
+    "title": "Sảnh chờ",
+    "goBack": {
+      "home": "Quay lại trang chủ"
+    },
+    "searchPlaceholder": "Tìm phòng ...",
+    "searchHelper": "Tìm phòng bằng mã phòng hoặc tên của chủ phòng",
+    "createRoom": "Tạo phòng",
+    "reload": "Tải lại",
+    "room": "Phòng",
+    "owner": "Chủ phòng",
+    "enterRoom": "Vào phòng",
+    "errors": {
+      "loadRooms": "Không thể tải danh sách phòng",
+      "noRoomFound": "Không tìm thấy phòng nào khớp với yêu cầu!"
+    }
+  },
+  "roomDetail": {
+    "title": "Phòng chờ",
+    "goBack": "Quay lại sảnh",
+    "owner": "Chủ phòng",
+    "players": "Người chơi",
+    "join": "Vào phòng",
+    "noPassword": {
+      "title": "Không có mật khẩu",
+      "description": "Bạn có thể vào phòng ngay bây giờ"
+    },
+    "settings": {
+      "title": "Cài đặt phòng",
+      "description": "Bạn có thể cập nhật lại cài đặt phòng ở đây",
+      "capacity": "Số lượng người",
+      "password": "Mật khẩu",
+      "update": "Cập nhật"
+    },
+    "gameSettings": {
+      "title": "Cài đặt trò chơi",
+      "description": "Bạn có thể cập nhật lại cài đặt trò chơi ở đây",
+      "selectRole": "Chọn vai trò",
+      "selectedRoles": "Các vai trò đã chọn",
+      "voteTime": "Thời gian bỏ phiếu",
+      "discussionTime": "Thời gian thảo luận",
+      "startGame": "Bắt đầu chơi",
+      "seconds": "giây"
+    }
+  },
+  "createRoom": {
+    "title": "Tạo phòng",
+    "capacity": {
+      "title": "Số lượng người",
+      "placeholder": "Nhập số nguyên dương"
+    },
+    "password": {
+      "title": "Mật khẩu",
+      "placeholder": "Không bắt buộc"
+    },
+    "submit": "Tạo"
+  },
+  "errorPopup": {
+    "reload": "Tải lại trang"
+  },
+  "game": {
+    "error": {
+      "title": "Lỗi"
+    },
+    "end": {
+      "title": "Trò chơi kết thúc",
+      "goBack": "Quay lại phòng"
+    },
+    "dayReport": {
+      "title": "Báo cáo ngày",
+      "deadPlayers": "Người chơi đã chết"
+    }
+  }
+}
