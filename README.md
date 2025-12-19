@@ -4,7 +4,7 @@
 
 [Tiếng Việt](./README.vi-VN.md) [日本語](./README.jp-JP.md)
 <br>
-**Demo Gameplay**
+**Demo Gameplay** <br>
 ![Mad Village Game](./frontend/src/assets/demo.gif)
 
 ## List of contents
